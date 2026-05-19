@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Perfil - GamesSphere{% endblock %}
+
+{% block content %}
+<div class="edit-profile-container" style="background:var(--bg-panel); border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:32px; margin-top:24px;">
+    <h2 class="section-title" style="margin-bottom:24px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
+        <i class="fas fa-user-edit" style="color:var(--accent-purple); margin-right:8px;"></i> Editar Perfil Gamer
+    </h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert" style="background:rgba(16, 185, 129, 0.1); border-left:4px solid var(--accent-green); padding:12px; margin-bottom:24px; border-radius:4px;">
+                    <i class="fas fa-check-circle" style="color:var(--accent-green);"></i> {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('jugador.editar_perfil') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">URL Avatar (Foto de perfil)</label>
+                <input type="url" name="foto_perfil" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white;" placeholder="https://ejemplo.com/avatar.png" value="{{ current_user.foto_perfil if current_user.foto_perfil else '' }}">
+            </div>
+            
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">URL Banner (Fondo de perfil)</label>
+                <input type="url" name="banner" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white;" placeholder="https://ejemplo.com/banner.jpg" value="{{ current_user.banner if current_user.banner else '' }}">
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:24px;">
+            <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">Biografía</label>
+            <textarea name="biografia" class="form-control" rows="4" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white;" placeholder="Cuéntale a la comunidad sobre ti...">{{ current_user.biografia if current_user.biografia else '' }}</textarea>
+        </div>
+        
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px;">
+            <div class="form-group">
+                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">País / Región 🌍</label>
+                <input type="text" name="pais" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white;" placeholder="Ej. Colombia, México, España..." value="{{ current_user.pais if current_user.pais else '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">Estado Personalizado 💬</label>
+                <input type="text" name="estado_personalizado" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white;" placeholder="Ej. En directo / Subiendo a Radiante" value="{{ current_user.estado_personalizado if current_user.estado_personalizado else '' }}" maxlength="100">
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom:24px; width:50%;">
+            <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">Tu Identidad / Clase 🏷️</label>
+            <select name="titulo_perfil" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white; outline:none; cursor:pointer;">
+                <option value="Gamer" {% if current_user.titulo_perfil == 'Gamer' %}selected{% endif %}>🎮 Gamer</option>
+                <option value="Streamer" {% if current_user.titulo_perfil == 'Streamer' %}selected{% endif %}>🔴 Streamer</option>
+                <option value="Pro Player" {% if current_user.titulo_perfil == 'Pro Player' %}selected{% endif %}>🏆 Pro Player</option>
+                <option value="Creador" {% if current_user.titulo_perfil == 'Creador' %}selected{% endif %}>🎥 Creador de Contenido</option>
+                <option value="Caster" {% if current_user.titulo_perfil == 'Caster' %}selected{% endif %}>🎙️ Caster / Analista</option>
+                <option value="Diseñador" {% if current_user.titulo_perfil == 'Diseñador' %}selected{% endif %}>🖌️ Diseñador / Artista</option>
+            </select>
+        </div>
+
+        <h3 style="font-size:16px; margin-bottom:16px; margin-top:32px; color:white; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;"><i class="fas fa-link" style="color:var(--accent-purple);"></i> Redes Sociales e Integraciones</h3>
+        <p style="color:var(--text-muted); font-size:13px; margin-bottom:24px;">Conecta tus canales para que otros jugadores puedan encontrarte. ¡Deja en blanco los que no uses!</p>
+        
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px; margin-bottom:40px;">
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:8px; color:var(--text-muted); font-size:13px;"><i class="fab fa-twitch" style="color:#9146FF; font-size:16px;"></i> Twitch</label>
+                <input type="text" name="twitch" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); padding:10px; border-radius:8px; color:white;" placeholder="Usuario de Twitch" value="{{ current_user.twitch if current_user.twitch else '' }}">
+            </div>
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:8px; color:var(--text-muted); font-size:13px;"><i class="fas fa-play" style="color:#53fc18; font-size:16px;"></i> Kick</label>
+                <input type="text" name="kick" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); padding:10px; border-radius:8px; color:white;" placeholder="Usuario de Kick" value="{{ current_user.kick if current_user.kick else '' }}">
+            </div>
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:8px; color:var(--text-muted); font-size:13px;"><i class="fab fa-youtube" style="color:#FF0000; font-size:16px;"></i> YouTube</label>
+                <input type="text" name="youtube" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); padding:10px; border-radius:8px; color:white;" placeholder="@tu_canal" value="{{ current_user.youtube if current_user.youtube else '' }}">
+            </div>
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:8px; color:var(--text-muted); font-size:13px;"><i class="fab fa-discord" style="color:#5865F2; font-size:16px;"></i> Discord</label>
+                <input type="text" name="discord" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); padding:10px; border-radius:8px; color:white;" placeholder="usuario#1234" value="{{ current_user.discord if current_user.discord else '' }}">
+            </div>
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:8px; color:var(--text-muted); font-size:13px;"><i class="fab fa-steam" style="color:var(--text-muted); font-size:16px;"></i> Steam</label>
+                <input type="text" name="steam" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); padding:10px; border-radius:8px; color:white;" placeholder="Steam ID / Enlace" value="{{ current_user.steam if current_user.steam else '' }}">
+            </div>
+        </div>
+        
+        <h3 style="font-size:16px; margin-bottom:16px; color:white;">Juegos Favoritos</h3>
+        <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Selecciona los juegos que quieres destacar en tu perfil.</p>
+        
+        <div class="games-checkbox-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:16px; margin-bottom:32px;">
+            {% set juegos = current_user.juegos_favoritos.split(',') if current_user.juegos_favoritos else [] %}
+            
+            <!-- Titanes -->
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="Roblox" {% if 'Roblox' in juegos %}checked{% endif %}> Roblox
+            </label>
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="Counter-Strike 2" {% if 'Counter-Strike 2' in juegos %}checked{% endif %}> Counter-Strike 2
+            </label>
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="Minecraft" {% if 'Minecraft' in juegos %}checked{% endif %}> Minecraft
+            </label>
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="EA SPORTS FC 26" {% if 'EA SPORTS FC 26' in juegos %}checked{% endif %}> EA FC 26
+            </label>
+            
+            <!-- Shooters / BR -->
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="Call of Duty: Warzone" {% if 'Call of Duty: Warzone' in juegos or 'Call of Duty' in juegos %}checked{% endif %}> CoD: Warzone
+            </label>
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="Apex Legends" {% if 'Apex Legends' in juegos %}checked{% endif %}> Apex Legends
+            </label>
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="Valorant" {% if 'Valorant' in juegos %}checked{% endif %}> Valorant
+            </label>
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="Fortnite" {% if 'Fortnite' in juegos %}checked{% endif %}> Fortnite
+            </label>
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="Free Fire" {% if 'Free Fire' in juegos %}checked{% endif %}> Free Fire
+            </label>
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="Overwatch 2" {% if 'Overwatch 2' in juegos %}checked{% endif %}> Overwatch 2
+            </label>
+
+            <!-- MOBA -->
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="Honor of Kings" {% if 'Honor of Kings' in juegos %}checked{% endif %}> Honor of Kings
+            </label>
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="Mobile Legends: Bang Bang" {% if 'Mobile Legends: Bang Bang' in juegos %}checked{% endif %}> Mobile Legends
+            </label>
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="Dota 2" {% if 'Dota 2' in juegos %}checked{% endif %}> Dota 2
+            </label>
+
+            <!-- Supervivencia -->
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="ARK: Survival Evolved" {% if 'ARK: Survival Evolved' in juegos %}checked{% endif %}> ARK: Survival
+            </label>
+            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                <input type="checkbox" name="juegos" value="GTA V" {% if 'GTA V' in juegos %}checked{% endif %}> GTA V / Online
+            </label>
+        </div>
+        
+        <div style="display:flex; justify-content:flex-end; gap:16px;">
+            <a href="{{ url_for('jugador.perfil') }}" class="btn-secondary" style="text-decoration:none; display:inline-block; padding:12px 24px;">Cancelar</a>
+            <button type="submit" class="btn-primary" style="padding:12px 32px;"><i class="fas fa-save" style="margin-right:8px;"></i> Guardar cambios</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block right_sidebar %}
+<!-- Reuse the stats right sidebar or leave empty -->
+{% endblock %}

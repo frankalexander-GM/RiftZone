@@ -1,0 +1,32 @@
+Instrucciones para las imágenes de las comunidades:
+
+Hemos estructurado las imágenes por género o tipo de comunidad para que el proyecto sea escalable y fácil de mantener.
+
+Debes crear las siguientes carpetas dentro de esta misma ruta y poner las fotos de los juegos (en formato .jpg) dentro de la carpeta que les corresponde. 
+
+Estructura requerida:
+
+1. Carpeta: titanes/
+   - roblox.jpg
+   - cs2.jpg
+   - minecraft.jpg
+   - eafc26.jpg
+
+2. Carpeta: shooters/
+   - warzone.jpg
+   - apex.jpg
+   - valorant.jpg
+   - fortnite.jpg
+   - freefire.jpg
+   - overwatch2.jpg
+
+3. Carpeta: mobas/
+   - lol.jpg
+   - mobilelegends.jpg
+   - dota2.jpg
+
+4. Carpeta: supervivencia/
+   - ark.jpg
+   - gtav.jpg
+
+Solo arrastra tus fotos a sus respectivas carpetas con esos nombres y la página las mostrará automáticamente de forma hermosa y estructurada.

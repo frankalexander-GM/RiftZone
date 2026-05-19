@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Chat Global - RiftZone{% endblock %}
+
+{% block content %}
+<div class="chat-container" style="display: flex; flex-direction: column; height: 80vh; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; margin-top: 16px;">
+    
+    <!-- Cabecera del chat -->
+    <div style="padding: 16px 24px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px;">
+        <i class="fas fa-hashtag" style="font-size: 24px; color: var(--text-muted);"></i>
+        <div>
+            <h2 style="font-size: 18px; color: white; margin: 0;">general</h2>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Habla con toda la comunidad. ¡Sé respetuoso!</p>
+        </div>
+    </div>
+
+    <!-- Área de mensajes -->
+    <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+        <div style="text-align: center; color: var(--text-muted); font-size: 12px; margin-bottom: 16px;">
+            <i class="fas fa-robot"></i> Cargando mensajes...
+        </div>
+    </div>
+
+    <!-- Caja para escribir -->
+    <div style="padding: 16px 24px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border-color);">
+        <form id="chat-form" style="display: flex; gap: 12px;">
+            <input type="text" id="chat-input" placeholder="Enviar un mensaje a #general" autocomplete="off"
+                   style="flex: 1; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 14px 16px; border-radius: 8px; color: white; font-size: 15px; outline: none;">
+            <button type="submit" class="btn-primary" style="padding: 0 24px; border-radius: 8px;">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Lógica de Tiempo Real (Polling) -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const chatMessages = document.getElementById('chat-messages');
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+    
+    let isScrolledToBottom = true;
+    
+    // Verificar si el usuario ha scrolleado hacia arriba
+    chatMessages.addEventListener('scroll', () => {
+        isScrolledToBottom = chatMessages.scrollHeight - chatMessages.clientHeight <= chatMessages.scrollTop + 50;
+    });
+
+    function renderMensaje(msg) {
+        return `
+            <div style="display: flex; gap: 16px;">
+                <img src="${msg.usuario_foto}" alt="${msg.usuario_nombre}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: baseline; gap: 8px;">
+                        <strong style="color: white; font-size: 15px;">${msg.usuario_nombre}</strong>
+                        <span style="color: var(--text-muted); font-size: 12px;">${msg.fecha_envio}</span>
+                    </div>
+                    <p style="color: #d1d5db; margin-top: 4px; font-size: 14px; line-height: 1.5; word-break: break-word;">
+                        ${msg.contenido}
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
+    async function cargarMensajes() {
+        try {
+            const res = await fetch("{{ url_for('chat.obtener_mensajes') }}");
+            const data = await res.json();
+            
+            chatMessages.innerHTML = ''; // Limpiar
+            if (data.mensajes.length === 0) {
+                chatMessages.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px;">¡Sé el primero en enviar un mensaje!</div>';
+            } else {
+                data.mensajes.forEach(msg => {
+                    chatMessages.insertAdjacentHTML('beforeend', renderMensaje(msg));
+                });
+            }
+            
+            // Auto scroll si estaba abajo
+            if (isScrolledToBottom) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        } catch (e) {
+            console.error("Error cargando el chat", e);
+        }
+    }
+
+    // Enviar nuevo mensaje
+    chatForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const contenido = chatInput.value.trim();
+        if (!contenido) return;
+        
+        chatInput.value = ''; // Limpiar input rápido
+        
+        try {
+            await fetch("{{ url_for('chat.enviar_mensaje') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token() }}" // Seguridad obligatoria en Flask-WTF
+                },
+                body: JSON.stringify({ contenido: contenido })
+            });
+            
+            cargarMensajes(); // Recargar inmediatamente para ver el mensaje
+            isScrolledToBottom = true; // Forzar bajar
+            
+        } catch (e) {
+            console.error("Error al enviar", e);
+        }
+    });
+
+    // POLLING: Preguntar por mensajes nuevos cada 2.5 segundos
+    setInterval(cargarMensajes, 2500);
+    
+    // Carga inicial
+    cargarMensajes();
+});
+</script>
+{% endblock %}

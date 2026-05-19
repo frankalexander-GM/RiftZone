@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Sala de {{ comunidad }} - RiftZone{% endblock %}
+
+{% block content %}
+<div class="chat-container" style="display: flex; flex-direction: column; height: 80vh; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; margin-top: 16px;">
+    
+    <!-- Cabecera del chat -->
+    <div style="padding: 16px 24px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <a href="{{ url_for('jugador.comunidades') }}" style="color: var(--text-muted); text-decoration: none; font-size: 18px;"><i class="fas fa-arrow-left"></i></a>
+            <i class="fas fa-gamepad" style="font-size: 24px; color: var(--accent-purple);"></i>
+            <div>
+                <h2 style="font-size: 18px; color: white; margin: 0;">{{ comunidad }}</h2>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Sala oficial de la comunidad de {{ comunidad }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Área de mensajes -->
+    <div id="chat-messages-comunidad" style="flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+        <div style="text-align: center; color: var(--text-muted); font-size: 12px; margin-bottom: 16px;">
+            <i class="fas fa-robot"></i> Cargando mensajes de {{ comunidad }}...
+        </div>
+    </div>
+
+    <!-- Caja para escribir -->
+    <div style="padding: 16px 24px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border-color);">
+        <form id="chat-form-comunidad" style="display: flex; gap: 12px;">
+            <input type="text" id="chat-input-comunidad" placeholder="Enviar un mensaje a la comunidad de {{ comunidad }}" autocomplete="off"
+                   style="flex: 1; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 14px 16px; border-radius: 8px; color: white; font-size: 15px; outline: none;">
+            <button type="submit" class="btn-primary" style="padding: 0 24px; border-radius: 8px;">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Lógica de Tiempo Real (Polling) para la Comunidad -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const chatMessages = document.getElementById('chat-messages-comunidad');
+    const chatForm = document.getElementById('chat-form-comunidad');
+    const chatInput = document.getElementById('chat-input-comunidad');
+    const comunidad_actual = "{{ comunidad }}";
+    
+    let isScrolledToBottom = true;
+    
+    chatMessages.addEventListener('scroll', () => {
+        isScrolledToBottom = chatMessages.scrollHeight - chatMessages.clientHeight <= chatMessages.scrollTop + 50;
+    });
+
+    function renderMensaje(msg) {
+        return `
+            <div style="display: flex; gap: 16px;">
+                <img src="${msg.usuario_foto}" alt="${msg.usuario_nombre}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: baseline; gap: 8px;">
+                        <strong style="color: white; font-size: 15px;">${msg.usuario_nombre}</strong>
+                        <span style="color: var(--text-muted); font-size: 12px;">${msg.fecha_envio}</span>
+                    </div>
+                    <p style="color: #d1d5db; margin-top: 4px; font-size: 14px; line-height: 1.5; word-break: break-word;">
+                        ${msg.contenido}
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
+    async function cargarMensajes() {
+        try {
+            const res = await fetch(`/chat/api/mensajes/${comunidad_actual}`);
+            const data = await res.json();
+            
+            chatMessages.innerHTML = '';
+            if (data.mensajes.length === 0) {
+                chatMessages.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px;">¡Sé el primero en enviar un mensaje en ' + comunidad_actual + '!</div>';
+            } else {
+                data.mensajes.forEach(msg => {
+                    chatMessages.insertAdjacentHTML('beforeend', renderMensaje(msg));
+                });
+            }
+            
+            if (isScrolledToBottom) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        } catch (e) {
+            console.error("Error cargando el chat de la comunidad", e);
+        }
+    }
+
+    chatForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const contenido = chatInput.value.trim();
+        if (!contenido) return;
+        
+        chatInput.value = '';
+        
+        try {
+            await fetch(`/chat/api/enviar/${comunidad_actual}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ contenido: contenido })
+            });
+            
+            cargarMensajes();
+            isScrolledToBottom = true;
+            
+        } catch (e) {
+            console.error("Error al enviar", e);
+        }
+    });
+
+    setInterval(cargarMensajes, 2500);
+    cargarMensajes();
+});
+</script>
+{% endblock %}

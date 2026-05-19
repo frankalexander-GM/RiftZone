@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Comunidad {{ juego }} - RiftZone{% endblock %}
+
+{% block content %}
+<!-- ENCABEZADO DE LA COMUNIDAD -->
+<div style="background: linear-gradient(rgba(15, 23, 42, 0.5), var(--bg-color)), url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200&auto=format&fit=crop'); background-size: cover; background-position: center; border-radius: var(--radius-lg); padding: 40px; margin-bottom: 24px; border: 1px solid var(--border-color); display: flex; align-items: flex-end; justify-content: space-between; height: 200px;">
+    <div>
+        <h1 style="color: white; font-size: 32px; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">{{ juego }}</h1>
+        <p style="color: rgba(255,255,255,0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.8);">Comunidad oficial de jugadores</p>
+    </div>
+    <a href="{{ url_for('chat.chat_sala', comunidad=juego) }}" style="background: var(--accent-purple); color: white; padding: 12px 24px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 15px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); display: flex; align-items: center; gap: 8px; transition: transform 0.2s;">
+        <i class="fas fa-comment-dots" style="font-size: 18px;"></i> Entrar al Chat
+    </a>
+</div>
+
+<!-- CREATE POST (específico para el juego) -->
+{% if current_user.is_authenticated %}
+<div class="create-post" style="margin-bottom:16px;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert" style="background:rgba(16, 185, 129, 0.1); border-left:4px solid var(--accent-green); padding:8px 12px; margin-bottom:16px; border-radius:4px; font-size:13px;">
+                    <i class="fas fa-check-circle" style="color:var(--accent-green);"></i> {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <form id="create-post-form" method="POST" action="{{ url_for('jugador.crear_publicacion') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="create-post-header" style="margin-bottom:12px;">
+            <img src="{{ current_user.foto_perfil if current_user.foto_perfil else 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=100&auto=format&fit=crop' }}" alt="Avatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+            <textarea name="contenido" class="post-input" placeholder="Comparte algo con la comunidad de {{ juego }}..." required style="height:50px; padding:12px; font-size:14px; border:none; background:transparent; border-bottom:1px solid rgba(255,255,255,0.1); border-radius:0;"></textarea>
+        </div>
+        
+        <div id="image-url-container" style="display:none; padding:0 0 12px 56px;">
+            <input type="url" name="imagen_url" placeholder="Pega la URL de tu imagen aquí..." style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); padding:10px 12px; border-radius:var(--radius-sm); color:white; font-size:13px;">
+        </div>
+
+        <div class="create-post-actions" style="padding-left:56px; display:flex; justify-content:space-between; align-items:center;">
+            <div class="post-types" style="gap:16px;">
+                <button type="button" class="post-type-btn image" onclick="document.getElementById('image-url-container').style.display = 'block';"><i class="far fa-image"></i> Imagen</button>
+                <button type="button" class="post-type-btn clip"><i class="fas fa-video"></i> Clip</button>
+            </div>
+            <div style="display:flex; gap:12px; align-items:center;">
+                <!-- Bloqueamos el juego a esta comunidad -->
+                <input type="hidden" name="juego" value="{{ juego }}">
+                <span style="font-size:13px; color:var(--text-muted);">Publicando en: <strong>{{ juego }}</strong></span>
+                <button type="submit" class="btn-primary" style="padding:8px 24px; border-radius:20px;">Publicar</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<!-- FEED DE PUBLICACIONES -->
+{% if publicaciones %}
+    {% for post in publicaciones %}
+    <div class="post-card">
+        <div class="post-header">
+            <div class="post-author">
+                <img src="{{ post.autor.foto_perfil if post.autor.foto_perfil else 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=100&auto=format&fit=crop' }}" alt="{{ post.autor.username }}" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
+                <div class="author-info">
+                    <h4><a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" style="color:white; text-decoration:none;">{{ post.autor.nombre if post.autor.nombre else post.autor.username }}</a></h4>
+                    <div class="post-meta">
+                        {{ post.fecha_creacion | timeago }}
+                    </div>
+                </div>
+            </div>
+            <button class="icon-btn" style="background:transparent;"><i class="fas fa-ellipsis-h"></i></button>
+        </div>
+        
+        <div class="post-content">
+            {{ post.contenido }}
+        </div>
+        
+        {% if post.imagen_url %}
+        <div class="post-media">
+            <img src="{{ post.imagen_url }}" alt="Media" style="width:100%; border-radius:var(--radius-md); margin-top:12px;">
+        </div>
+        {% endif %}
+        
+        <div class="post-actions" style="margin-top:16px; margin-bottom:16px;">
+            <button class="action-btn {% if current_user in post.usuarios_likes %}liked{% endif %}" id="like-btn-{{ post.id_publicacion }}" onclick="toggleLike({{ post.id_publicacion }})"><i class="fas fa-heart"></i> <span id="like-count-{{ post.id_publicacion }}">{{ post.likes }}</span></button>
+            <button class="action-btn" onclick="document.getElementById('comments-{{ post.id_publicacion }}').style.display='block'"><i class="far fa-comment"></i> {{ post.comentarios|length }}</button>
+            <button class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
+        </div>
+
+        <!-- COMMENTS -->
+        <div id="comments-{{ post.id_publicacion }}" class="comments-section" style="display:none; border-top:1px solid var(--border-color); padding-top:16px;">
+            {% for comment in post.comentarios %}
+            <div class="comment" style="display:flex; gap:12px; margin-bottom:12px;">
+                <img src="{{ comment.autor.foto_perfil if comment.autor.foto_perfil else 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=100&auto=format&fit=crop' }}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+                <div class="comment-content" style="background:var(--bg-dark); padding:10px 12px; border-radius:var(--radius-md); flex:1;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span style="font-size:13px; font-weight:700;">{{ comment.autor.nombre if comment.autor.nombre else comment.autor.username }}</span>
+                        <span style="font-size:11px; color:var(--text-muted);">{{ comment.fecha_creacion | timeago }}</span>
+                    </div>
+                    <p style="font-size:13px; color:white; line-height:1.4; margin:0;">{{ comment.contenido }}</p>
+                </div>
+            </div>
+            {% endfor %}
+            <form method="POST" action="{{ url_for('jugador.comentar', post_id=post.id_publicacion) }}" style="display:flex; gap:12px; margin-top:16px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="text" name="contenido" placeholder="Escribe un comentario..." style="flex:1; background:var(--bg-dark); border:1px solid var(--border-color); padding:8px 12px; border-radius:20px; color:white; font-size:13px;" required>
+                <button type="submit" style="background:transparent; border:none; color:var(--accent-purple); cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <!-- DATOS DE PRUEBA VISUALES -->
+    <div style="margin-bottom: 24px; padding: 12px; background: rgba(139, 92, 246, 0.1); border-left: 4px solid var(--accent-purple); color: var(--text-muted); font-size: 13px; border-radius: 4px;">
+        <i class="fas fa-info-circle" style="color: var(--accent-purple);"></i> Estas son publicaciones de ejemplo para que puedas probar y ver el diseño de la comunidad de {{ juego }}.
+    </div>
+
+    <!-- Ejemplo 1 -->
+    <div class="post-card">
+        <div class="post-header">
+            <div class="post-author">
+                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=100&auto=format&fit=crop" alt="ProGamer" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
+                <div class="author-info">
+                    <h4><a href="#" style="color:white; text-decoration:none;">ProGamer_99</a> <i class="fas fa-check-circle verified-icon" style="font-size:14px;"></i></h4>
+                    <div class="post-meta">Hace 2 horas</div>
+                </div>
+            </div>
+            <button class="icon-btn" style="background:transparent;"><i class="fas fa-ellipsis-h"></i></button>
+        </div>
+        <div class="post-content">
+            ¡Acabo de encontrar el mejor spot en {{ juego }}! Nadie se espera que estés ahí. ¿Alguien más lo usa? 🤯🎮
+        </div>
+        <div class="post-media">
+            <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=800&auto=format&fit=crop" alt="Gameplay" style="width:100%; height:300px; object-fit:cover; border-radius:var(--radius-md); margin-top:12px;">
+        </div>
+        <div class="post-actions" style="margin-top:16px; margin-bottom:16px;">
+            <button class="action-btn" onclick="this.classList.toggle('liked'); let s=this.querySelector('span'); s.textContent = this.classList.contains('liked') ? '143' : '142';"><i class="fas fa-heart"></i> <span>142</span></button>
+            <button class="action-btn" onclick="let c = document.getElementById('fake-comments-1'); c.style.display = c.style.display === 'none' ? 'block' : 'none';"><i class="far fa-comment"></i> 24</button>
+            <button class="action-btn"><i class="fas fa-retweet"></i> 5</button>
+            <button class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
+        </div>
+        <!-- FAKE COMMENTS -->
+        <div id="fake-comments-1" class="comments-section" style="display:none; border-top:1px solid var(--border-color); padding-top:16px;">
+            <div style="display:flex; gap:12px; margin-top:16px;">
+                <input type="text" placeholder="Escribe un comentario..." style="flex:1; background:var(--bg-dark); border:1px solid var(--border-color); padding:8px 12px; border-radius:20px; color:white; font-size:13px;">
+                <button type="button" onclick="alert('Este es un post de prueba. ¡Crea un post real arriba para guardar comentarios en la base de datos!');" style="background:transparent; border:none; color:var(--accent-purple); cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ejemplo 2 -->
+    <div class="post-card">
+        <div class="post-header">
+            <div class="post-author">
+                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop" alt="Luna" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
+                <div class="author-info">
+                    <h4><a href="#" style="color:white; text-decoration:none;">LunaGamer</a></h4>
+                    <div class="post-meta">Hace 5 horas</div>
+                </div>
+            </div>
+            <button class="icon-btn" style="background:transparent;"><i class="fas fa-ellipsis-h"></i></button>
+        </div>
+        <div class="post-content">
+            Buscando equipo (Dúo/Trío) para jugar rankeds en la comunidad de {{ juego }} esta noche. Requisito: usar micrófono y no ser tóxico. 🎙️🔥
+        </div>
+        <div class="post-actions" style="margin-top:16px; margin-bottom:16px;">
+            <button class="action-btn liked" onclick="this.classList.toggle('liked'); let s=this.querySelector('span'); s.textContent = this.classList.contains('liked') ? '89' : '88';"><i class="fas fa-heart"></i> <span>89</span></button>
+            <button class="action-btn" onclick="let c = document.getElementById('fake-comments-2'); c.style.display = c.style.display === 'none' ? 'block' : 'none';"><i class="far fa-comment"></i> 12</button>
+            <button class="action-btn"><i class="fas fa-retweet"></i> 1</button>
+            <button class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
+        </div>
+        <!-- FAKE COMMENTS -->
+        <div id="fake-comments-2" class="comments-section" style="display:none; border-top:1px solid var(--border-color); padding-top:16px;">
+            <div style="display:flex; gap:12px; margin-top:16px;">
+                <input type="text" placeholder="Escribe un comentario..." style="flex:1; background:var(--bg-dark); border:1px solid var(--border-color); padding:8px 12px; border-radius:20px; color:white; font-size:13px;">
+                <button type="button" onclick="alert('Este es un post de prueba. ¡Crea un post real arriba para guardar comentarios en la base de datos!');" style="background:transparent; border:none; color:var(--accent-purple); cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<script>
+function toggleLike(postId) {
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    fetch(`/jugador/like/${postId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            const btn = document.getElementById(`like-btn-${postId}`);
+            const countSpan = document.getElementById(`like-count-${postId}`);
+            if(data.liked) {
+                btn.classList.add('liked');
+            } else {
+                btn.classList.remove('liked');
+            }
+            countSpan.textContent = data.likes_count;
+        }
+    });
+}
+</script>
+{% endblock %}

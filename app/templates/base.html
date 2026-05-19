@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RiftZone{% endblock %}</title>
+    
+    <!-- CSS -->
+    <link href="{{ url_for('static', filename='css/games_sphere.css') }}" rel="stylesheet">
+    
+    <!-- Fonts & Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+
+<div class="app-layout">
+    <!-- TOP NAVBAR -->
+    <nav class="top-nav">
+        <div class="nav-left">
+            <a href="/" class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-gamepad" style="color: white; font-size: 18px;"></i>
+                </div>
+                RiftZone
+            </a>
+        </div>
+        
+        <div class="nav-center">
+            <form action="{{ url_for('public.buscar') }}" method="GET" class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" placeholder="Buscar jugadores, clanes, publicaciones..." required>
+                <button type="submit" style="display:none;"></button>
+            </form>
+        </div>
+        
+        <div class="nav-right">
+            <button class="btn-primary">
+                <i class="fas fa-plus"></i> Crear
+            </button>
+            
+            <button class="icon-btn">
+                <i class="fas fa-comment-dots"></i>
+            </button>
+            
+            <div class="dropdown-container" style="position: relative;">
+                <button class="icon-btn" onclick="document.getElementById('notif-dropdown').classList.toggle('show')">
+                    <i class="fas fa-bell"></i>
+                    {% if current_user.is_authenticated %}
+                        {% set no_leidas = current_user.notificaciones.filter_by(leido=False).count() %}
+                        {% if no_leidas > 0 %}
+                        <span class="badge" style="background: var(--accent-purple); color: white; border-radius: 50%; font-size: 11px; font-weight: bold; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; position: absolute; top: -4px; right: -4px; box-shadow: 0 0 10px var(--accent-purple);">{{ no_leidas }}</span>
+                        {% endif %}
+                    {% endif %}
+                </button>
+                
+                {% if current_user.is_authenticated %}
+                <div id="notif-dropdown" class="dropdown-menu" style="display: none; position: absolute; top: 120%; right: -10px; width: 340px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: 0 10px 40px rgba(0,0,0,0.8); z-index: 1000;">
+                    <div style="padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2);">
+                        <h4 style="margin: 0; color: white; font-size: 15px;"><i class="fas fa-bell" style="color: var(--accent-purple); margin-right: 6px;"></i> Notificaciones</h4>
+                        <a href="{{ url_for('jugador.leer_notificaciones') }}" style="color: var(--accent-purple); font-size: 12px; text-decoration: none; font-weight: bold;"><i class="fas fa-check-double"></i> Marcar leídas</a>
+                    </div>
+                    <div style="max-height: 350px; overflow-y: auto; padding: 8px;">
+                        {% set notifs = current_user.notificaciones.limit(5).all() %}
+                        {% if notifs %}
+                            {% for n in notifs %}
+                            <div {% if n.enlace %}onclick="window.location.href='{{ n.enlace }}'"{% endif %} style="padding: 12px; border-radius: 8px; margin-bottom: 4px; background: {% if not n.leido %}rgba(139, 92, 246, 0.1){% else %}transparent{% endif %}; border-left: {% if not n.leido %}3px solid var(--accent-purple){% else %}3px solid transparent{% endif %}; display: flex; gap: 12px; align-items: flex-start; transition: background 0.2s; {% if n.enlace %}cursor: pointer;{% endif %}" onmouseover="this.style.background='var(--bg-dark)'" onmouseout="this.style.background='{% if not n.leido %}rgba(139, 92, 246, 0.1){% else %}transparent{% endif %}'">
+                                <div style="background: var(--bg-dark); width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 1px solid var(--border-color); flex-shrink: 0;">
+                                    <i class="{{ n.icono }}" style="color: {% if n.tipo == 'clan' %}var(--accent-purple){% elif n.tipo == 'social' %}var(--accent-magenta){% else %}var(--accent-green){% endif %}; font-size: 14px;"></i>
+                                </div>
+                                <div style="flex: 1;">
+                                    <p style="margin: 0; color: white; font-size: 13px; line-height: 1.4;">{{ n.mensaje }}</p>
+                                    <span style="font-size: 10px; color: var(--text-muted); margin-top: 6px; display: block;"><i class="far fa-clock"></i> Hace unos instantes</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div style="padding: 40px 20px; text-align: center; color: var(--text-muted);">
+                                <i class="far fa-bell-slash" style="font-size: 40px; margin-bottom: 16px; opacity: 0.2;"></i>
+                                <p style="margin: 0; font-size: 14px;">Estás al día.<br>No hay notificaciones nuevas.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <style>
+                    .dropdown-menu.show { display: block !important; animation: slideDown 0.2s ease; }
+                    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+                </style>
+                {% endif %}
+            </div>
+            
+            <div class="user-profile-btn" style="cursor: pointer;" onclick="window.location.href='{{ url_for('jugador.perfil') }}'">
+                <div class="avatar">
+                    <img src="https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=200&auto=format&fit=crop" alt="Avatar" class="avatar-img">
+                </div>
+                <div class="user-info">
+                    <span class="user-name">{% if current_user.is_authenticated %}{{ current_user.username }}{% else %}Invitado{% endif %} <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 4px;"></i></span>
+                </div>
+            </div>
+            
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('auth.logout') }}" class="icon-btn" title="Cerrar sesión" style="text-decoration:none;">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- CONTENT WRAPPER -->
+    <div class="content-wrapper">
+        
+        <!-- LEFT SIDEBAR -->
+        <aside class="left-sidebar">
+            <div class="menu-group">
+                <a href="{{ url_for('jugador.dashboard') }}" class="menu-item active"><i class="fas fa-home"></i> Inicio</a>
+                <a href="{{ url_for('chat.chat_global') }}" class="menu-item"><i class="fas fa-comment-dots"></i> Chat Global</a>
+                <a href="#" class="menu-item"><i class="fas fa-compass"></i> Explorar</a>
+                <a href="{{ url_for('jugador.comunidades') }}" class="menu-item"><i class="fas fa-users"></i> Comunidades</a>
+                <a href="{{ url_for('clanes.index') }}" class="menu-item"><i class="fas fa-shield-alt"></i> Clanes</a>
+                <a href="#" class="menu-item"><i class="fas fa-envelope"></i> Mensajes</a>
+                <a href="#" class="menu-item"><i class="fas fa-user-friends"></i> Amigos</a>
+                <a href="#" class="menu-item"><i class="fas fa-trophy"></i> Torneos</a>
+                <a href="#" class="menu-item"><i class="fas fa-rocket"></i> Boosts</a>
+                <a href="#" class="menu-item"><i class="fas fa-store"></i> Tienda</a>
+                <a href="#" class="menu-item premium"><i class="fas fa-crown"></i> Premium</a>
+            </div>
+            
+            <div class="menu-group">
+                <h3 class="menu-title" style="display: flex; align-items: center; justify-content: space-between;">
+                    <span><i class="fas fa-globe" style="color: var(--accent-purple); margin-right: 6px;"></i> CHAT MUNDIAL</span>
+                    <span style="width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; box-shadow: 0 0 8px var(--accent-green);"></span>
+                </h3>
+                
+                <div id="mini-chat-messages" style="height: 350px; overflow-y: auto; background: var(--bg-dark); border-radius: var(--radius-md); padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border-color);">
+                    <!-- Los mensajes cargarán aquí -->
+                    <div style="text-align: center; color: var(--text-muted); font-size: 13px; margin-top: auto; margin-bottom: auto;">
+                        <i class="fas fa-spinner fa-spin"></i> Conectando...
+                    </div>
+                </div>
+                
+                {% if current_user.rol != 'invitado' %}
+                <form id="mini-chat-form" style="display: flex; gap: 8px;">
+                    <input type="text" id="mini-chat-input" placeholder="Escribe algo..." autocomplete="off"
+                           style="flex: 1; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 10px 12px; border-radius: 8px; color: white; font-size: 13px; outline: none;">
+                    <button type="submit" class="btn-primary" style="padding: 0 16px; border-radius: 8px;">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+                {% else %}
+                <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid var(--accent-purple); border-radius: 8px; padding: 12px; text-align: center;">
+                    <span style="font-size: 12px; color: var(--text-muted);">Solo modo lectura. <a href="{{ url_for('auth.register') }}" style="color: var(--accent-purple); font-weight: bold; text-decoration: none;">Crea una cuenta</a> para hablar.</span>
+                </div>
+                {% endif %}
+            </div>
+
+        </aside>
+
+        <!-- MAIN FEED -->
+        <main class="main-feed">
+            {% block content %}{% endblock %}
+        </main>
+        
+        <!-- RIGHT SIDEBAR -->
+        {% block right_sidebar %}
+        {% endblock %}
+        
+    </div>
+</div>
+
+<!-- MOBILE BOTTOM NAVIGATION -->
+<nav class="mobile-bottom-nav">
+    <a href="{{ url_for('jugador.dashboard') }}" class="mobile-nav-item">
+        <i class="fas fa-home"></i>
+        <span>Inicio</span>
+    </a>
+    <a href="{{ url_for('jugador.comunidades') }}" class="mobile-nav-item">
+        <i class="fas fa-users"></i>
+        <span>Grupos</span>
+    </a>
+    <a href="{{ url_for('clanes.index') }}" class="mobile-nav-item">
+        <i class="fas fa-shield-alt"></i>
+        <span>Clanes</span>
+    </a>
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('jugador.perfil') }}" class="mobile-nav-item">
+        <i class="fas fa-user"></i>
+        <span>Perfil</span>
+    </a>
+    {% else %}
+    <a href="{{ url_for('auth.login') }}" class="mobile-nav-item">
+        <i class="fas fa-sign-in-alt"></i>
+        <span>Entrar</span>
+    </a>
+    {% endif %}
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const chatContainer = document.getElementById('mini-chat-messages');
+    const chatForm = document.getElementById('mini-chat-form');
+    const chatInput = document.getElementById('mini-chat-input');
+    let isScrolledToBottom = true;
+    
+    if(!chatContainer) return;
+
+    chatContainer.addEventListener('scroll', () => {
+        isScrolledToBottom = chatContainer.scrollHeight - chatContainer.clientHeight <= chatContainer.scrollTop + 20;
+    });
+
+    function renderMensajeMini(msg) {
+        return `
+            <div style="display: flex; gap: 8px;">
+                <img src="${msg.usuario_foto}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                <div>
+                    <div style="display: flex; align-items: baseline; gap: 6px;">
+                        <strong style="color: white; font-size: 13px;">${msg.usuario_nombre}</strong>
+                        <span style="color: var(--text-muted); font-size: 10px;">${msg.fecha_envio}</span>
+                    </div>
+                    <p style="color: #d1d5db; margin-top: 2px; font-size: 12px; line-height: 1.4; word-break: break-word;">
+                        ${msg.contenido}
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
+    async function cargarMiniChat() {
+        try {
+            const res = await fetch("{{ url_for('chat.obtener_mensajes') }}");
+            if (!res.ok) return;
+            const data = await res.json();
+            
+            chatContainer.innerHTML = ''; 
+            if (data.mensajes.length === 0) {
+                chatContainer.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 12px; margin-top:20px;">Sin mensajes recientes</div>';
+            } else {
+                data.mensajes.forEach(msg => {
+                    chatContainer.insertAdjacentHTML('beforeend', renderMensajeMini(msg));
+                });
+            }
+            
+            if (isScrolledToBottom) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        } catch (e) {
+            console.log("Error silencioso del mini-chat");
+        }
+    }
+
+    if (chatForm) {
+        chatForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const contenido = chatInput.value.trim();
+            if (!contenido) return;
+            
+            chatInput.value = ''; 
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            try {
+                await fetch("{{ url_for('chat.enviar_mensaje') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: JSON.stringify({ contenido: contenido })
+                });
+                
+                cargarMiniChat();
+                isScrolledToBottom = true;
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    }
+
+    setInterval(cargarMiniChat, 3000);
+    cargarMiniChat();
+});
+</script>
+</body>
+</html>

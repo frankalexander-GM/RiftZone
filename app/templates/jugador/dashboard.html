@@ -1,0 +1,482 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio - RiftZone{% endblock %}
+
+{% block content %}
+<!-- HORIZONTAL GAMES LIST -->
+<div class="games-horizontal-list">
+    <div class="game-card-mini add-new">
+        <i class="fas fa-plus" style="font-size:24px;"></i>
+        <span style="color:var(--text-muted); text-shadow:none;">Crear<br>publicación</span>
+    </div>
+    <div class="game-card-mini">
+        <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=150&h=200&fit=crop" class="game-bg" alt="Minecraft">
+        <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=50&h=50&fit=crop" class="game-icon-circle" alt="Icon">
+        <span>Minecraft</span>
+    </div>
+    <div class="game-card-mini">
+        <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=150&h=200&fit=crop" class="game-bg" alt="Valorant">
+        <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=50&h=50&fit=crop" class="game-icon-circle" alt="Icon">
+        <span>Valorant</span>
+    </div>
+    <div class="game-card-mini">
+        <img src="https://images.unsplash.com/photo-1589241062272-c0a000072dfa?w=150&h=200&fit=crop" class="game-bg" alt="Fortnite">
+        <img src="https://images.unsplash.com/photo-1589241062272-c0a000072dfa?w=50&h=50&fit=crop" class="game-icon-circle" alt="Icon">
+        <span>Fortnite</span>
+    </div>
+    <div class="game-card-mini">
+        <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&h=200&fit=crop" class="game-bg" alt="LoL">
+        <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=50&h=50&fit=crop" class="game-icon-circle" alt="Icon">
+        <span>LoL</span>
+    </div>
+    <div class="game-card-mini">
+        <img src="https://images.unsplash.com/photo-1605901302636-6db8a2b5e282?w=150&h=200&fit=crop" class="game-bg" alt="GTA V">
+        <img src="https://images.unsplash.com/photo-1605901302636-6db8a2b5e282?w=50&h=50&fit=crop" class="game-icon-circle" alt="Icon" style="border-radius:10px;">
+        <span>GTA V</span>
+    </div>
+    <div class="game-card-mini">
+        <img src="https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=150&h=200&fit=crop" class="game-bg" alt="Free Fire">
+        <img src="https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=50&h=50&fit=crop" class="game-icon-circle" alt="Icon" style="border-radius:10px;">
+        <span>Free Fire</span>
+    </div>
+</div>
+
+<!-- CREATE POST -->
+{% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+<div class="create-post" style="margin-bottom:16px;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert" style="background:rgba(16, 185, 129, 0.1); border-left:4px solid var(--accent-green); padding:8px 12px; margin-bottom:16px; border-radius:4px; font-size:13px;">
+                    <i class="fas fa-check-circle" style="color:var(--accent-green);"></i> {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <form id="create-post-form" method="POST" action="{{ url_for('jugador.crear_publicacion') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="create-post-header" style="margin-bottom:12px;">
+            <img src="{{ current_user.foto_perfil if current_user.foto_perfil else 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=100&auto=format&fit=crop' }}" alt="Avatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+            <textarea name="contenido" class="post-input" placeholder="¿Qué estás pensando, {{ current_user.username }}?" required style="height:50px; padding:12px; font-size:14px; border:none; background:transparent; border-bottom:1px solid rgba(255,255,255,0.1); border-radius:0;"></textarea>
+        </div>
+        
+        <div id="image-url-container" style="display:none; padding:0 0 12px 56px;">
+            <input type="url" name="imagen_url" placeholder="Pega la URL de tu imagen aquí..." style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); padding:10px 12px; border-radius:var(--radius-sm); color:white; font-size:13px;">
+        </div>
+
+        <div class="create-post-actions" style="padding-left:56px; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 12px;">
+            <div class="post-types" style="display:flex; gap:12px; flex-wrap: wrap;">
+                <button type="button" class="post-type-btn image" onclick="document.getElementById('image-url-container').style.display = 'block';"><i class="far fa-image"></i> Imagen</button>
+                <button type="button" class="post-type-btn clip"><i class="fas fa-video"></i> Clip</button>
+                <button type="button" class="post-type-btn poll"><i class="fas fa-poll"></i> Encuesta</button>
+                <button type="button" class="post-type-btn tournament"><i class="fas fa-trophy"></i> Torneo</button>
+            </div>
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap: wrap;">
+                <select name="juego" style="background:var(--bg-card); border:1px solid var(--border-color); padding:8px 12px; border-radius:20px; color:white; font-size:13px; cursor:pointer;" required>
+                    <option value="General" selected>General</option>
+                    <optgroup label="🔥 Los Titanes Mundiales">
+                        <option value="Roblox">Roblox</option>
+                        <option value="Counter-Strike 2">Counter-Strike 2</option>
+                        <option value="Minecraft">Minecraft</option>
+                        <option value="EA SPORTS FC 26">EA SPORTS FC 26</option>
+                    </optgroup>
+                    <optgroup label="🎯 Shooters y Battle Royales">
+                        <option value="Call of Duty: Warzone">Call of Duty: Warzone</option>
+                        <option value="Apex Legends">Apex Legends</option>
+                        <option value="Valorant">Valorant</option>
+                        <option value="Fortnite">Fortnite</option>
+                        <option value="Free Fire">Free Fire</option>
+                        <option value="Overwatch 2">Overwatch 2</option>
+                    </optgroup>
+                    <optgroup label="⚔️ Tácticos y MOBA">
+                        <option value="Honor of Kings">Honor of Kings</option>
+                        <option value="Mobile Legends: Bang Bang">Mobile Legends: Bang Bang</option>
+                        <option value="Dota 2">Dota 2</option>
+                    </optgroup>
+                    <optgroup label="🌲 Supervivencia y Mundo Abierto">
+                        <option value="ARK: Survival Evolved">ARK: Survival Evolved</option>
+                        <option value="GTA V">GTA V</option>
+                    </optgroup>
+                </select>
+                <button type="submit" class="btn-primary" style="padding:8px 24px; border-radius:20px;">Publicar</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<!-- TABS -->
+<div class="feed-tabs">
+    <div class="feed-tab active">Para ti</div>
+    <div class="feed-tab">Siguiendo</div>
+    <div class="feed-tab">Populares</div>
+    <div class="feed-tab">Recientes</div>
+</div>
+
+<!-- POSTS FEED -->
+{% if publicaciones %}
+    {% for post in publicaciones %}
+    <div class="post-card">
+        <div class="post-header">
+            <div class="post-author">
+                <img src="{{ post.autor.foto_perfil if post.autor.foto_perfil else 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=100&auto=format&fit=crop' }}" alt="{{ post.autor.username }}" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
+                <div class="author-info">
+                    <h4><a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" style="color:white; text-decoration:none;">{{ post.autor.nombre if post.autor.nombre else post.autor.username }}</a> {% if post.autor.es_premium %}<i class="fas fa-check-circle verified-icon" style="font-size:14px;"></i>{% endif %}</h4>
+                    <div class="post-meta">
+                        {{ post.fecha_creacion | timeago }} <span class="game-tag" style="background:rgba(139, 92, 246, 0.2);">{{ post.juego }}</span>
+                    </div>
+                </div>
+            </div>
+            <button class="icon-btn" style="background:transparent;"><i class="fas fa-ellipsis-h"></i></button>
+        </div>
+        
+        <div class="post-content">
+            {{ post.contenido }}
+        </div>
+        
+        {% if post.imagen_url %}
+        <div class="post-media">
+            <img src="{{ post.imagen_url }}" alt="Media" style="width:100%; border-radius:var(--radius-md); margin-top:12px;">
+        </div>
+        {% endif %}
+        
+        <div class="post-actions" style="margin-top:16px; margin-bottom:16px;">
+            <button class="action-btn {% if current_user in post.usuarios_likes %}liked{% endif %}" id="like-btn-{{ post.id_publicacion }}" onclick="toggleLike({{ post.id_publicacion }})"><i class="fas fa-heart"></i> <span id="like-count-{{ post.id_publicacion }}">{{ post.likes }}</span></button>
+            <button class="action-btn" onclick="document.getElementById('comments-{{ post.id_publicacion }}').style.display='block'"><i class="far fa-comment"></i> {{ post.comentarios|length }}</button>
+            <button class="action-btn"><i class="fas fa-retweet"></i> 0</button>
+            <button class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
+        </div>
+
+        <!-- COMMENTS SECTION -->
+        <div id="comments-{{ post.id_publicacion }}" class="comments-section" style="display:none; border-top:1px solid var(--border-color); padding-top:16px;">
+            {% for comment in post.comentarios %}
+            <div class="comment" style="display:flex; gap:12px; margin-bottom:12px;">
+                <img src="{{ comment.autor.foto_perfil if comment.autor.foto_perfil else 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=100&auto=format&fit=crop' }}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+                <div class="comment-content" style="background:var(--bg-dark); padding:10px 12px; border-radius:var(--radius-md); flex:1;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span style="font-size:13px; font-weight:700;">{{ comment.autor.nombre if comment.autor.nombre else comment.autor.username }}</span>
+                        <span style="font-size:11px; color:var(--text-muted);">{{ comment.fecha_creacion | timeago }}</span>
+                    </div>
+                    <p style="font-size:13px; color:white; line-height:1.4; margin:0;">{{ comment.contenido }}</p>
+                </div>
+            </div>
+            {% endfor %}
+            
+            {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+            <form method="POST" action="{{ url_for('jugador.comentar', post_id=post.id_publicacion) }}" style="display:flex; gap:12px; margin-top:16px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <img src="{{ current_user.foto_perfil if current_user.foto_perfil else 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=100&auto=format&fit=crop' }}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+                <input type="text" name="contenido" placeholder="Escribe un comentario..." style="flex:1; background:var(--bg-dark); border:1px solid var(--border-color); padding:8px 12px; border-radius:20px; color:white; font-size:13px;" required>
+                <button type="submit" style="background:transparent; border:none; color:var(--accent-purple); cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
+            </form>
+            {% else %}
+            <div style="text-align: center; margin-top: 16px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px dashed var(--border-color);">
+                <span style="font-size: 12px; color: var(--text-muted);"><i class="fas fa-lock"></i> Debes <a href="{{ url_for('auth.register') }}" style="color: var(--accent-purple); text-decoration: none;">registrarte</a> para poder comentar en las publicaciones.</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div style="text-align:center; padding:40px; color:var(--text-muted);">
+        <i class="fas fa-gamepad" style="font-size:48px; margin-bottom:16px; opacity:0.5;"></i>
+        <h3>No hay publicaciones recientes</h3>
+        <p>Sé el primero en compartir algo con la comunidad.</p>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block right_sidebar %}
+<div class="feed-right-container">
+    <!-- COLUMNA MEDIA (Chats, Torneos, Jugadores) -->
+    <div class="feed-sidebar-col">
+        
+        <!-- CHATS ACTIVOS -->
+        <div class="widget">
+            <div class="widget-header">
+                <h3 class="widget-title">Chats activos</h3>
+                <i class="fas fa-chevron-right" style="color:var(--text-muted); font-size:12px;"></i>
+            </div>
+            <div class="friends-list">
+                <div class="friend-item" style="cursor:pointer; margin-bottom:12px;">
+                    <div class="friend-info-wrap">
+                        <img src="https://images.unsplash.com/photo-1618331835717-801e976710b2?w=50&h=50&fit=crop" alt="Global Chat" class="friend-avatar">
+                        <div class="friend-details">
+                            <h5>Global Chat</h5>
+                            <span class="friend-state">243 en línea</span>
+                        </div>
+                    </div>
+                    <div class="badge" style="position:static; padding:2px 6px; width:auto; border-radius:10px;">99+</div>
+                </div>
+                <div class="friend-item" style="cursor:pointer; margin-bottom:12px;">
+                    <div class="friend-info-wrap">
+                        <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=50&h=50&fit=crop" alt="Minecraft" class="friend-avatar" style="border-radius:8px;">
+                        <div class="friend-details">
+                            <h5>Minecraft</h5>
+                            <span class="friend-state">128 en línea</span>
+                        </div>
+                    </div>
+                    <div class="badge" style="position:static; padding:2px 6px; width:auto; border-radius:10px;">12</div>
+                </div>
+                <div class="friend-item" style="cursor:pointer; margin-bottom:12px;">
+                    <div class="friend-info-wrap">
+                        <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=50&h=50&fit=crop" alt="Valorant" class="friend-avatar" style="border-radius:8px;">
+                        <div class="friend-details">
+                            <h5>Valorant</h5>
+                            <span class="friend-state">98 en línea</span>
+                        </div>
+                    </div>
+                    <div class="badge" style="position:static; padding:2px 6px; width:auto; border-radius:10px;">5</div>
+                </div>
+                <div class="friend-item" style="cursor:pointer; margin-bottom:12px;">
+                    <div class="friend-info-wrap">
+                        <img src="https://images.unsplash.com/photo-1589241062272-c0a000072dfa?w=50&h=50&fit=crop" alt="Fortnite" class="friend-avatar" style="border-radius:8px;">
+                        <div class="friend-details">
+                            <h5>Fortnite</h5>
+                            <span class="friend-state">76 en línea</span>
+                        </div>
+                    </div>
+                    <div class="badge" style="position:static; padding:2px 6px; width:auto; border-radius:10px;">3</div>
+                </div>
+                <div style="text-align:center; padding-top:8px; border-top:1px solid var(--border-color);">
+                    <a href="#" style="color:var(--text-muted); font-size:13px; font-weight:600;">Ver todos los chats</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TORNEOS DESTACADOS -->
+        <div class="widget">
+            <div class="widget-header">
+                <h3 class="widget-title">Torneos destacados</h3>
+                <a href="#" class="widget-link">Ver todos</a>
+            </div>
+            <div class="friends-list">
+                <div class="friend-item" style="cursor:pointer; align-items:flex-start; margin-bottom:16px;">
+                    <div class="friend-info-wrap">
+                        <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=50&h=50&fit=crop" alt="Valorant Tourney" class="friend-game-icon" style="width:36px; height:36px; border-radius:8px;">
+                        <div class="friend-details">
+                            <h5>Torneo de Verano</h5>
+                            <span class="friend-state" style="display:block; margin-bottom:2px;">Valorant</span>
+                            <span class="friend-state" style="font-size:11px;">24 / 32 equipos</span>
+                        </div>
+                    </div>
+                    <div style="color: var(--accent-green); font-weight:700; font-size:13px;">$120</div>
+                </div>
+                <div class="friend-item" style="cursor:pointer; align-items:flex-start; margin-bottom:16px;">
+                    <div class="friend-info-wrap">
+                        <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=50&h=50&fit=crop" alt="Minecraft Tourney" class="friend-game-icon" style="width:36px; height:36px; border-radius:8px;">
+                        <div class="friend-details">
+                            <h5>Minecraft Builders Cup</h5>
+                            <span class="friend-state" style="display:block; margin-bottom:2px;">Minecraft</span>
+                            <span class="friend-state" style="font-size:11px;">16 / 32 equipos</span>
+                        </div>
+                    </div>
+                    <div style="color: var(--accent-green); font-weight:700; font-size:13px;">$80</div>
+                </div>
+                <div class="friend-item" style="cursor:pointer; align-items:flex-start;">
+                    <div class="friend-info-wrap">
+                        <img src="https://images.unsplash.com/photo-1589241062272-c0a000072dfa?w=50&h=50&fit=crop" alt="Fortnite Tourney" class="friend-game-icon" style="width:36px; height:36px; border-radius:8px;">
+                        <div class="friend-details">
+                            <h5>Fortnite Battle Cup</h5>
+                            <span class="friend-state" style="display:block; margin-bottom:2px;">Fortnite</span>
+                            <span class="friend-state" style="font-size:11px;">48 / 64 equipos</span>
+                        </div>
+                    </div>
+                    <div style="color: var(--accent-green); font-weight:700; font-size:13px;">$200</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- JUGADORES DESTACADOS -->
+        <div class="widget">
+            <div class="widget-header">
+                <h3 class="widget-title">Jugadores destacados</h3>
+            </div>
+            <div class="friends-list">
+                <div class="friend-item" style="margin-bottom:12px;">
+                    <div class="friend-info-wrap">
+                        <span style="font-weight:700; color:var(--accent-green); margin-right:8px;">1</span>
+                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=50&h=50&fit=crop" alt="ShadowZ" class="friend-avatar">
+                        <div class="friend-details">
+                            <h5>ShadowZ</h5>
+                            <span class="friend-state">Diamante III</span>
+                        </div>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-muted);">2450 XP</div>
+                </div>
+                <div class="friend-item" style="margin-bottom:12px;">
+                    <div class="friend-info-wrap">
+                        <span style="font-weight:700; color:white; margin-right:8px;">2</span>
+                        <img src="https://images.unsplash.com/photo-1618331835717-801e976710b2?w=50&h=50&fit=crop" alt="NexoBlade" class="friend-avatar">
+                        <div class="friend-details">
+                            <h5>NexoBlade</h5>
+                            <span class="friend-state">Inmortal I</span>
+                        </div>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-muted);">2320 XP</div>
+                </div>
+                <div class="friend-item" style="margin-bottom:12px;">
+                    <div class="friend-info-wrap">
+                        <span style="font-weight:700; color:#F59E0B; margin-right:8px;">3</span>
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50&h=50&fit=crop" alt="Zer0Carry" class="friend-avatar">
+                        <div class="friend-details">
+                            <h5>Zer0Carry</h5>
+                            <span class="friend-state">Diamante II</span>
+                        </div>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-muted);">2150 XP</div>
+                </div>
+                <div style="text-align:center; padding-top:8px; border-top:1px solid var(--border-color);">
+                    <a href="#" style="color:var(--text-muted); font-size:13px; font-weight:600;">Ver ranking completo</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- COLUMNA EXTREMO DERECHO (Profile, Juegos, Stats, Amigos) -->
+    <div class="feed-sidebar-col">
+        {% if current_user.is_authenticated %}
+        <!-- PROFILE SUMMARY -->
+        <div class="profile-summary-card">
+            <div class="banner"></div>
+            <div class="info">
+                <div class="avatar">
+                    <img src="https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=200&auto=format&fit=crop" alt="Avatar">
+                </div>
+                <h3 style="font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:4px;">{{ current_user.nombre if current_user.nombre else current_user.username }} <i class="fas fa-check-circle verified-icon" style="font-size:12px;"></i></h3>
+                <p style="color:var(--text-muted); font-size:12px; margin-bottom:16px;">@{{ current_user.username }}</p>
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; margin-bottom:8px;">
+                    <span style="font-weight:600;">Nivel {{ current_user.nivel if current_user.nivel else 1 }}</span>
+                    <span style="color:var(--text-muted);">{{ current_user.xp if current_user.xp else 0 }} / 5,000 XP</span>
+                </div>
+                <div class="progress-bar" style="margin-bottom:16px;">
+                    <div class="progress-fill" style="width: 10%;"></div>
+                </div>
+                
+                <div style="display:flex; justify-content:center; gap:6px; color:#FACC15; font-size:13px; font-weight:700; background:rgba(250, 204, 21, 0.1); padding:8px; border-radius:8px;">
+                    <i class="fas fa-crown"></i> {{ 'Miembro Premium' if current_user.es_premium else 'Miembro Básico' }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- JUEGOS FAVORITOS -->
+        <div class="widget">
+            <div class="widget-header">
+                <h3 class="widget-title">Juegos favoritos</h3>
+            </div>
+            <div style="display:flex; gap:12px;">
+                <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=50&h=50&fit=crop" style="width:40px; height:40px; border-radius:10px; object-fit:cover;" alt="Minecraft">
+                <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=50&h=50&fit=crop" style="width:40px; height:40px; border-radius:10px; object-fit:cover;" alt="Valorant">
+                <img src="https://images.unsplash.com/photo-1589241062272-c0a000072dfa?w=50&h=50&fit=crop" style="width:40px; height:40px; border-radius:10px; object-fit:cover;" alt="Fortnite">
+                <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=50&h=50&fit=crop" style="width:40px; height:40px; border-radius:10px; object-fit:cover;" alt="LoL">
+            </div>
+        </div>
+        
+        <!-- ESTADISTICAS QUICK -->
+        <div class="widget">
+            <h3 class="widget-title" style="margin-bottom:16px;">Estadísticas</h3>
+            <div style="display:flex; justify-content:space-between; text-align:center;">
+                <div>
+                    <div style="font-size:18px; font-weight:800; color:white;">87</div>
+                    <div style="font-size:11px; color:var(--text-muted);">Publicaciones</div>
+                </div>
+                <div>
+                    <div style="font-size:18px; font-weight:800; color:white;">1.2K</div>
+                    <div style="font-size:11px; color:var(--text-muted);">Seguidores</div>
+                </div>
+                <div>
+                    <div style="font-size:18px; font-weight:800; color:white;">342</div>
+                    <div style="font-size:11px; color:var(--text-muted);">Siguiendo</div>
+                </div>
+            </div>
+        </div>
+        
+        {% else %}
+        <!-- GUEST PROMO WIDGET -->
+        <div class="widget" style="text-align:center; padding:32px 16px;">
+            <div style="font-size:48px; color:var(--accent-purple); margin-bottom:16px;">
+                <i class="fas fa-gamepad"></i>
+            </div>
+            <h3 style="margin-bottom:12px;">Únete a la zona</h3>
+            <p style="color:var(--text-muted); font-size:14px; margin-bottom:24px;">Regístrate para crear publicaciones, comentar y conectar con otros gamers.</p>
+            <a href="{{ url_for('auth.register') }}" class="btn-primary" style="display:inline-block; width:100%; text-decoration:none; margin-bottom:12px; box-sizing:border-box;">Crear cuenta</a>
+            <a href="{{ url_for('auth.login') }}" style="color:var(--text-muted); font-size:13px; font-weight:600;">Ya tengo cuenta</a>
+        </div>
+        
+        <!-- AMIGOS EN LINEA (MINI) -->
+        <div class="widget">
+            <div class="widget-header">
+                <h3 class="widget-title">Amigos en línea</h3>
+                <a href="#" class="widget-link">Ver todos</a>
+            </div>
+            <div class="friends-list">
+                <div class="friend-item">
+                    <div class="friend-info-wrap">
+                        <div class="friend-avatar-wrap">
+                            <img src="https://images.unsplash.com/photo-1618331835717-801e976710b2?w=50&h=50&fit=crop" alt="NexoBlade" class="friend-avatar" style="width:32px; height:32px;">
+                            <div class="status-dot online" style="width:8px; height:8px;"></div>
+                        </div>
+                        <div class="friend-details">
+                            <h5 style="font-size:13px;">NexoBlade</h5>
+                            <span class="friend-state" style="font-size:11px;">En línea</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="friend-item">
+                    <div class="friend-info-wrap">
+                        <div class="friend-avatar-wrap">
+                            <img src="https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?w=50&h=50&fit=crop" alt="PixelCraft" class="friend-avatar" style="width:32px; height:32px;">
+                            <div class="status-dot ingame" style="width:8px; height:8px;"></div>
+                        </div>
+                        <div class="friend-details">
+                            <h5 style="font-size:13px;">PixelCraft</h5>
+                            <span class="friend-state ingame" style="font-size:11px;">En línea</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="friend-item">
+                    <div class="friend-info-wrap">
+                        <div class="friend-avatar-wrap">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50&h=50&fit=crop" alt="LunaGamer" class="friend-avatar" style="width:32px; height:32px;">
+                            <div class="status-dot ingame" style="width:8px; height:8px;"></div>
+                        </div>
+                        <div class="friend-details">
+                            <h5 style="font-size:13px;">LunaGamer</h5>
+                            <span class="friend-state ingame" style="font-size:11px;">En partida</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+    </div>
+</div>
+
+<script>
+function toggleLike(postId) {
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    fetch(`/jugador/like/${postId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            const btn = document.getElementById(`like-btn-${postId}`);
+            const countSpan = document.getElementById(`like-count-${postId}`);
+            if(data.liked) {
+                btn.classList.add('liked');
+            } else {
+                btn.classList.remove('liked');
+            }
+            countSpan.textContent = data.likes_count;
+        }
+    });
+}
+</script>
+{% endblock %}

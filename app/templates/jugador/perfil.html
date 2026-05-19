@@ -1,0 +1,503 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ (usuario.nombre if usuario.nombre else usuario.username) if usuario is defined else (current_user.nombre if current_user.nombre else current_user.username) }} - RiftZone{% endblock %}
+
+{% block content %}
+{% set perfil_user = usuario if usuario is defined else current_user %}
+{% set is_own = perfil_user.id_usuario == current_user.id_usuario %}
+
+<!-- PROFILE HEADER -->
+<div class="profile-header">
+    <div class="profile-banner" style="background: url('{{ perfil_user.banner if perfil_user.banner else 'https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=1200&auto=format&fit=crop' }}') center/cover;"></div>
+    <div class="profile-info-container">
+        <div class="profile-avatar-wrapper">
+            <img src="{{ perfil_user.foto_perfil if perfil_user.foto_perfil else 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=200&auto=format&fit=crop' }}" alt="Avatar" class="profile-avatar">
+            <div class="level-badge">{{ perfil_user.nivel if perfil_user.nivel else 1 }}</div>
+        </div>
+        
+        <div class="profile-details">
+            <div>
+                <h1 class="profile-name">{{ perfil_user.nombre if perfil_user.nombre else perfil_user.username }} <i class="fas fa-check-circle verified-icon"></i></h1>
+                <p class="profile-handle" style="display:flex; align-items:center;">
+                    @{{ perfil_user.username }} 
+                    {% set titulo = perfil_user.titulo_perfil if perfil_user.titulo_perfil else 'Gamer' %}
+                    <span class="badge" style="position:relative; display:inline-flex; align-items:center; margin-left:14px; padding:4px 10px; font-size:11px; font-weight:bold; border-radius:12px; 
+                        {% if titulo == 'Streamer' %}background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: white;
+                        {% elif titulo == 'Pro Player' %}background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.3); color: white;
+                        {% elif titulo == 'Creador' %}background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: white;
+                        {% elif titulo == 'Caster' %}background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); color: white;
+                        {% elif titulo == 'Diseñador' %}background: rgba(236, 72, 153, 0.15); border: 1px solid rgba(236, 72, 153, 0.3); color: white;
+                        {% else %}background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: white;{% endif %}">
+                        
+                        {% if titulo == 'Streamer' %}<i class="fas fa-circle" style="color:var(--accent-red); margin-right:6px; font-size:8px;"></i> Streamer
+                        {% elif titulo == 'Pro Player' %}<i class="fas fa-trophy" style="color:#FBBF24; margin-right:6px;"></i> Pro Player
+                        {% elif titulo == 'Creador' %}<i class="fas fa-video" style="color:var(--accent-blue); margin-right:6px;"></i> Creador
+                        {% elif titulo == 'Caster' %}<i class="fas fa-microphone-alt" style="color:var(--accent-purple); margin-right:6px;"></i> Caster
+                        {% elif titulo == 'Diseñador' %}<i class="fas fa-paint-brush" style="color:#EC4899; margin-right:6px;"></i> Diseñador
+                        {% else %}<i class="fas fa-gamepad" style="color:var(--accent-green); margin-right:6px;"></i> Gamer{% endif %}
+                    </span>
+                </p>
+                <div class="profile-tags">
+                    <span class="tag"><i class="fas fa-users" style="color: var(--accent-purple);"></i> <span id="seguidores-count">{{ perfil_user.num_seguidores }}</span> seguidores</span>
+                    <span class="tag"><i class="fas fa-user-plus" style="color: var(--accent-blue);"></i> {{ perfil_user.num_siguiendo }} siguiendo</span>
+                    <span class="tag"><i class="far fa-calendar-alt"></i> Se unió {{ perfil_user.fecha_registro | timeago }}</span>
+                </div>
+            </div>
+            
+            <div class="profile-actions">
+                {% if is_own %}
+                    <a href="{{ url_for('jugador.editar_perfil') }}" class="btn-secondary" style="text-decoration:none;"><i class="fas fa-pen"></i> Editar perfil</a>
+                {% else %}
+                    <button id="follow-btn" class="btn-primary" onclick="toggleFollow({{ perfil_user.id_usuario }})" style="padding:10px 24px;">
+                        {% if current_user.esta_siguiendo(perfil_user) %}
+                            <i class="fas fa-user-check"></i> Siguiendo
+                        {% else %}
+                            <i class="fas fa-user-plus"></i> Seguir
+                        {% endif %}
+                    </button>
+                {% endif %}
+                <button class="btn-icon"><i class="fas fa-ellipsis-h"></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="profile-tabs">
+        <div class="tab active">Resumen</div>
+        <div class="tab">Publicaciones</div>
+        <div class="tab">Juegos</div>
+        <div class="tab">Estadísticas</div>
+        <div class="tab">Clanes</div>
+        <div class="tab">Logros</div>
+        <div class="tab">Media</div>
+    </div>
+</div>
+
+<!-- ABOUT SECTION -->
+<div class="about-section">
+    <h2 class="section-title">Sobre mí</h2>
+    <p class="about-text">
+        {% if perfil_user.biografia %}
+            {{ perfil_user.biografia }}
+        {% else %}
+            {% if is_own %}Todavía no has escrito una biografía. ¡Ve a editar tu perfil para que todos te conozcan! 🎮{% else %}Este usuario aún no ha escrito una biografía.{% endif %}
+        {% endif %}
+    </p>
+    
+    {% if perfil_user.estado_personalizado %}
+    <div style="background: rgba(139, 92, 246, 0.1); border-left: 3px solid var(--accent-purple); padding: 8px 12px; border-radius: 4px; margin-bottom: 24px;">
+        <i class="fas fa-quote-left" style="color:var(--accent-purple); margin-right:8px; font-size: 10px;"></i>
+        <span style="color: white; font-size: 13px; font-style: italic;">{{ perfil_user.estado_personalizado }}</span>
+    </div>
+    {% endif %}
+    
+    <div class="info-cards">
+        <div class="info-card">
+            <i class="fas fa-globe-americas"></i>
+            <div class="info-card-content">
+                <span>Región</span>
+                <strong>{{ perfil_user.pais if perfil_user.pais else 'Desconocida' }}</strong>
+            </div>
+        </div>
+        <div class="info-card">
+            <i class="far fa-clock"></i>
+            <div class="info-card-content">
+                <span>Disponibilidad</span>
+                <strong>Noches</strong>
+            </div>
+        </div>
+        <div class="info-card">
+            <i class="fas fa-desktop"></i>
+            <div class="info-card-content">
+                <span>Plataformas</span>
+                <strong>PC, PS5, Switch</strong>
+            </div>
+        </div>
+    </div>
+    
+    <!-- REDES SOCIALES -->
+    {% if perfil_user.twitch or perfil_user.kick or perfil_user.youtube or perfil_user.discord or perfil_user.steam %}
+    <div style="margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px;">
+        <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text-muted);"><i class="fas fa-link"></i> Redes y Canales</h3>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            {% if perfil_user.twitch %}
+            <a href="https://twitch.tv/{{ perfil_user.twitch }}" target="_blank" style="display:flex; align-items:center; gap:6px; background: rgba(145, 70, 255, 0.1); border: 1px solid rgba(145, 70, 255, 0.3); color: white; text-decoration: none; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='rgba(145, 70, 255, 0.2)'" onmouseout="this.style.background='rgba(145, 70, 255, 0.1)'"><i class="fab fa-twitch" style="color:#9146FF;"></i> Twitch</a>
+            {% endif %}
+            
+            {% if perfil_user.kick %}
+            <a href="https://kick.com/{{ perfil_user.kick }}" target="_blank" style="display:flex; align-items:center; gap:6px; background: rgba(83, 252, 24, 0.1); border: 1px solid rgba(83, 252, 24, 0.3); color: white; text-decoration: none; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='rgba(83, 252, 24, 0.2)'" onmouseout="this.style.background='rgba(83, 252, 24, 0.1)'"><i class="fas fa-play" style="color:#53fc18;"></i> Kick</a>
+            {% endif %}
+            
+            {% if perfil_user.youtube %}
+            <a href="https://youtube.com/{{ perfil_user.youtube }}" target="_blank" style="display:flex; align-items:center; gap:6px; background: rgba(255, 0, 0, 0.1); border: 1px solid rgba(255, 0, 0, 0.3); color: white; text-decoration: none; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='rgba(255, 0, 0, 0.2)'" onmouseout="this.style.background='rgba(255, 0, 0, 0.1)'"><i class="fab fa-youtube" style="color:#FF0000;"></i> YouTube</a>
+            {% endif %}
+            
+            {% if perfil_user.discord %}
+            <span style="display:flex; align-items:center; gap:6px; background: rgba(88, 101, 242, 0.1); border: 1px solid rgba(88, 101, 242, 0.3); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;"><i class="fab fa-discord" style="color:#5865F2;"></i> {{ perfil_user.discord }}</span>
+            {% endif %}
+            
+            {% if perfil_user.steam %}
+            <span style="display:flex; align-items:center; gap:6px; background: rgba(27, 40, 56, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;"><i class="fab fa-steam" style="color:var(--text-muted);"></i> {{ perfil_user.steam }}</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- MAIN GAMES -->
+<div class="about-section" style="background:transparent; border:none; padding:0; margin-bottom: 24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+        <h2 class="section-title" style="margin:0;">Juegos principales</h2>
+        <a href="{{ url_for('jugador.editar_perfil') }}" style="color: var(--accent-purple); font-size: 14px; font-weight:600;">Editar</a>
+    </div>
+    
+    <div class="games-grid">
+        {% set games = perfil_user.juegos_favoritos.split(',') if perfil_user.juegos_favoritos else [] %}
+        
+        {% if 'Valorant' in games %}
+        <div class="game-card">
+            <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=300&h=200&fit=crop" class="game-bg" alt="Valorant">
+            <div class="game-card-content">
+                <h3>Valorant</h3>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if 'Minecraft' in games %}
+        <div class="game-card">
+            <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=300&h=200&fit=crop" class="game-bg" alt="Minecraft">
+            <div class="game-card-content">
+                <h3>Minecraft</h3>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if 'Fortnite' in games %}
+        <div class="game-card">
+            <img src="https://images.unsplash.com/photo-1589241062272-c0a000072dfa?w=300&h=200&fit=crop" class="game-bg" alt="Fortnite">
+            <div class="game-card-content">
+                <h3>Fortnite</h3>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if 'League of Legends' in games %}
+        <div class="game-card">
+            <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=300&h=200&fit=crop" class="game-bg" alt="League of Legends">
+            <div class="game-card-content">
+                <h3>League of Legends</h3>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if not games %}
+        <p style="color:var(--text-muted); font-size:14px; padding:12px;">No tienes juegos seleccionados. Haz clic en Editar para agregarlos.</p>
+        {% endif %}
+        
+        <a href="{{ url_for('jugador.editar_perfil') }}" class="game-card game-card-add" style="text-decoration:none;">
+            <i class="fas fa-plus"></i>
+            <span style="font-weight: 600;">Modificar juegos</span>
+        </a>
+    </div>
+</div>
+
+{% if is_own %}
+<!-- CREATE POST -->
+<div class="create-post">
+    <div class="create-post-header">
+        <img src="https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=100&auto=format&fit=crop" alt="Avatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+        <textarea class="post-input" placeholder="¿Qué estás pensando, {{ perfil_user.username }}?"></textarea>
+    </div>
+    <div class="create-post-actions" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:12px;">
+        <div class="post-types" style="display:flex; gap:12px; flex-wrap:wrap;">
+            <button class="post-type-btn image"><i class="far fa-image"></i> Imagen</button>
+            <button class="post-type-btn clip"><i class="fas fa-video"></i> Clip</button>
+            <button class="post-type-btn poll"><i class="fas fa-poll"></i> Encuesta</button>
+            <button class="post-type-btn tournament"><i class="fas fa-trophy"></i> Torneo</button>
+        </div>
+        <button class="btn-primary" style="padding:8px 24px; border-radius:20px;">Publicar</button>
+    </div>
+</div>
+{% endif %}
+
+<!-- POST 1 -->
+<div class="post-card">
+    <div class="post-header">
+        <div class="post-author">
+            <img src="https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=100&auto=format&fit=crop" alt="NexoBlade" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
+            <div class="author-info">
+                <h4>NexoBlade <i class="fas fa-check-circle verified-icon" style="font-size:14px;"></i></h4>
+                <div class="post-meta">
+                    Hace 2 horas <span class="game-tag">Valorant</span>
+                </div>
+            </div>
+        </div>
+        <button class="icon-btn" style="background:transparent;"><i class="fas fa-ellipsis-h"></i></button>
+    </div>
+    
+    <div class="post-content">
+        ¡Partidaza anoche con el squad! 💥<br>
+        Logramos remontar un 2-10 😁
+    </div>
+    
+    <div class="post-media">
+        <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop" alt="Valorant Gameplay">
+    </div>
+    
+    <div class="post-actions">
+        <button class="action-btn liked"><i class="fas fa-heart"></i> 124</button>
+        <button class="action-btn"><i class="far fa-comment"></i> 32</button>
+        <button class="action-btn"><i class="fas fa-retweet"></i> 8</button>
+        <button class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
+    </div>
+</div>
+
+<!-- POST 2 -->
+<div class="post-card">
+    <div class="post-header">
+        <div class="post-author">
+            <img src="https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?q=80&w=100&auto=format&fit=crop" alt="PixelCraft" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
+            <div class="author-info">
+                <h4>PixelCraft <i class="fas fa-check-circle verified-icon" style="font-size:14px;"></i></h4>
+                <div class="post-meta">
+                    Hace 3 horas <span class="game-tag minecraft">Minecraft</span>
+                </div>
+            </div>
+        </div>
+        <button class="icon-btn" style="background:transparent;"><i class="fas fa-ellipsis-h"></i></button>
+    </div>
+    
+    <div class="post-content">
+        Nuevo diseño para mi base survival, ¿qué les parece? 🧱🌲
+    </div>
+    
+    <div class="post-media">
+        <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=800&auto=format&fit=crop" alt="Minecraft Base">
+    </div>
+    
+    <div class="post-actions">
+        <button class="action-btn"><i class="far fa-heart"></i> 89</button>
+        <button class="action-btn"><i class="far fa-comment"></i> 15</button>
+        <button class="action-btn"><i class="fas fa-retweet"></i> 2</button>
+        <button class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
+    </div>
+</div>
+{% endblock %}
+
+{% block right_sidebar %}
+{% set perfil_user = usuario if usuario is defined else current_user %}
+<aside class="right-sidebar">
+    <!-- NIVEL Y XP -->
+    <div class="widget level-widget">
+        <div class="level-icon">
+            <i class="fas fa-crown"></i>
+        </div>
+        <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 4px;">Nivel {{ perfil_user.nivel if perfil_user.nivel else 1 }}</h3>
+        <p style="color: var(--text-muted); font-size: 13px;">Rango {{ 'Premium' if perfil_user.es_premium else 'Básico' }}</p>
+        
+        <div class="progress-container">
+            <div class="progress-info">
+                <span>XP Actual</span>
+                <span>{{ perfil_user.xp if perfil_user.xp else 0 }} / 5,000 XP</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 10%;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ESTADISTICAS -->
+    <div class="widget">
+        <div class="widget-header">
+            <h3 class="widget-title">Estadísticas</h3>
+            <span class="widget-link" style="color: var(--text-muted); cursor:pointer;">General <i class="fas fa-chevron-down" style="font-size:10px; margin-left:4px;"></i></span>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-label"><i class="fas fa-gamepad"></i> Partidas jugadas</div>
+                <div class="stat-value">1,256</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label"><i class="fas fa-trophy"></i> Victorias</div>
+                <div class="stat-value">782</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label"><i class="fas fa-chart-line"></i> Winrate</div>
+                <div class="stat-value" style="color: var(--accent-green);">62%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label"><i class="fas fa-crosshairs"></i> K/D</div>
+                <div class="stat-value">1.45</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- LOGROS RECIENTES -->
+    <div class="widget">
+        <div class="widget-header">
+            <h3 class="widget-title">Logros recientes</h3>
+            <a href="#" class="widget-link">Ver todos</a>
+        </div>
+        <div class="achievement-list">
+            <div class="achievement-item">
+                <div class="achiev-icon gold"><i class="fas fa-fire"></i></div>
+                <div class="achiev-info">
+                    <h4 class="achiev-title">Primera sangre</h4>
+                    <p class="achiev-desc">Realiza tu primera kill</p>
+                </div>
+                <div class="achiev-xp">10 XP</div>
+            </div>
+            <div class="achievement-item">
+                <div class="achiev-icon purple"><i class="fas fa-shield-alt"></i></div>
+                <div class="achiev-info">
+                    <h4 class="achiev-title">Imparable</h4>
+                    <p class="achiev-desc">Gana 10 partidas seguidas</p>
+                </div>
+                <div class="achiev-xp">50 XP</div>
+            </div>
+            <div class="achievement-item">
+                <div class="achiev-icon gold"><i class="fas fa-brain"></i></div>
+                <div class="achiev-info">
+                    <h4 class="achiev-title">Estrataga</h4>
+                    <p class="achiev-desc">Asiste en 100 eliminaciones</p>
+                </div>
+                <div class="achiev-xp">25 XP</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- CLANES -->
+    <div class="widget">
+        <div class="widget-header">
+            <h3 class="widget-title">Clanes</h3>
+            <a href="{{ url_for('clanes.index') }}" class="widget-link">Explorar</a>
+        </div>
+        
+        {% set membresias = perfil_user.membresias_clan.all() if perfil_user.membresias_clan else [] %}
+        {% if membresias %}
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+            {% for membresia in membresias %}
+                {% set clan = membresia.clan %}
+                <a href="{{ url_for('clanes.detalle', clan_id=clan.id_clan) }}" style="text-decoration: none; display: block;">
+                    <div class="clan-card" style="transition: transform 0.2s, border-color 0.2s; margin: 0;" onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='var(--accent-purple)';" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='var(--border-color)';">
+                        {% if clan.logo_url %}
+                            <img src="{{ clan.logo_url }}" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(139, 92, 246, 0.3);">
+                        {% else %}
+                            <div class="clan-logo">{{ clan.nombre[0] | upper }}</div>
+                        {% endif %}
+                        
+                        <div class="clan-info">
+                            <h4>
+                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; display: inline-block; vertical-align: bottom;">{{ clan.nombre }}</span>
+                                
+                                {% if membresia.rol == 'lider' %}
+                                    <span class="role-badge" style="background: rgba(251, 191, 36, 0.15); color: #FBBF24; border: 1px solid rgba(251, 191, 36, 0.3);"><i class="fas fa-crown" style="margin-right:2px;"></i> Líder</span>
+                                {% elif membresia.rol == 'moderador' %}
+                                    <span class="role-badge" style="background: rgba(59, 130, 246, 0.15); color: #3B82F6; border: 1px solid rgba(59, 130, 246, 0.3);"><i class="fas fa-shield-alt" style="margin-right:2px;"></i> Mod</span>
+                                {% else %}
+                                    <span class="role-badge" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid rgba(255, 255, 255, 0.1);"><i class="fas fa-user" style="margin-right:2px;"></i> Miembro</span>
+                                {% endif %}
+                                
+                                {% if clan.privacidad == 'privado' %}
+                                    <i class="fas fa-lock" style="font-size: 10px; color: var(--accent-red); margin-left: 4px;" title="Clan Privado"></i>
+                                {% endif %}
+                            </h4>
+                            <div class="clan-members"><i class="fas fa-users"></i> {{ clan.miembros.count() }} miembros</div>
+                        </div>
+                    </div>
+                </a>
+            {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 24px 16px; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
+                <i class="fas fa-ghost" style="color: var(--text-muted); font-size: 32px; margin-bottom: 12px; opacity: 0.3;"></i>
+                <h4 style="color: white; font-size: 14px; margin-bottom: 4px;">Lobo Solitario</h4>
+                <p style="color: var(--text-muted); font-size: 12px; margin: 0;">Aún no se ha unido a ningún clan competitivo.</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- AMIGOS EN LINEA -->
+    <div class="widget">
+        <div class="widget-header">
+            <h3 class="widget-title">Amigos en línea</h3>
+            <a href="#" class="widget-link">Ver todos</a>
+        </div>
+        <div class="friends-list">
+            <div class="friend-item">
+                <div class="friend-info-wrap">
+                    <div class="friend-avatar-wrap">
+                        <img src="https://images.unsplash.com/photo-1618331835717-801e976710b2?w=50&h=50&fit=crop" alt="NexoBlade" class="friend-avatar">
+                        <div class="status-dot online"></div>
+                    </div>
+                    <div class="friend-details">
+                        <h5>NexoBlade</h5>
+                        <span class="friend-state">En línea</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="friend-item">
+                <div class="friend-info-wrap">
+                    <div class="friend-avatar-wrap">
+                        <img src="https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?w=50&h=50&fit=crop" alt="PixelCraft" class="friend-avatar">
+                        <div class="status-dot ingame"></div>
+                    </div>
+                    <div class="friend-details">
+                        <h5>PixelCraft</h5>
+                        <span class="friend-state ingame">En partida</span>
+                    </div>
+                </div>
+                <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=50&h=50&fit=crop" class="friend-game-icon" alt="Minecraft">
+            </div>
+            
+            <div class="friend-item">
+                <div class="friend-info-wrap">
+                    <div class="friend-avatar-wrap">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50&h=50&fit=crop" alt="LunaGamer" class="friend-avatar">
+                        <div class="status-dot ingame"></div>
+                    </div>
+                    <div class="friend-details">
+                        <h5>LunaGamer</h5>
+                        <span class="friend-state ingame">En partida</span>
+                    </div>
+                </div>
+                <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=50&h=50&fit=crop" class="friend-game-icon" alt="Valorant">
+            </div>
+            
+            <div class="friend-item" style="margin-top: 8px;">
+                <div style="display:flex; gap: -10px; margin-left: 8px;">
+                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=50&h=50&fit=crop" style="width:30px; height:30px; border-radius:50%; border:2px solid var(--bg-card); margin-left:-10px; position:relative; z-index:3;">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop" style="width:30px; height:30px; border-radius:50%; border:2px solid var(--bg-card); margin-left:-10px; position:relative; z-index:2;">
+                    <div style="width:30px; height:30px; border-radius:50%; border:2px solid var(--bg-card); margin-left:-10px; position:relative; z-index:1; background:var(--bg-panel); color:var(--text-muted); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">+20</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<script>
+function toggleFollow(userId) {
+    const csrfToken = '{{ csrf_token() }}';
+    fetch(`/jugador/seguir/${userId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            const btn = document.getElementById('follow-btn');
+            const countSpan = document.getElementById('seguidores-count');
+            if(data.following) {
+                btn.innerHTML = '<i class="fas fa-user-check"></i> Siguiendo';
+            } else {
+                btn.innerHTML = '<i class="fas fa-user-plus"></i> Seguir';
+            }
+            countSpan.textContent = data.seguidores_count;
+        }
+    });
+}
+</script>
+{% endblock %}

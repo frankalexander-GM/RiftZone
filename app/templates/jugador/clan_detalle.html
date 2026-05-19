@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block title %}{{ clan.nombre }} - Clan RiftZone{% endblock %}
+
+{% block content %}
+<div class="clan-container" style="padding: 0; max-width: 1200px; margin: 0 auto; padding-bottom: 40px;">
+    
+    <!-- BANNER Y HEADER -->
+    <div style="position: relative; border-radius: 0 0 var(--radius-lg) var(--radius-lg); overflow: hidden; background: var(--bg-card); border-bottom: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        
+        <div style="height: 250px; background-image: url('{{ clan.banner_url if clan.banner_url else 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200&auto=format&fit=crop' }}'); background-size: cover; background-position: center; position: relative;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, var(--bg-card) 0%, transparent 100%);"></div>
+        </div>
+        
+        <div style="position: relative; padding: 0 40px 30px 40px; display: flex; gap: 30px; align-items: flex-end; margin-top: -80px;">
+            <img src="{{ clan.logo_url }}" alt="Logo del Clan" style="width: 150px; height: 150px; border-radius: 20px; object-fit: cover; border: 6px solid var(--bg-card); box-shadow: 0 10px 20px rgba(0,0,0,0.5); z-index: 2; background: var(--bg-dark);">
+            
+            <div style="flex: 1; z-index: 2;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                    <h1 style="color: white; font-size: 36px; margin: 0; letter-spacing: -0.5px;">{{ clan.nombre }}</h1>
+                    {% if clan.privacidad == 'privado' %}
+                        <span title="Clan Privado" style="color: var(--accent-red); font-size: 20px;"><i class="fas fa-lock"></i></span>
+                    {% else %}
+                        <span title="Clan Público" style="color: var(--accent-green); font-size: 20px;"><i class="fas fa-globe"></i></span>
+                    {% endif %}
+                </div>
+                
+                <p style="color: rgba(255,255,255,0.8); font-size: 16px; margin: 0 0 20px 0; max-width: 600px; line-height: 1.5;">{{ clan.descripcion }}</p>
+                
+                <div style="display: flex; gap: 32px; align-items: center;">
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Líder Fundador</span>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                            <img src="{{ clan.lider.foto_perfil if clan.lider.foto_perfil else 'https://ui-avatars.com/api/?name=' + clan.lider.username }}" style="width: 24px; height: 24px; border-radius: 50%;">
+                            <span style="color: white; font-size: 15px; font-weight: bold;">{{ clan.lider.username }}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.1);"></div>
+                    
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Nivel {{ clan.nivel }}</span>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px; width: 180px;">
+                            <div style="flex: 1; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;">
+                                {% set xp_percent = (clan.xp % 1000) / 10 %}
+                                <div style="width: {{ xp_percent }}%; height: 100%; background: var(--accent-purple); border-radius: 10px; box-shadow: 0 0 10px var(--accent-purple);"></div>
+                            </div>
+                            <span style="color: var(--accent-purple); font-size: 13px; font-weight: bold;">{{ clan.xp }} XP</span>
+                        </div>
+                    </div>
+                    
+                    <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.1);"></div>
+                    
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Miembros Activos</span>
+                        <span style="color: white; font-size: 16px; font-weight: bold; margin-top: 6px;"><i class="fas fa-users" style="color: var(--accent-green);"></i> {{ clan.miembros.count() }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="z-index: 2; padding-bottom: 10px;">
+                {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+                    {% set en_este_clan = clan.miembros.filter_by(usuario_id=current_user.id_usuario).first() %}
+                    {% set ya_solicito = clan.solicitudes.filter_by(usuario_id=current_user.id_usuario, estado='pendiente').first() %}
+                    
+                    {% if en_este_clan %}
+                        {% if en_este_clan.rol == 'lider' %}
+                        <button onclick="document.getElementById('modal-configurar-clan').style.display='flex';" class="btn-primary" style="padding: 12px 28px; border-radius: 30px; font-weight: bold; background: transparent; border: 2px solid var(--accent-purple); color: white; transition: 0.2s;"><i class="fas fa-cog"></i> Configurar</button>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('clanes.abandonar', clan_id=clan.id_clan) }}" style="margin: 0;" onsubmit="return confirm('¿Estás seguro de que quieres abandonar las filas de este clan?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-primary" style="padding: 12px 28px; border-radius: 30px; font-weight: bold; background: rgba(255,255,255,0.1); border: 2px solid transparent; color: white; transition: 0.2s;"><i class="fas fa-sign-out-alt"></i> Abandonar</button>
+                        </form>
+                        {% endif %}
+                    {% elif ya_solicito %}
+                        <button disabled class="btn-primary" style="padding: 14px 36px; border-radius: 30px; font-weight: bold; font-size: 16px; opacity: 0.7; cursor: not-allowed; background: var(--bg-dark); color: var(--text-muted); border: 1px solid var(--border-color);">
+                            <i class="fas fa-clock"></i> Solicitud en Revisión
+                        </button>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('clanes.unirse', clan_id=clan.id_clan) }}" style="margin: 0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-primary" style="padding: 14px 36px; border-radius: 30px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); transition: transform 0.2s;">
+                                {% if clan.privacidad == 'privado' %}<i class="fas fa-lock"></i> Solicitar Acceso{% else %}<i class="fas fa-plus"></i> Unirme al Clan{% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+                {% elif current_user.is_authenticated and current_user.rol == 'invitado' %}
+                    <a href="{{ url_for('auth.register') }}" class="btn-primary" style="text-decoration: none; padding: 14px 36px; border-radius: 30px; font-weight: bold; background: rgba(255,255,255,0.1); color: var(--text-muted);">
+                        <i class="fas fa-lock"></i> Registrate para Unirte
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- CUERPO DEL CLAN -->
+    <div style="display: grid; grid-template-columns: 1fr 350px; gap: 24px; margin-top: 24px; padding: 0 20px;">
+        
+        <!-- COLUMNA IZQUIERDA: Muro y Actividad -->
+        <div>
+            {% set en_este_clan = None %}
+            {% if current_user.is_authenticated %}
+                {% set en_este_clan = clan.miembros.filter_by(usuario_id=current_user.id_usuario).first() %}
+            {% endif %}
+            
+            {% if en_este_clan %}
+                <!-- Muro Exclusivo -->
+                <div class="create-post" style="margin-bottom: 24px;">
+                    <div style="display: flex; gap: 16px; align-items: flex-start;">
+                        <img src="{{ current_user.foto_perfil if current_user.foto_perfil else 'https://ui-avatars.com/api/?name=' + current_user.username }}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-purple);">
+                        <div style="flex: 1;">
+                            <form id="clan-post-form" onsubmit="event.preventDefault(); publicarMuro();">
+                                <textarea id="clan-post-input" placeholder="Comparte una estrategia o anuncio oficial con los miembros de tu clan..." required style="width: 100%; height: 80px; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 12px; border-radius: 12px; color: white; outline: none; resize: none; font-size: 15px;"></textarea>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                                    <div style="display: flex; gap: 12px;">
+                                        <button type="button" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s;"><i class="fas fa-image"></i> Media</button>
+                                        <button type="button" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s;"><i class="fas fa-calendar-alt"></i> Evento</button>
+                                    </div>
+                                    <button type="submit" class="btn-primary" style="padding: 8px 24px; border-radius: 20px; font-weight: bold;"><i class="fas fa-paper-plane"></i> Publicar Privado</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Posts del Clan -->
+                <div id="clan-wall-feed">
+                    {% set posts = clan.publicaciones.limit(10).all() %}
+                    {% if posts %}
+                        {% for post in posts %}
+                        <div style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 20px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                                <div style="display: flex; gap: 12px; align-items: center;">
+                                    <img src="{{ post.usuario.foto_perfil if post.usuario.foto_perfil else 'https://ui-avatars.com/api/?name=' + post.usuario.username }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    <div>
+                                        <div style="color: white; font-weight: bold; font-size: 15px;">{{ post.usuario.username }}</div>
+                                        <div style="color: var(--text-muted); font-size: 12px;">{{ post.fecha_creacion.strftime('%d %b %H:%M') }} • Solo Clan</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p style="color: white; font-size: 14px; line-height: 1.6; margin-bottom: 16px; word-break: break-word;">{{ post.contenido }}</p>
+                            <div style="display: flex; gap: 16px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px;">
+                                <button style="background: transparent; border: none; color: var(--text-muted); font-weight: bold; font-size: 13px; cursor: pointer;"><i class="far fa-heart"></i> Me gusta</button>
+                                <button style="background: transparent; border: none; color: var(--text-muted); font-weight: bold; font-size: 13px; cursor: pointer;"><i class="far fa-comment"></i> Comentar</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div id="muro-vacio" style="text-align: center; padding: 60px 40px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+                            <i class="fas fa-wind" style="font-size: 56px; color: var(--text-muted); opacity: 0.2; margin-bottom: 20px;"></i>
+                            <h3 style="color: white; margin-bottom: 12px; font-size: 22px;">El muro está muy tranquilo</h3>
+                            <p style="color: var(--text-muted); font-size: 15px;">Sé el primero en compartir algo estratégico con tus compañeros de clan.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <!-- Perfil Público (No es miembro) -->
+                <div style="text-align: center; padding: 80px 40px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color); margin-top: 0;">
+                    <i class="fas fa-eye-slash" style="font-size: 72px; color: var(--text-muted); opacity: 0.2; margin-bottom: 24px;"></i>
+                    <h3 style="color: white; font-size: 28px; margin-bottom: 16px; letter-spacing: -0.5px;">Contenido Confidencial del Clan</h3>
+                    <p style="color: var(--text-muted); max-width: 450px; margin: 0 auto; line-height: 1.6; margin-bottom: 30px; font-size: 15px;">El muro de publicaciones, estrategias competitivas y eventos grupales solo está disponible para los miembros oficiales de <strong>{{ clan.nombre }}</strong>.</p>
+                    {% if clan.privacidad == 'publico' %}
+                        <p style="color: var(--accent-purple); font-weight: bold; font-size: 16px;"><i class="fas fa-unlock"></i> ¡Este clan es de puertas abiertas! Únete ahora para desbloquear todo el contenido.</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- COLUMNA DERECHA: Chat y Miembros -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            
+            {% if en_este_clan %}
+            <!-- Chat Privado del Clan -->
+            <div style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; height: 420px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <div style="padding: 16px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="color: white; margin: 0; font-size: 15px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-comments" style="color: var(--accent-purple);"></i> Cuartel General</h3>
+                    <span style="width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; box-shadow: 0 0 8px var(--accent-green);"></span>
+                </div>
+                
+                <div id="clan-chat-messages" style="flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;">
+                    <!-- Mensaje del sistema -->
+                    <div style="text-align: center; margin: 10px 0;">
+                        <span style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-size: 11px; padding: 4px 12px; border-radius: 20px;">Has entrado a la sala de comunicación encriptada.</span>
+                    </div>
+                    {% set msgs = clan.mensajes.all()[-30:] %}
+                    {% for msg in msgs %}
+                    <div style="display: flex; gap: 12px;">
+                        <img src="{{ msg.usuario.foto_perfil if msg.usuario.foto_perfil else 'https://ui-avatars.com/api/?name=' + msg.usuario.username }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px;">
+                                <strong style="color: white; font-size: 13px;">{{ msg.usuario.username }}</strong>
+                                <span style="color: var(--text-muted); font-size: 10px;">{{ msg.fecha_envio.strftime('%H:%M') }}</span>
+                            </div>
+                            <div style="color: rgba(255,255,255,0.9); font-size: 13px; line-height: 1.4; word-break: break-word;">
+                                {{ msg.contenido }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div style="padding: 12px; background: var(--bg-dark); border-top: 1px solid var(--border-color);">
+                    <form id="clan-chat-form" style="display: flex; gap: 8px; margin: 0;" onsubmit="event.preventDefault(); enviarMensajeChat();">
+                        <input type="text" id="clan-chat-input" placeholder="Habla con tu escuadrón..." required style="flex: 1; background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 12px; border-radius: 8px; color: white; outline: none; font-size: 13px;">
+                        <button type="submit" class="btn-primary" style="padding: 0 16px; border-radius: 8px;"><i class="fas fa-paper-plane"></i></button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Roster de Miembros -->
+            <div style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <div style="padding: 16px 20px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color);">
+                    <h3 style="color: white; margin: 0; font-size: 15px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-list-ul" style="color: var(--text-muted);"></i> Roster de Jugadores</h3>
+                </div>
+                
+                <div style="padding: 12px; display: flex; flex-direction: column; gap: 4px; max-height: 400px; overflow-y: auto;">
+                    {% for miembro in clan.miembros %}
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 8px; transition: background 0.2s; cursor: pointer;" onmouseover="this.style.background='var(--bg-dark)'" onmouseout="this.style.background='transparent'">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img src="{{ miembro.usuario.foto_perfil if miembro.usuario.foto_perfil else 'https://ui-avatars.com/api/?name=' + miembro.usuario.username }}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="display: flex; flex-direction: column;">
+                                <span style="color: white; font-size: 14px; font-weight: 500;">{{ miembro.usuario.username }}</span>
+                                {% if miembro.rol == 'lider' %}
+                                    <span style="color: #FBBF24; font-size: 11px; font-weight: bold; margin-top: 2px;"><i class="fas fa-crown"></i> LÍDER</span>
+                                {% elif miembro.rol == 'moderador' %}
+                                    <span style="color: var(--accent-blue); font-size: 11px; font-weight: bold; margin-top: 2px;"><i class="fas fa-shield-alt"></i> MODERADOR</span>
+                                {% else %}
+                                    <span style="color: var(--text-muted); font-size: 11px; margin-top: 2px;"><i class="fas fa-user"></i> Miembro</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if en_este_clan and en_este_clan.rol in ['lider', 'administrador'] and miembro.rol != 'lider' %}
+                        <div style="position: relative;">
+                            <button onclick="var menu = document.getElementById('menu-roster-{{ miembro.id_miembro }}'); if(menu.style.display === 'none'){ menu.style.display = 'block'; } else { menu.style.display = 'none'; }" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; padding:4px 8px;" title="Opciones avanzadas"><i class="fas fa-ellipsis-v"></i></button>
+                            
+                            <!-- Menú discreto -->
+                            <div id="menu-roster-{{ miembro.id_miembro }}" style="display: none; position: absolute; right: 0; top: 100%; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; width: 160px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); z-index: 100;">
+                                {% if en_este_clan.rol == 'lider' %}
+                                <form method="POST" action="{{ url_for('clanes.transferir_mando', clan_id=clan.id_clan, usuario_id=miembro.usuario_id) }}" style="margin:0; margin-bottom: 4px;" onsubmit="return confirm('¿Seguro que deseas CEDER EL LIDERAZGO a {{ miembro.usuario.username }}? Pasarás a ser Administrador y no podrás revertir esta acción.');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" style="width: 100%; text-align: left; background:transparent; border:none; color: #FBBF24; cursor:pointer; padding: 6px; font-size: 12px; border-radius: 4px; transition: 0.2s;" onmouseover="this.style.background='rgba(251, 191, 36, 0.1)'" onmouseout="this.style.background='transparent'"><i class="fas fa-crown"></i> Transferir Mando</button>
+                                </form>
+                                {% endif %}
+                                
+                                <form method="POST" action="{{ url_for('clanes.expulsar', clan_id=clan.id_clan, usuario_id=miembro.usuario_id) }}" style="margin:0;" onsubmit="return confirm('¿Seguro que deseas expulsar a {{ miembro.usuario.username }} del clan?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" style="width: 100%; text-align: left; background:transparent; border:none; color:var(--accent-red); cursor:pointer; padding: 6px; font-size: 12px; border-radius: 4px; transition: 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'"><i class="fas fa-sign-out-alt"></i> Expulsar Miembro</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Panel de Solicitudes (Solo Lideres/Mods) -->
+            {% if en_este_clan and en_este_clan.rol in ['lider', 'moderador'] %}
+                {% set pendientes = clan.solicitudes.filter_by(estado='pendiente').all() %}
+                {% if pendientes %}
+                <div style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--accent-purple); overflow: hidden; box-shadow: 0 0 15px rgba(139, 92, 246, 0.15);">
+                    <div style="padding: 16px 20px; background: rgba(139, 92, 246, 0.1); border-bottom: 1px solid var(--border-color);">
+                        <h3 style="color: white; margin: 0; font-size: 14px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-envelope-open-text" style="color: var(--accent-purple);"></i> Solicitudes de Ingreso <span style="background: var(--accent-purple); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">{{ pendientes|length }}</span></h3>
+                    </div>
+                    
+                    <div style="padding: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;">
+                        {% for sol in pendientes %}
+                        <div style="background: var(--bg-dark); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                                <img src="{{ sol.usuario.foto_perfil if sol.usuario.foto_perfil else 'https://ui-avatars.com/api/?name=' + sol.usuario.username }}" style="width: 28px; height: 28px; border-radius: 50%;">
+                                <span style="color: white; font-size: 13px; font-weight: bold;">{{ sol.usuario.username }}</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <form method="POST" action="{{ url_for('clanes.gestionar_solicitud', solicitud_id=sol.id_solicitud, accion='aceptar') }}" style="flex: 1; margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" style="width: 100%; background: rgba(16, 185, 129, 0.2); border: 1px solid var(--accent-green); color: var(--accent-green); padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s;"><i class="fas fa-check"></i> Aceptar</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('clanes.gestionar_solicitud', solicitud_id=sol.id_solicitud, accion='rechazar') }}" style="flex: 1; margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" style="width: 100%; background: rgba(239, 68, 68, 0.2); border: 1px solid var(--accent-red); color: var(--accent-red); padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s;"><i class="fas fa-times"></i> Rechazar</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Configurar Clan -->
+{% if en_este_clan and en_este_clan.rol == 'lider' %}
+<div id="modal-configurar-clan" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: var(--bg-panel); width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; border-radius: var(--radius-lg); border: 1px solid var(--border-color); animation: slideUp 0.3s ease;">
+        <div style="padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2);">
+            <h3 style="color: white; margin: 0; font-size: 18px;"><i class="fas fa-cog" style="color: var(--accent-purple);"></i> Configuración del Clan</h3>
+            <button onclick="document.getElementById('modal-configurar-clan').style.display='none';" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="POST" action="{{ url_for('clanes.editar', clan_id=clan.id_clan) }}" style="padding: 24px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; color: var(--text-muted); font-size: 13px; margin-bottom: 8px;">Nombre del Clan *</label>
+                <input type="text" name="nombre" value="{{ clan.nombre }}" required style="width: 100%; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; color: white; outline: none; font-size: 15px;">
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; color: var(--text-muted); font-size: 13px; margin-bottom: 8px;">Descripción</label>
+                <textarea name="descripcion" style="width: 100%; height: 80px; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; color: white; outline: none; font-size: 14px; resize: none;">{{ clan.descripcion }}</textarea>
+            </div>
+            
+            <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                <div style="flex: 1;">
+                    <label style="display: block; color: var(--text-muted); font-size: 13px; margin-bottom: 8px;">URL del Logo</label>
+                    <input type="url" name="logo_url" value="{{ clan.logo_url }}" style="width: 100%; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; color: white; outline: none; font-size: 14px;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; color: var(--text-muted); font-size: 13px; margin-bottom: 8px;">URL del Banner</label>
+                    <input type="url" name="banner_url" value="{{ clan.banner_url }}" style="width: 100%; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; color: white; outline: none; font-size: 14px;">
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; color: var(--text-muted); font-size: 13px; margin-bottom: 8px;">Privacidad del Clan</label>
+                <div style="display: flex; gap: 16px;">
+                    <label style="color: white; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" name="privacidad" value="publico" {% if clan.privacidad == 'publico' %}checked{% endif %}> Público
+                    </label>
+                    <label style="color: white; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" name="privacidad" value="privado" {% if clan.privacidad == 'privado' %}checked{% endif %}> Privado
+                    </label>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);">Guardar Cambios</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% if current_user.is_authenticated %}
+<script>
+    // Username y Avatar actuales del usuario
+    const currentUsername = "{{ current_user.username }}";
+    const currentAvatar = "{{ current_user.foto_perfil if current_user.foto_perfil else 'https://ui-avatars.com/api/?name=' + current_user.username }}";
+
+    async function enviarMensajeChat() {
+        const input = document.getElementById('clan-chat-input');
+        const text = input.value.trim();
+        if(!text) return;
+        
+        input.value = '';
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        try {
+            await fetch(`{{ url_for('clanes.enviar_mensaje_clan', clan_id=clan.id_clan) }}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+                body: JSON.stringify({ contenido: text })
+            });
+            window.location.reload();
+        } catch(e) { console.error("Error", e); }
+    }
+    
+    async function publicarMuro() {
+        const input = document.getElementById('clan-post-input');
+        const text = input.value.trim();
+        if(!text) return;
+        
+        input.value = '';
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        try {
+            await fetch(`{{ url_for('clanes.publicar_muro_clan', clan_id=clan.id_clan) }}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+                body: JSON.stringify({ contenido: text })
+            });
+            window.location.reload();
+        } catch(e) { console.error("Error", e); }
+    }
+    
+    // Auto-scroll al fondo del chat
+    window.onload = function() {
+        const chatMessages = document.getElementById('clan-chat-messages');
+        if(chatMessages) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    };
+</script>
+<style>
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endif %}
+{% endblock %}
