@@ -1,3 +1,3 @@
 """
-GamesSphere - Red social gaming con temática cyberpunk anime
+RiftZone - Red social gaming con temática cyberpunk anime
 """

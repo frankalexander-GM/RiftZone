@@ -1,5 +1,5 @@
 class ComentarioService:
-    """Servicio de comentarios - GamesSphere"""
+    """Servicio de comentarios - RiftZone"""
     
     def __init__(self, com_repo):
         self.com_repo = com_repo

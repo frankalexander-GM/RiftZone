@@ -2,7 +2,7 @@ from datetime import datetime
 from app.factories.app_factory import db
 
 class Comentario(db.Model):
-    """Modelo de Comentario - GamesSphere"""
+    """Modelo de Comentario - RiftZone"""
     __tablename__ = 'comentarios'
     
     id_comentario = db.Column(db.Integer, primary_key=True, autoincrement=True)

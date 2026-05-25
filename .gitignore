@@ -30,7 +30,8 @@ env/
 # Base de datos SQLite
 *.db
 *.sqlite3
-app/games_sphere_dev.db
+app/riftzone_dev.db
+app/riftzone.db
 
 # Configuración del Sistema Operativo
 .DS_Store

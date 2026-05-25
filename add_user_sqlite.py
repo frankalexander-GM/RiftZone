@@ -1,7 +1,7 @@
 import sqlite3
 import datetime
 
-db_path = "app/games_sphere_dev.db"
+db_path = "app/riftzone_dev.db"
 
 # Usaremos un hash de contraseña ficticio ya que no necesitamos iniciar sesión con él para probar la búsqueda
 # Si quieres loguearte, tendría que coincidir con el bcrypt de '123456'. 

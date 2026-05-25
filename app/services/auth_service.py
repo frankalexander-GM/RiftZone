@@ -1,7 +1,7 @@
 from app.factories.app_factory import bcrypt
 
 class AuthService:
-    """Servicio de autenticación - GamesSphere"""
+    """Servicio de autenticación - RiftZone"""
     
     def __init__(self, user_repo):
         self.user_repo = user_repo

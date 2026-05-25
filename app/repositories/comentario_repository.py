@@ -1,7 +1,7 @@
 from app.models.comentario import Comentario
 
 class ComentarioRepository:
-    """Repositorio de comentarios - GamesSphere"""
+    """Repositorio de comentarios - RiftZone"""
     
     def __init__(self, session=None):
         self.session = session

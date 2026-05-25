@@ -1,7 +1,7 @@
 from app.models.usuario import Usuario
 
 class UsuarioRepository:
-    """Repositorio de usuarios - GamesSphere"""
+    """Repositorio de usuarios - RiftZone"""
     
     def __init__(self, session=None):
         self.session = session

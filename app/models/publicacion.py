@@ -7,7 +7,7 @@ publicacion_likes = db.Table('publicacion_likes',
 )
 
 class Publicacion(db.Model):
-    """Modelo de Publicación (Post) - GamesSphere"""
+    """Modelo de Publicación (Post) - RiftZone"""
     __tablename__ = 'publicaciones'
     
     id_publicacion = db.Column(db.Integer, primary_key=True, autoincrement=True)

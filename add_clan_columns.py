@@ -1,6 +1,6 @@
 import sqlite3
 
-db_path = r'c:\seguridad copy\plataforma web\RiftZone\app\games_sphere_dev.db'
+db_path = r'c:\seguridad copy\plataforma web\RiftZone\app\riftzone_dev.db'
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 

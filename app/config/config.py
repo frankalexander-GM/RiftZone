@@ -3,13 +3,13 @@ import secrets
 from datetime import timedelta
 
 class Config:
-    """Configuración base de la aplicación GamesSphere"""
+    """Configuración base de la aplicación RiftZone"""
     
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'riftzone_secreto_desarrollo_12345'
     
     basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'games_sphere.db')
+        'sqlite:///' + os.path.join(basedir, 'riftzone.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     
@@ -36,7 +36,7 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_ECHO = True
     basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'games_sphere_dev.db')
+        'sqlite:///' + os.path.join(basedir, 'riftzone_dev.db')
 
 class TestingConfig(Config):
     """Configuración para pruebas"""

@@ -12,7 +12,7 @@ if __name__ == '__main__':
     debug_mode = config_name == 'development'
     port = int(os.environ.get('PORT', 5050))
     
-    print(f"GamesSphere Backend iniciando en modo {config_name}")
+    print(f"RiftZone Backend iniciando en modo {config_name}")
     print(f"Debug: {debug_mode}")
     print(f"Port: {port}")
     

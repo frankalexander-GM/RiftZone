@@ -1,5 +1,5 @@
 class PublicacionService:
-    """Servicio de publicaciones - GamesSphere"""
+    """Servicio de publicaciones - RiftZone"""
     
     def __init__(self, pub_repo):
         self.pub_repo = pub_repo

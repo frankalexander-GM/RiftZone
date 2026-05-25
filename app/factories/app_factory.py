@@ -14,7 +14,7 @@ csrf = CSRFProtect()
 
 def create_app(config_name='default'):
     """
-    Fábrica de aplicaciones Flask - GamesSphere
+    Fábrica de aplicaciones Flask - RiftZone
     """
     import os
     basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -31,7 +31,7 @@ def create_app(config_name='default'):
     csrf.init_app(app)
     
     login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'Inicia sesión para acceder a GamesSphere.'
+    login_manager.login_message = 'Inicia sesión para acceder a RiftZone.'
     login_manager.login_message_category = 'info'
     
     upload_folder = app.config['UPLOAD_FOLDER']

@@ -1,4 +1,4 @@
-"""Fábrica de servicios para GamesSphere"""
+"""Fábrica de servicios para RiftZone"""
 
 class ServiceFactory:
     """Fábrica centralizada para crear servicios de negocio"""

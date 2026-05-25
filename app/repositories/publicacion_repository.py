@@ -1,7 +1,7 @@
 from app.models.publicacion import Publicacion
 
 class PublicacionRepository:
-    """Repositorio de publicaciones - GamesSphere"""
+    """Repositorio de publicaciones - RiftZone"""
     
     def __init__(self, session=None):
         self.session = session
