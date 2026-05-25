@@ -22,9 +22,7 @@
     <nav class="top-nav">
         <div class="nav-left">
             <a href="/" class="logo">
-                <div class="logo-icon">
-                    <i class="fas fa-gamepad" style="color: white; font-size: 18px;"></i>
-                </div>
+                <img src="{{ url_for('static', filename='img/riftzone_logo_nav.jpg') }}" alt="RiftZone" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover;">
                 RiftZone
             </a>
         </div>
@@ -67,7 +65,7 @@
                         {% set notifs = current_user.notificaciones.limit(5).all() %}
                         {% if notifs %}
                             {% for n in notifs %}
-                            <div {% if n.enlace %}onclick="window.location.href='{{ n.enlace }}'"{% endif %} style="padding: 12px; border-radius: 8px; margin-bottom: 4px; background: {% if not n.leido %}rgba(139, 92, 246, 0.1){% else %}transparent{% endif %}; border-left: {% if not n.leido %}3px solid var(--accent-purple){% else %}3px solid transparent{% endif %}; display: flex; gap: 12px; align-items: flex-start; transition: background 0.2s; {% if n.enlace %}cursor: pointer;{% endif %}" onmouseover="this.style.background='var(--bg-dark)'" onmouseout="this.style.background='{% if not n.leido %}rgba(139, 92, 246, 0.1){% else %}transparent{% endif %}'">
+                            <div {% if n.enlace %}onclick="window.location.href='{{ n.enlace }}'"{% endif %} style="padding: 12px; border-radius: 8px; margin-bottom: 4px; background: {% if not n.leido %}rgba(123, 47, 240, 0.1){% else %}transparent{% endif %}; border-left: {% if not n.leido %}3px solid var(--accent-purple){% else %}3px solid transparent{% endif %}; display: flex; gap: 12px; align-items: flex-start; transition: background 0.2s; {% if n.enlace %}cursor: pointer;{% endif %}" onmouseover="this.style.background='var(--bg-dark)'" onmouseout="this.style.background='{% if not n.leido %}rgba(123, 47, 240, 0.1){% else %}transparent{% endif %}'">
                                 <div style="background: var(--bg-dark); width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 1px solid var(--border-color); flex-shrink: 0;">
                                     <i class="{{ n.icono }}" style="color: {% if n.tipo == 'clan' %}var(--accent-purple){% elif n.tipo == 'social' %}var(--accent-magenta){% else %}var(--accent-green){% endif %}; font-size: 14px;"></i>
                                 </div>
@@ -150,7 +148,7 @@
                     </button>
                 </form>
                 {% else %}
-                <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid var(--accent-purple); border-radius: 8px; padding: 12px; text-align: center;">
+                <div style="background: rgba(123, 47, 240, 0.1); border: 1px solid var(--accent-purple); border-radius: 8px; padding: 12px; text-align: center;">
                     <span style="font-size: 12px; color: var(--text-muted);">Solo modo lectura. <a href="{{ url_for('auth.register') }}" style="color: var(--accent-purple); font-weight: bold; text-decoration: none;">Crea una cuenta</a> para hablar.</span>
                 </div>
                 {% endif %}

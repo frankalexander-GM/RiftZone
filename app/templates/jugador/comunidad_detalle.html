@@ -9,7 +9,7 @@
         <h1 style="color: white; font-size: 32px; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">{{ juego }}</h1>
         <p style="color: rgba(255,255,255,0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.8);">Comunidad oficial de jugadores</p>
     </div>
-    <a href="{{ url_for('chat.chat_sala', comunidad=juego) }}" style="background: var(--accent-purple); color: white; padding: 12px 24px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 15px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); display: flex; align-items: center; gap: 8px; transition: transform 0.2s;">
+    <a href="{{ url_for('chat.chat_sala', comunidad=juego) }}" style="background: var(--accent-purple); color: white; padding: 12px 24px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 15px; box-shadow: 0 4px 15px rgba(123, 47, 240, 0.4); display: flex; align-items: center; gap: 8px; transition: transform 0.2s;">
         <i class="fas fa-comment-dots" style="font-size: 18px;"></i> Entrar al Chat
     </a>
 </div>
@@ -110,7 +110,7 @@
     {% endfor %}
 {% else %}
     <!-- DATOS DE PRUEBA VISUALES -->
-    <div style="margin-bottom: 24px; padding: 12px; background: rgba(139, 92, 246, 0.1); border-left: 4px solid var(--accent-purple); color: var(--text-muted); font-size: 13px; border-radius: 4px;">
+    <div style="margin-bottom: 24px; padding: 12px; background: rgba(123, 47, 240, 0.1); border-left: 4px solid var(--accent-purple); color: var(--text-muted); font-size: 13px; border-radius: 4px;">
         <i class="fas fa-info-circle" style="color: var(--accent-purple);"></i> Estas son publicaciones de ejemplo para que puedas probar y ver el diseño de la comunidad de {{ juego }}.
     </div>
 

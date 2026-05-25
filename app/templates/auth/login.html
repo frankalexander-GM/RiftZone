@@ -49,9 +49,11 @@
             margin-bottom: 32px;
         }
         
-        .logo-center .logo-icon {
-            width: 48px; height: 48px;
-            font-size: 24px;
+        .logo-center .logo-img {
+            width: 60px; height: 60px;
+            border-radius: 12px;
+            object-fit: cover;
+            filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.3));
         }
         
         .form-group {
@@ -80,7 +82,7 @@
         .form-control:focus {
             outline: none;
             border-color: var(--accent-purple);
-            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+            box-shadow: 0 0 0 2px rgba(123, 47, 240, 0.2);
         }
         
         .btn-block {
@@ -104,7 +106,7 @@
         }
         
         .alert {
-            background-color: rgba(255, 45, 149, 0.1);
+            background-color: rgba(0, 229, 255, 0.1);
             border-left: 4px solid var(--accent-magenta);
             color: white;
             padding: 12px 16px;
@@ -118,7 +120,7 @@
 
 <div class="auth-container">
     <div class="logo-center">
-        <div class="logo-icon"><i class="fas fa-gamepad"></i></div>
+        <img src="{{ url_for('static', filename='img/riftzone_logo.jpg') }}" alt="RiftZone" class="logo-img">
         RiftZone
     </div>
     

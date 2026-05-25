@@ -22,10 +22,10 @@
                         <h3 style="color: white; margin-bottom: 8px; font-size: 18px;">{{ juego.nombre }}</h3>
                         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.4; margin-bottom: 16px;">{{ juego.desc }}</p>
                         <div style="display: flex; gap: 8px;">
-                            <a href="{{ url_for('jugador.comunidad_detalle', juego=juego.nombre) }}" style="flex: 1; text-align: center; text-decoration: none; background: rgba(139, 92, 246, 0.1); padding: 10px; border-radius: 8px; transition: 0.2s;">
+                            <a href="{{ url_for('jugador.comunidad_detalle', juego=juego.nombre) }}" style="flex: 1; text-align: center; text-decoration: none; background: rgba(123, 47, 240, 0.1); padding: 10px; border-radius: 8px; transition: 0.2s;">
                                 <span style="font-size: 13px; color: var(--accent-purple); font-weight: 700;">Comunidad</span>
                             </a>
-                            <a href="{{ url_for('chat.chat_sala', comunidad=juego.nombre) }}" style="flex: 1; text-align: center; text-decoration: none; background: var(--accent-purple); padding: 10px; border-radius: 8px; transition: 0.2s; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);">
+                            <a href="{{ url_for('chat.chat_sala', comunidad=juego.nombre) }}" style="flex: 1; text-align: center; text-decoration: none; background: var(--accent-purple); padding: 10px; border-radius: 8px; transition: 0.2s; box-shadow: 0 4px 10px rgba(123, 47, 240, 0.3);">
                                 <span style="font-size: 13px; color: white; font-weight: 700;"><i class="fas fa-comment"></i> Chat</span>
                             </a>
                         </div>

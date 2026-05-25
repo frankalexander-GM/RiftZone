@@ -24,8 +24,8 @@
                     <span class="badge" style="position:relative; display:inline-flex; align-items:center; margin-left:14px; padding:4px 10px; font-size:11px; font-weight:bold; border-radius:12px; 
                         {% if titulo == 'Streamer' %}background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: white;
                         {% elif titulo == 'Pro Player' %}background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.3); color: white;
-                        {% elif titulo == 'Creador' %}background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: white;
-                        {% elif titulo == 'Caster' %}background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); color: white;
+                        {% elif titulo == 'Creador' %}background: rgba(0, 188, 212, 0.15); border: 1px solid rgba(0, 188, 212, 0.3); color: white;
+                        {% elif titulo == 'Caster' %}background: rgba(123, 47, 240, 0.15); border: 1px solid rgba(123, 47, 240, 0.3); color: white;
                         {% elif titulo == 'Diseñador' %}background: rgba(236, 72, 153, 0.15); border: 1px solid rgba(236, 72, 153, 0.3); color: white;
                         {% else %}background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: white;{% endif %}">
                         
@@ -84,7 +84,7 @@
     </p>
     
     {% if perfil_user.estado_personalizado %}
-    <div style="background: rgba(139, 92, 246, 0.1); border-left: 3px solid var(--accent-purple); padding: 8px 12px; border-radius: 4px; margin-bottom: 24px;">
+    <div style="background: rgba(123, 47, 240, 0.1); border-left: 3px solid var(--accent-purple); padding: 8px 12px; border-radius: 4px; margin-bottom: 24px;">
         <i class="fas fa-quote-left" style="color:var(--accent-purple); margin-right:8px; font-size: 10px;"></i>
         <span style="color: white; font-size: 13px; font-style: italic;">{{ perfil_user.estado_personalizado }}</span>
     </div>
@@ -380,7 +380,7 @@
                 <a href="{{ url_for('clanes.detalle', clan_id=clan.id_clan) }}" style="text-decoration: none; display: block;">
                     <div class="clan-card" style="transition: transform 0.2s, border-color 0.2s; margin: 0;" onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='var(--accent-purple)';" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='var(--border-color)';">
                         {% if clan.logo_url %}
-                            <img src="{{ clan.logo_url }}" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(139, 92, 246, 0.3);">
+                            <img src="{{ clan.logo_url }}" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(123, 47, 240, 0.3);">
                         {% else %}
                             <div class="clan-logo">{{ clan.nombre[0] | upper }}</div>
                         {% endif %}
@@ -392,7 +392,7 @@
                                 {% if membresia.rol == 'lider' %}
                                     <span class="role-badge" style="background: rgba(251, 191, 36, 0.15); color: #FBBF24; border: 1px solid rgba(251, 191, 36, 0.3);"><i class="fas fa-crown" style="margin-right:2px;"></i> Líder</span>
                                 {% elif membresia.rol == 'moderador' %}
-                                    <span class="role-badge" style="background: rgba(59, 130, 246, 0.15); color: #3B82F6; border: 1px solid rgba(59, 130, 246, 0.3);"><i class="fas fa-shield-alt" style="margin-right:2px;"></i> Mod</span>
+                                    <span class="role-badge" style="background: rgba(0, 188, 212, 0.15); color: #00BCD4; border: 1px solid rgba(0, 188, 212, 0.3);"><i class="fas fa-shield-alt" style="margin-right:2px;"></i> Mod</span>
                                 {% else %}
                                     <span class="role-badge" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid rgba(255, 255, 255, 0.1);"><i class="fas fa-user" style="margin-right:2px;"></i> Miembro</span>
                                 {% endif %}

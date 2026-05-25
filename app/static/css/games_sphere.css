@@ -7,13 +7,14 @@
     --text-main: #ffffff;
     --text-muted: #8b8b9e;
     
-    --accent-purple: #8B5CF6;
-    --accent-magenta: #FF2D95;
-    --accent-blue: #3B82F6;
-    --accent-green: #10B981;
+    --accent-purple: #7B2FF0;
+    --accent-magenta: #00E5FF;
+    --accent-blue: #00BCD4;
+    --accent-green: #39FF14;
+    --accent-cyan: #64FFDA;
     
     --border-color: rgba(255, 255, 255, 0.05);
-    --neon-glow: 0 0 15px rgba(139, 92, 246, 0.5);
+    --neon-glow: 0 0 15px rgba(0, 229, 255, 0.5);
     
     --nav-height: 70px;
     --sidebar-left-width: 260px;
@@ -124,7 +125,7 @@ input, textarea {
 
 .search-bar:focus-within {
     border-color: var(--accent-purple);
-    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 0 0 2px rgba(123, 47, 240, 0.2);
 }
 
 .search-bar i {
@@ -476,7 +477,7 @@ input, textarea {
     font-weight: 700;
     padding: 4px 8px;
     border-radius: 12px;
-    box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 10px rgba(123, 47, 240, 0.5);
 }
 
 .profile-details {
@@ -591,7 +592,7 @@ input, textarea {
     width: 100%;
     height: 2px;
     background: var(--accent-purple);
-    box-shadow: 0 -2px 10px rgba(139, 92, 246, 0.5);
+    box-shadow: 0 -2px 10px rgba(123, 47, 240, 0.5);
 }
 
 /* ABOUT SECTION */
@@ -726,7 +727,7 @@ input, textarea {
 .game-card-add:hover {
     border-color: var(--accent-purple);
     color: var(--accent-purple);
-    background-color: rgba(139, 92, 246, 0.05);
+    background-color: rgba(123, 47, 240, 0.05);
 }
 
 /* CREATE POST */
@@ -793,9 +794,9 @@ input, textarea {
 }
 
 .post-type-btn.image i { color: #10B981; }
-.post-type-btn.clip i { color: #8B5CF6; }
-.post-type-btn.poll i { color: #3B82F6; }
-.post-type-btn.tournament i { color: #FF2D95; }
+.post-type-btn.clip i { color: #7B2FF0; }
+.post-type-btn.poll i { color: #00BCD4; }
+.post-type-btn.tournament i { color: #00E5FF; }
 
 /* POSTS FEED */
 .post-card {
@@ -836,7 +837,7 @@ input, textarea {
 }
 
 .game-tag {
-    background-color: rgba(139, 92, 246, 0.1);
+    background-color: rgba(123, 47, 240, 0.1);
     color: var(--accent-purple);
     padding: 2px 8px;
     border-radius: 4px;
@@ -945,7 +946,7 @@ input, textarea {
     width: 64px;
     height: 64px;
     margin: 0 auto 16px;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(255, 45, 149, 0.2));
+    background: linear-gradient(135deg, rgba(123, 47, 240, 0.2), rgba(0, 229, 255, 0.2));
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -1048,7 +1049,7 @@ input, textarea {
 }
 
 .achiev-icon.purple {
-    background: rgba(139, 92, 246, 0.1);
+    background: rgba(123, 47, 240, 0.1);
     color: var(--accent-purple);
 }
 
@@ -1075,7 +1076,7 @@ input, textarea {
 
 /* CLANS WIDGET */
 .clan-card {
-    background: linear-gradient(135deg, rgba(255, 45, 149, 0.05), rgba(139, 92, 246, 0.05));
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.05), rgba(123, 47, 240, 0.05));
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 16px;
@@ -1095,7 +1096,7 @@ input, textarea {
     color: var(--accent-magenta);
     font-weight: 900;
     font-size: 24px;
-    border: 1px solid rgba(255, 45, 149, 0.3);
+    border: 1px solid rgba(0, 229, 255, 0.3);
 }
 
 .clan-info h4 {
@@ -1108,7 +1109,7 @@ input, textarea {
 }
 
 .role-badge {
-    background-color: rgba(139, 92, 246, 0.2);
+    background-color: rgba(123, 47, 240, 0.2);
     color: var(--accent-purple);
     font-size: 10px;
     padding: 2px 6px;
@@ -1252,7 +1253,7 @@ input, textarea {
 
 .game-card-mini.add-new:hover {
     color: var(--accent-purple);
-    background-color: rgba(139, 92, 246, 0.05);
+    background-color: rgba(123, 47, 240, 0.05);
 }
 
 .game-card-mini span {
@@ -1428,7 +1429,7 @@ input, textarea {
     }
 
     .menu-item.active {
-        background: rgba(139, 92, 246, 0.15);
+        background: rgba(123, 47, 240, 0.15);
         color: var(--accent-purple);
     }
 

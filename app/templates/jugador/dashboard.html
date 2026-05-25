@@ -123,7 +123,7 @@
                 <div class="author-info">
                     <h4><a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" style="color:white; text-decoration:none;">{{ post.autor.nombre if post.autor.nombre else post.autor.username }}</a> {% if post.autor.es_premium %}<i class="fas fa-check-circle verified-icon" style="font-size:14px;"></i>{% endif %}</h4>
                     <div class="post-meta">
-                        {{ post.fecha_creacion | timeago }} <span class="game-tag" style="background:rgba(139, 92, 246, 0.2);">{{ post.juego }}</span>
+                        {{ post.fecha_creacion | timeago }} <span class="game-tag" style="background:rgba(123, 47, 240, 0.2);">{{ post.juego }}</span>
                     </div>
                 </div>
             </div>
