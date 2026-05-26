@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Tienda - RiftZone{% endblock %}
+
+{% block content %}
+<style>
+@media (max-width: 768px) {
+    .plan-card--gold {
+        transform: none !important;
+    }
+}
+</style>
+<div class="tienda-container" style="max-width: 1000px; margin: 0 auto; padding: clamp(16px,4vw,24px);">
+    
+    <div style="text-align: center; margin-bottom: 40px;">
+        <i class="fas fa-store" style="font-size: 50px; color: var(--accent-purple); margin-bottom: 20px; display: inline-block;"></i>
+        <h2 style="font-size: 36px; color: white; margin-bottom: 12px; font-weight: 900; letter-spacing: 1px;">Tienda RiftZone</h2>
+        <p style="color: var(--text-muted); font-size: 18px;">Adquiere tu Pase VIP para obtener RiftCoins y beneficios exclusivos.</p>
+    </div>
+
+    {% if current_user.es_premium %}
+    <div class="active-subscription" style="background: linear-gradient(135deg, rgba(250, 204, 21, 0.2) 0%, rgba(0,0,0,0.5) 100%); border: 2px solid #FACC15; border-radius: 16px; padding: 30px; text-align: center; box-shadow: 0 10px 40px rgba(250, 204, 21, 0.15); margin-bottom: 40px;">
+        <h3 style="color: white; font-size: 24px; margin: 0 0 12px;">¡Ya eres VIP!</h3>
+        <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 16px;">Disfrutas de los beneficios VIP. Puedes adquirir más pases para acumular más RiftCoins en tu Billetera.</p>
+    </div>
+    {% endif %}
+
+    <!-- SECCIÓN MEMBRESÍAS VIP -->
+    <div style="margin-bottom: 40px;">
+        <h3 style="color: white; font-size: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;"><i class="fas fa-crown" style="color: #FACC15;"></i> Membresías VIP</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+            
+            <!-- Pase Plata -->
+            <div style="background: var(--bg-card); border: 1px solid rgba(156, 163, 175, 0.4); border-radius: 24px; padding: 32px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+                <h3 style="color: #9CA3AF; font-size: 24px; margin: 0 0 16px;">Pase Plata</h3>
+                
+                <div style="font-size: 36px; font-weight: 900; color: white; margin-bottom: 8px;">
+                    $4.99 <span style="font-size: 14px; color: var(--text-muted); font-weight: normal;">/ mes</span>
+                </div>
+                
+                <div style="background: rgba(156, 163, 175, 0.1); border-radius: 12px; padding: 12px; margin-bottom: 24px; color: #9CA3AF; font-weight: bold;">
+                    <i class="fas fa-coins" style="margin-right: 6px;"></i> Recibes 500 RC
+                </div>
+
+                <ul style="list-style: none; padding: 0; margin: 0 0 32px; text-align: left; min-height: 140px;">
+                    <li style="color: #e5e7eb; margin-bottom: 12px; font-size: 14px;"><i class="fas fa-check" style="color: #9CA3AF; margin-right: 8px;"></i> Insignia VIP Básica</li>
+                    <li style="color: #e5e7eb; margin-bottom: 12px; font-size: 14px;"><i class="fas fa-check" style="color: #9CA3AF; margin-right: 8px;"></i> 500 RiftCoins al mes</li>
+                    <li style="color: #e5e7eb; margin-bottom: 12px; font-size: 14px;"><i class="fas fa-check" style="color: #9CA3AF; margin-right: 8px;"></i> Acceso a canales VIP</li>
+                </ul>
+
+                <button onclick="comprarPremium('plata')" class="btn-secondary" style="width: 100%; padding: 12px; font-size: 16px; border-radius: 30px; border-color: #9CA3AF; color: white;">
+                    Adquirir Plata
+                </button>
+            </div>
+
+            <!-- Pase Oro -->
+            <div class="plan-card--gold" style="background: linear-gradient(180deg, rgba(250, 204, 21, 0.15) 0%, var(--bg-card) 100%); border: 2px solid #FACC15; border-radius: 24px; padding: 32px; text-align: center; position: relative; box-shadow: 0 20px 50px rgba(250, 204, 21, 0.15); transform: scale(1.05); z-index: 10;">
+                <div style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: #FACC15; color: black; font-size: 12px; font-weight: 800; padding: 6px 16px; border-radius: 12px; letter-spacing: 1px;">MÁS POPULAR</div>
+                <h3 style="color: #FACC15; font-size: 28px; margin: 0 0 16px; text-shadow: 0 0 10px rgba(250, 204, 21, 0.4);">Pase Oro</h3>
+                
+                <div style="font-size: 42px; font-weight: 900; color: white; margin-bottom: 8px;">
+                    $9.99 <span style="font-size: 14px; color: var(--text-muted); font-weight: normal;">/ mes</span>
+                </div>
+                
+                <div style="background: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 24px; color: #FACC15; font-weight: bold; text-shadow: 0 0 5px rgba(250, 204, 21, 0.5);">
+                    <i class="fas fa-coins" style="margin-right: 6px;"></i> Recibes 1,500 RC
+                </div>
+
+                <ul style="list-style: none; padding: 0; margin: 0 0 32px; text-align: left; min-height: 140px;">
+                    <li style="color: white; margin-bottom: 12px; font-size: 14px; font-weight: 500;"><i class="fas fa-check" style="color: #FACC15; margin-right: 8px;"></i> Corona Dorada VIP</li>
+                    <li style="color: white; margin-bottom: 12px; font-size: 14px; font-weight: 500;"><i class="fas fa-check" style="color: #FACC15; margin-right: 8px;"></i> 1,500 RiftCoins al mes</li>
+                    <li style="color: white; margin-bottom: 12px; font-size: 14px; font-weight: 500;"><i class="fas fa-check" style="color: #FACC15; margin-right: 8px;"></i> Resplandor en Publicaciones</li>
+                    <li style="color: white; margin-bottom: 12px; font-size: 14px; font-weight: 500;"><i class="fas fa-check" style="color: #FACC15; margin-right: 8px;"></i> Nombre Destacado en Chat</li>
+                </ul>
+
+                <button onclick="comprarPremium('oro')" class="btn-primary" style="width: 100%; padding: 16px; font-size: 18px; border-radius: 30px; background: linear-gradient(90deg, #FACC15, #EAB308); color: black; font-weight: 800; border: none; box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4);">
+                    OBTENER ORO
+                </button>
+            </div>
+
+            <!-- Pase Diamante -->
+            <div style="background: var(--bg-card); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 24px; padding: 32px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+                <h3 style="color: #A78BFA; font-size: 24px; margin: 0 0 16px;">Pase Diamante</h3>
+                
+                <div style="font-size: 36px; font-weight: 900; color: white; margin-bottom: 8px;">
+                    $19.99 <span style="font-size: 14px; color: var(--text-muted); font-weight: normal;">/ mes</span>
+                </div>
+                
+                <div style="background: rgba(139, 92, 246, 0.1); border-radius: 12px; padding: 12px; margin-bottom: 24px; color: #A78BFA; font-weight: bold;">
+                    <i class="fas fa-coins" style="margin-right: 6px;"></i> Recibes 4,000 RC
+                </div>
+
+                <ul style="list-style: none; padding: 0; margin: 0 0 32px; text-align: left; min-height: 140px;">
+                    <li style="color: #e5e7eb; margin-bottom: 12px; font-size: 14px;"><i class="fas fa-check" style="color: #A78BFA; margin-right: 8px;"></i> Todos los beneficios Oro</li>
+                    <li style="color: #e5e7eb; margin-bottom: 12px; font-size: 14px;"><i class="fas fa-check" style="color: #A78BFA; margin-right: 8px;"></i> 4,000 RiftCoins al mes</li>
+                    <li style="color: #e5e7eb; margin-bottom: 12px; font-size: 14px;"><i class="fas fa-check" style="color: #A78BFA; margin-right: 8px;"></i> Fondos animados para perfil</li>
+                    <li style="color: #e5e7eb; margin-bottom: 12px; font-size: 14px;"><i class="fas fa-check" style="color: #A78BFA; margin-right: 8px;"></i> Soporte Técnico Prioritario</li>
+                </ul>
+
+                <button onclick="comprarPremium('diamante')" class="btn-secondary" style="width: 100%; padding: 12px; font-size: 16px; border-radius: 30px; border-color: #A78BFA; color: white;">
+                    Adquirir Diamante
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+function comprarPremium(plan) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    let nombrePlan = plan.toUpperCase();
+    if(!confirm(`¿Deseas suscribirte al Pase ${nombrePlan} (Facturación ficticia)?`)) return;
+    
+    fetch("{{ url_for('jugador.comprar_premium') }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+        },
+        body: JSON.stringify({ plan: plan })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            alert("👑 " + data.message);
+            location.reload();
+        } else {
+            alert("❌ Error: " + data.message);
+        }
+    })
+    .catch(e => {
+        alert("Error de conexión al procesar el pago.");
+    });
+}
+</script>
+{% endblock %}

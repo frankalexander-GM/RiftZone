@@ -1,0 +1,61 @@
+{% if config.ADSENSE_ENABLED %}
+{# ============================================================
+   Google AdSense - Unidades de anuncio reutilizables
+   Antes de publicar, reemplaza 'ca-pub-0000000000000000'
+   con tu código real de AdSense en config.py
+   ============================================================ #}
+
+{# --- Banner horizontal (728x90) para cabecera/pie de páginas --- #}
+{% macro ad_banner() %}
+<div class="ad-container ad-banner">
+    <div class="ad-label">— Publicidad —</div>
+    <ins class="adsbygoogle"
+         style="display:inline-block;width:728px;height:90px"
+         data-ad-client="{{ config.ADSENSE_PUBLISHER_ID }}"
+         data-ad-slot="1234567890"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+{% endmacro %}
+
+{# --- Cuadrado mediano (300x250) para sidebar --- #}
+{% macro ad_square() %}
+<div class="ad-container ad-square">
+    <div class="ad-label">— Publicidad —</div>
+    <ins class="adsbygoogle"
+         style="display:inline-block;width:300px;height:250px"
+         data-ad-client="{{ config.ADSENSE_PUBLISHER_ID }}"
+         data-ad-slot="1234567891"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+{% endmacro %}
+
+{# --- Anuncio responsive horizontal (ocupa todo el ancho) --- #}
+{% macro ad_responsive() %}
+<div class="ad-container ad-responsive">
+    <div class="ad-label">— Publicidad —</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="{{ config.ADSENSE_PUBLISHER_ID }}"
+         data-ad-slot="1234567892"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+{% endmacro %}
+
+{# --- Anuncio vertical (160x600) para laterales --- #}
+{% macro ad_skyscraper() %}
+<div class="ad-container ad-skyscraper">
+    <div class="ad-label">— Publicidad —</div>
+    <ins class="adsbygoogle"
+         style="display:inline-block;width:160px;height:600px"
+         data-ad-client="{{ config.ADSENSE_PUBLISHER_ID }}"
+         data-ad-slot="1234567893"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+{% endmacro %}
+
+{# Carga del script de AdSense (una sola vez) #}
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config.ADSENSE_PUBLISHER_ID }}"
+     crossorigin="anonymous"></script>
+{% endif %}

@@ -1,0 +1,17 @@
+{# plan_key: plata | oro | diamante #}
+{% set ya_activo = plan_key in planes_reclamados %}
+{% set es_actual = current_user.membresia_tipo == plan_key and current_user.es_premium %}
+{% set plan_class = 'plan-btn--silver' if plan_key == 'plata' else ('plan-btn--gold' if plan_key == 'oro' else 'plan-btn--diamond') %}
+{% if ya_activo %}
+<button type="button" class="plan-btn {{ plan_class }}" disabled style="opacity:0.5; cursor:not-allowed; width:100%;">
+    <i class="fas fa-check-circle"></i> Ya activado
+</button>
+{% elif es_actual %}
+<button type="button" class="plan-btn {{ plan_class }}" disabled style="opacity:0.6; cursor:not-allowed; width:100%;">
+    <i class="fas fa-crown"></i> Plan activo
+</button>
+{% else %}
+<button type="button" onclick="comprarPremium('{{ plan_key }}', this)" class="plan-btn {{ plan_class }}" style="width:100%;">
+    {{ btn_label }}
+</button>
+{% endif %}

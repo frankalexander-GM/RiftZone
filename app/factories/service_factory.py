@@ -51,5 +51,11 @@ class ServiceFactory:
             self._services['clan'] = ClanService()
         return self._services['clan']
 
+    def get_notificacion_service(self):
+        if 'notificacion' not in self._services:
+            from app.services.notificacion_service import NotificacionService
+            self._services['notificacion'] = NotificacionService()
+        return self._services['notificacion']
+
 def get_service_factory(session=None):
     return ServiceFactory(session)

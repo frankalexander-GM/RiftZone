@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Billetera - RiftCoins{% endblock %}
+
+{% block content %}
+<div class="wallet-container" style="max-width: 800px; margin: 0 auto; padding: clamp(16px,4vw,24px);">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom: 24px;">
+        <h2 style="margin:0; font-size: 24px; color: white;">Mi Billetera</h2>
+        {% if ya_reclamo_hoy %}
+        <button type="button" class="btn-secondary" disabled style="opacity:0.7; cursor:not-allowed;">
+            <i class="fas fa-check"></i> Recompensa reclamada hoy
+        </button>
+        {% else %}
+        <form action="{{ url_for('billetera.ganar') }}" method="POST" id="daily-reward-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn-primary" id="daily-reward-btn" style="background:var(--accent-purple);">
+                <i class="fas fa-gift"></i> Reclamar +{{ recompensa_diaria }} RC (1 vez al día)
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert {{ category }}" style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid var(--accent-purple); padding: 12px; margin-bottom: 20px; border-radius: 4px; color: white;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="balance-card" style="background: linear-gradient(135deg, #1f1f2e 0%, #2a2a3f 100%); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="color: var(--text-muted); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Saldo Disponible</div>
+        <div style="font-size: 56px; font-weight: 900; color: #FACC15; text-shadow: 0 0 20px rgba(250, 204, 21, 0.3); display: flex; justify-content: center; align-items: center; gap: 12px;">
+            <i class="fas fa-coins"></i> <span id="current-balance">{{ current_user.tokens }}</span>
+        </div>
+        <div style="color: var(--text-muted); font-size: 13px; margin-top: 8px;">RiftCoins (RC)</div>
+    </div>
+
+    <div class="test-transactions" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; margin-bottom: 32px;">
+        <h3 style="margin-top:0; margin-bottom: 16px; font-size: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;"><i class="fas fa-shopping-cart"></i> Tienda de Prueba</h3>
+        <div style="display:flex; gap: 12px; flex-wrap:wrap;">
+            <button onclick="testSpend(10, 'Skin Básica')" class="btn-secondary" style="flex:1; min-width:140px;"><i class="fas fa-tshirt"></i> Skin (10 RC)</button>
+            <button onclick="testSpend(100, 'Pase de Batalla')" class="btn-secondary" style="flex:1; min-width:140px; border-color: var(--accent-purple); color: var(--accent-purple);"><i class="fas fa-ticket-alt"></i> Pase (100 RC)</button>
+            <button onclick="testSpend(500, 'Membresía Premium')" class="btn-secondary" style="flex:1; min-width:140px; border-color: #FACC15; color: #FACC15;"><i class="fas fa-crown"></i> Premium (500 RC)</button>
+        </div>
+    </div>
+
+    <div class="transactions-container" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden;">
+        <div style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin:0; font-size: 16px;"><i class="fas fa-history"></i> Historial de Movimientos</h3>
+        </div>
+        
+        {% if transacciones %}
+            <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; min-width:400px;">
+                <thead>
+                    <tr style="background: rgba(0,0,0,0.2);">
+                        <th style="padding: 12px 20px; color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;">Fecha</th>
+                        <th style="padding: 12px 20px; color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;">Descripción</th>
+                        <th style="padding: 12px 20px; color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase; text-align: right;">Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transacciones %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 16px 20px; font-size: 13px; color: var(--text-muted);">{{ tx.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td style="padding: 16px 20px; font-size: 14px; color: white;">
+                            <i class="fas {% if tx.type == 'ingreso' %}fa-arrow-down{% else %}fa-arrow-up{% endif %}" style="color: {% if tx.type == 'ingreso' %}var(--accent-green){% else %}#ef4444{% endif %}; margin-right: 8px;"></i>
+                            {{ tx.description }}
+                        </td>
+                        <td style="padding: 16px 20px; font-size: 15px; font-weight: 700; text-align: right; color: {% if tx.type == 'ingreso' %}var(--accent-green){% else %}white{% endif %};">
+                            {% if tx.type == 'ingreso' %}+{% endif %}{{ tx.amount }} <i class="fas fa-coins" style="font-size: 11px; opacity: 0.7;"></i>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        {% else %}
+            <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+                <i class="fas fa-receipt" style="font-size: 32px; opacity: 0.5; margin-bottom: 12px;"></i>
+                <p>No tienes movimientos en tu billetera aún.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('daily-reward-form')?.addEventListener('submit', function() {
+    const btn = document.getElementById('daily-reward-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reclamando...';
+    }
+});
+
+function testSpend(amount, description) {
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    
+    // Alerta de confirmación
+    if(!confirm(`¿Seguro que deseas gastar ${amount} RiftCoins en "${description}"?`)) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('amount', amount);
+    formData.append('description', description);
+    
+    fetch("{{ url_for('billetera.gastar') }}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            // Actualizar saldo visualmente y recargar
+            alert("✅ " + data.message);
+            location.reload();
+        } else {
+            // Alerta de saldo insuficiente
+            alert("❌ Error: " + data.message);
+        }
+    })
+    .catch(error => {
+        alert("Ocurrió un error en la transacción.");
+        console.error('Error:', error);
+    });
+}
+</script>
+{% endblock %}

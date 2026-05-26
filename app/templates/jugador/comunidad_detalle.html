@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'macros/usuario.html' import nombre_usuario %}
 
 {% block title %}Comunidad {{ juego }} - RiftZone{% endblock %}
 
@@ -29,7 +30,7 @@
     <form id="create-post-form" method="POST" action="{{ url_for('jugador.crear_publicacion') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="create-post-header" style="margin-bottom:12px;">
-            <img src="{{ current_user.foto_perfil if current_user.foto_perfil else 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=100&auto=format&fit=crop' }}" alt="Avatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+            <img src="{{ current_user | user_avatar }}" alt="Avatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
             <textarea name="contenido" class="post-input" placeholder="Comparte algo con la comunidad de {{ juego }}..." required style="height:50px; padding:12px; font-size:14px; border:none; background:transparent; border-bottom:1px solid rgba(255,255,255,0.1); border-radius:0;"></textarea>
         </div>
         
@@ -61,7 +62,7 @@
             <div class="post-author">
                 <img src="{{ post.autor.foto_perfil if post.autor.foto_perfil else 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=100&auto=format&fit=crop' }}" alt="{{ post.autor.username }}" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
                 <div class="author-info">
-                    <h4><a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" style="color:white; text-decoration:none;">{{ post.autor.nombre if post.autor.nombre else post.autor.username }}</a></h4>
+                    <h4>{{ nombre_usuario(post.autor, true) }}</h4>
                     <div class="post-meta">
                         {{ post.fecha_creacion | timeago }}
                     </div>
@@ -81,30 +82,49 @@
         {% endif %}
         
         <div class="post-actions" style="margin-top:16px; margin-bottom:16px;">
-            <button class="action-btn {% if current_user in post.usuarios_likes %}liked{% endif %}" id="like-btn-{{ post.id_publicacion }}" onclick="toggleLike({{ post.id_publicacion }})"><i class="fas fa-heart"></i> <span id="like-count-{{ post.id_publicacion }}">{{ post.likes }}</span></button>
-            <button class="action-btn" onclick="document.getElementById('comments-{{ post.id_publicacion }}').style.display='block'"><i class="far fa-comment"></i> {{ post.comentarios|length }}</button>
-            <button class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
+            {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+            <button type="button" class="action-btn {% if post.is_liked_by(current_user) %}liked{% endif %}" data-like-btn data-post-id="{{ post.id_publicacion }}" id="like-btn-{{ post.id_publicacion }}">
+                <i class="{% if post.is_liked_by(current_user) %}fas{% else %}far{% endif %} fa-heart"></i> <span id="like-count-{{ post.id_publicacion }}">{{ post.likes }}</span>
+            </button>
+            {% else %}
+            <span class="action-btn" style="cursor:default; opacity:0.7;"><i class="fas fa-heart"></i> {{ post.likes }}</span>
+            {% endif %}
+            <button type="button" class="action-btn" data-toggle-comments data-post-id="{{ post.id_publicacion }}">
+                <i class="far fa-comment"></i> <span data-comment-count>{{ post.comentarios|length }}</span>
+            </button>
+            <button type="button" class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
         </div>
 
         <!-- COMMENTS -->
         <div id="comments-{{ post.id_publicacion }}" class="comments-section" style="display:none; border-top:1px solid var(--border-color); padding-top:16px;">
+            <div id="comments-list-{{ post.id_publicacion }}" class="comments-list">
             {% for comment in post.comentarios %}
             <div class="comment" style="display:flex; gap:12px; margin-bottom:12px;">
-                <img src="{{ comment.autor.foto_perfil if comment.autor.foto_perfil else 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=100&auto=format&fit=crop' }}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+                <img src="{{ comment.autor | user_avatar }}" alt="" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
                 <div class="comment-content" style="background:var(--bg-dark); padding:10px 12px; border-radius:var(--radius-md); flex:1;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px; gap:8px;">
                         <span style="font-size:13px; font-weight:700;">{{ comment.autor.nombre if comment.autor.nombre else comment.autor.username }}</span>
                         <span style="font-size:11px; color:var(--text-muted);">{{ comment.fecha_creacion | timeago }}</span>
                     </div>
                     <p style="font-size:13px; color:white; line-height:1.4; margin:0;">{{ comment.contenido }}</p>
                 </div>
             </div>
+            {% else %}
+            <p class="comments-empty" style="color:var(--text-muted); font-size:13px; margin:0 0 12px;">Sé el primero en comentar.</p>
             {% endfor %}
-            <form method="POST" action="{{ url_for('jugador.comentar', post_id=post.id_publicacion) }}" style="display:flex; gap:12px; margin-top:16px;">
+            </div>
+            {% if current_user.rol != 'invitado' %}
+            <form class="comment-form" method="POST" action="{{ url_for('jugador.comentar', post_id=post.id_publicacion) }}" data-post-id="{{ post.id_publicacion }}" style="display:flex; gap:12px; margin-top:16px; align-items:center;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="text" name="contenido" placeholder="Escribe un comentario..." style="flex:1; background:var(--bg-dark); border:1px solid var(--border-color); padding:8px 12px; border-radius:20px; color:white; font-size:13px;" required>
-                <button type="submit" style="background:transparent; border:none; color:var(--accent-purple); cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
+                <img src="{{ current_user | user_avatar }}" alt="" style="width:32px; height:32px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+                <input type="text" name="contenido" placeholder="Escribe un comentario..." autocomplete="off" style="flex:1; min-width:0; background:var(--bg-dark); border:1px solid var(--border-color); padding:8px 12px; border-radius:20px; color:white; font-size:13px;" required>
+                <button type="submit" style="background:transparent; border:none; color:var(--accent-purple); cursor:pointer; padding:8px;"><i class="fas fa-paper-plane"></i></button>
             </form>
+            {% else %}
+            <div style="text-align:center; margin-top:16px; padding:12px; background:rgba(0,0,0,0.2); border-radius:8px; border:1px dashed var(--border-color);">
+                <span style="font-size:12px; color:var(--text-muted);"><i class="fas fa-lock"></i> <a href="{{ url_for('auth.register') }}" style="color:var(--accent-purple);">Regístrate</a> para comentar.</span>
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endfor %}
@@ -178,29 +198,4 @@
     </div>
 {% endif %}
 
-<script>
-function toggleLike(postId) {
-    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-    fetch(`/jugador/like/${postId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if(data.success) {
-            const btn = document.getElementById(`like-btn-${postId}`);
-            const countSpan = document.getElementById(`like-count-${postId}`);
-            if(data.liked) {
-                btn.classList.add('liked');
-            } else {
-                btn.classList.remove('liked');
-            }
-            countSpan.textContent = data.likes_count;
-        }
-    });
-}
-</script>
 {% endblock %}

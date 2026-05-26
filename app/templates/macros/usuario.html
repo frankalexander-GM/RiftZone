@@ -1,0 +1,10 @@
+{# Nombre visible con color de la etiqueta/título del perfil. No usar en chat ni comentarios. #}
+{% macro nombre_usuario(user, enlace=false, extra_class='') %}
+{% set estilo = user|nombre_estilo %}
+{% set texto = user|nombre_display %}
+{% if enlace %}
+<a href="{{ url_for('jugador.perfil_publico', username=user.username) }}" class="usuario-nombre-display {{ extra_class }}" style="text-decoration:none;{% if estilo %}{{ estilo }}{% else %}color:white;{% endif %}">{{ texto }}</a>
+{% else %}
+<span class="usuario-nombre-display {{ extra_class }}"{% if estilo %} style="{{ estilo }}"{% endif %}>{{ texto }}</span>
+{% endif %}
+{% endmacro %}

@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
-{% block title %}Editar Perfil - GamesSphere{% endblock %}
+{% block title %}Editar Perfil - RiftZone{% endblock %}
 
 {% block content %}
-<div class="edit-profile-container" style="background:var(--bg-panel); border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:32px; margin-top:24px;">
+<div class="edit-profile-container" style="background:var(--bg-panel); border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:clamp(16px,4vw,32px); margin-top:24px;">
     <h2 class="section-title" style="margin-bottom:24px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
         <i class="fas fa-user-edit" style="color:var(--accent-purple); margin-right:8px;"></i> Editar Perfil Gamer
     </h2>
@@ -18,36 +18,100 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST" action="{{ url_for('jugador.editar_perfil') }}">
+    <form method="POST" action="{{ url_for('jugador.editar_perfil') }}" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
-            <div class="form-group" style="margin-bottom:20px;">
-                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">URL Avatar (Foto de perfil)</label>
-                <input type="url" name="foto_perfil" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white;" placeholder="https://ejemplo.com/avatar.png" value="{{ current_user.foto_perfil if current_user.foto_perfil else '' }}">
+        <!-- Foto de Perfil -->
+        <div style="margin-bottom:28px;">
+            <label style="display:block; margin-bottom:12px; color:var(--text-muted); font-weight:600; font-size:14px;">
+                <i class="fas fa-camera" style="color:var(--accent-purple); margin-right:6px;"></i> Foto de Perfil
+            </label>
+            <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+                <!-- Vista previa (solo lectura; no abre el selector de archivos) -->
+                <div id="avatar-preview-frame" aria-hidden="true" style="width:80px; height:80px; flex-shrink:0; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; border:3px solid var(--accent-purple); box-shadow:0 0 12px rgba(139,92,246,0.3); pointer-events:none; user-select:none;{% if current_user.marco_perfil %} {{ current_user.marco_perfil }}{% endif %}">
+                    <img id="avatar-preview" 
+                         src="{{ current_user | user_avatar }}" 
+                         alt="" 
+                         style="width:100%; height:100%; border-radius:50%; object-fit:cover; display:block; pointer-events:none;">
+                </div>
+                <div style="flex:1; min-width:180px;">
+                    <input type="file" name="foto_perfil" id="foto-input" accept="image/png,image/jpeg" 
+                           style="display:none;" onchange="previewAvatar(this)">
+                    <button type="button" onclick="document.getElementById('foto-input').click()" 
+                            class="btn-secondary" style="padding:8px 20px; border-radius:12px; font-size:13px; cursor:pointer;">
+                        <i class="fas fa-upload" style="margin-right:6px;"></i> Subir imagen
+                    </button>
+                    <p style="color:var(--text-muted); font-size:11px; margin:8px 0 0;">Solo imágenes estáticas: PNG o JPG. Máximo 16 MB.</p>
+                </div>
             </div>
             
-            <div class="form-group" style="margin-bottom:20px;">
-                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">URL Banner (Fondo de perfil)</label>
-                <input type="url" name="banner" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white;" placeholder="https://ejemplo.com/banner.jpg" value="{{ current_user.banner if current_user.banner else '' }}">
+            <!-- Banner de perfil -->
+            <div style="margin-top:16px;">
+                <label style="display:block; margin-bottom:10px; color:var(--text-muted); font-weight:600; font-size:14px;">
+                    <i class="fas fa-image" style="color:var(--accent-purple); margin-right:6px;"></i> Banner de portada
+                </label>
+                <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+                    <div id="banner-preview" style="width:240px; height:80px; flex-shrink:0; border-radius:12px; border:2px solid var(--border-color); background-image:url('{{ current_user | user_banner }}'); background-size:cover; background-position:center;"></div>
+                    <div style="flex:1; min-width:180px;">
+                        <input type="file" name="banner" id="banner-input" accept="image/png,image/jpeg" 
+                               style="display:none;" onchange="previewBanner(this)">
+                        <button type="button" onclick="document.getElementById('banner-input').click()" 
+                                class="btn-secondary" style="padding:8px 20px; border-radius:12px; font-size:13px; cursor:pointer;">
+                            <i class="fas fa-upload" style="margin-right:6px;"></i> Subir banner
+                        </button>
+                        <p style="color:var(--text-muted); font-size:11px; margin:8px 0 0;">Solo imágenes estáticas: PNG o JPG.</p>
+                    </div>
+                </div>
+                <div style="background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.2); border-radius:12px; padding:12px 16px; margin-top:10px;">
+                    <p style="color:var(--text-muted); font-size:12px; margin:0;">
+                        Por defecto todos llevan el <strong style="color:white;">banner original de RiftZone</strong>.
+                        Otros fondos se compran en la
+                        <a href="{{ url_for('tienda.index') }}" style="color:var(--accent-purple); text-decoration:none; font-weight:600;">
+                            <i class="fas fa-store"></i> RiftStore
+                        </a>
+                        y se quitan con <strong style="color:white;">Desequipar</strong> en tu inventario.
+                    </p>
+                </div>
             </div>
         </div>
 
-        <div class="form-group" style="margin-bottom:24px;">
+        <div id="sobre-mi" class="form-group" style="margin-bottom:24px; scroll-margin-top:100px;">
             <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">Biografía</label>
             <textarea name="biografia" class="form-control" rows="4" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white;" placeholder="Cuéntale a la comunidad sobre ti...">{{ current_user.biografia if current_user.biografia else '' }}</textarea>
         </div>
-        
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px;">
+
+        <h3 style="font-size:16px; margin-bottom:16px; color:white; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-id-card" style="color:var(--accent-purple);"></i> Información del perfil
+        </h3>
+        <p style="color:var(--text-muted); font-size:13px; margin:-8px 0 16px;">Lo que aparece en las tarjetas de <strong style="color:white;">Sobre mí</strong> (Región, Disponibilidad y Plataformas).</p>
+
+        <div class="profile-info-edit-grid">
             <div class="form-group">
                 <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">País / Región 🌍</label>
                 <input type="text" name="pais" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white;" placeholder="Ej. Colombia, México, España..." value="{{ current_user.pais if current_user.pais else '' }}">
             </div>
-            
+
             <div class="form-group">
-                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">Estado Personalizado 💬</label>
-                <input type="text" name="estado_personalizado" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white;" placeholder="Ej. En directo / Subiendo a Radiante" value="{{ current_user.estado_personalizado if current_user.estado_personalizado else '' }}" maxlength="100">
+                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">Disponibilidad 🕐</label>
+                <select name="disponibilidad" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white; outline:none; cursor:pointer;">
+                    <option value="" {% if not current_user.disponibilidad %}selected{% endif %}>Selecciona una opción</option>
+                    <option value="Mañanas" {% if current_user.disponibilidad == 'Mañanas' %}selected{% endif %}>Mañanas</option>
+                    <option value="Tardes" {% if current_user.disponibilidad == 'Tardes' %}selected{% endif %}>Tardes</option>
+                    <option value="Noches" {% if current_user.disponibilidad == 'Noches' %}selected{% endif %}>Noches</option>
+                    <option value="Fines de semana" {% if current_user.disponibilidad == 'Fines de semana' %}selected{% endif %}>Fines de semana</option>
+                    <option value="Flexible" {% if current_user.disponibilidad == 'Flexible' %}selected{% endif %}>Flexible / Variable</option>
+                </select>
             </div>
+
+            <div class="form-group profile-info-edit-grid__full">
+                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">Plataformas 🎮</label>
+                <input type="text" name="plataformas" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white;" placeholder="Ej. PC, PS5, Xbox, Switch, Móvil" value="{{ current_user.plataformas if current_user.plataformas else '' }}" maxlength="150">
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom:24px;">
+            <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-weight:600; font-size:14px;">Estado personalizado 💬</label>
+            <input type="text" name="estado_personalizado" class="form-control" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; color:white;" placeholder="Ej. En directo / Subiendo a Radiante" value="{{ current_user.estado_personalizado if current_user.estado_personalizado else '' }}" maxlength="100">
         </div>
         
         <div class="form-group" style="margin-bottom:24px; width:50%;">
@@ -88,64 +152,137 @@
             </div>
         </div>
         
-        <h3 style="font-size:16px; margin-bottom:16px; color:white;">Juegos Favoritos</h3>
-        <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Selecciona los juegos que quieres destacar en tu perfil.</p>
+        <h3 style="font-size:16px; margin-bottom:8px; color:white; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-gamepad" style="color:var(--accent-purple);"></i> Juegos Favoritos
+        </h3>
+        <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Selecciona los juegos que quieres destacar en tu perfil.</p>
         
-        <div class="games-checkbox-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:16px; margin-bottom:32px;">
-            {% set juegos = current_user.juegos_favoritos.split(',') if current_user.juegos_favoritos else [] %}
-            
-            <!-- Titanes -->
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="Roblox" {% if 'Roblox' in juegos %}checked{% endif %}> Roblox
-            </label>
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="Counter-Strike 2" {% if 'Counter-Strike 2' in juegos %}checked{% endif %}> Counter-Strike 2
-            </label>
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="Minecraft" {% if 'Minecraft' in juegos %}checked{% endif %}> Minecraft
-            </label>
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="EA SPORTS FC 26" {% if 'EA SPORTS FC 26' in juegos %}checked{% endif %}> EA FC 26
-            </label>
-            
-            <!-- Shooters / BR -->
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="Call of Duty: Warzone" {% if 'Call of Duty: Warzone' in juegos or 'Call of Duty' in juegos %}checked{% endif %}> CoD: Warzone
-            </label>
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="Apex Legends" {% if 'Apex Legends' in juegos %}checked{% endif %}> Apex Legends
-            </label>
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="Valorant" {% if 'Valorant' in juegos %}checked{% endif %}> Valorant
-            </label>
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="Fortnite" {% if 'Fortnite' in juegos %}checked{% endif %}> Fortnite
-            </label>
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="Free Fire" {% if 'Free Fire' in juegos %}checked{% endif %}> Free Fire
-            </label>
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="Overwatch 2" {% if 'Overwatch 2' in juegos %}checked{% endif %}> Overwatch 2
-            </label>
+        {% set juegos = current_user.juegos_favoritos.split(',') if current_user.juegos_favoritos else [] %}
 
-            <!-- MOBA -->
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="Honor of Kings" {% if 'Honor of Kings' in juegos %}checked{% endif %}> Honor of Kings
-            </label>
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="Mobile Legends: Bang Bang" {% if 'Mobile Legends: Bang Bang' in juegos %}checked{% endif %}> Mobile Legends
-            </label>
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="Dota 2" {% if 'Dota 2' in juegos %}checked{% endif %}> Dota 2
-            </label>
+        <!-- 🔥 Titanes Mundiales -->
+        <div class="fav-games-category">
+            <span class="fav-games-category__title fav-games-category__title--gold">
+                <i class="fas fa-fire"></i> Titanes Mundiales
+            </span>
+            <div class="fav-games-picker-grid">
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="Roblox" {% if 'Roblox' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#00B2FF;">
+                        <span class="fav-game-pick__emoji">🟩</span><span class="fav-game-pick__name">Roblox</span>
+                    </div>
+                </label>
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="Counter-Strike 2" {% if 'Counter-Strike 2' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#DE9B35;">
+                        <span class="fav-game-pick__emoji">💣</span><span class="fav-game-pick__name">Counter-Strike 2</span>
+                    </div>
+                </label>
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="Minecraft" {% if 'Minecraft' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#5D8C3E;">
+                        <span class="fav-game-pick__emoji">⛏️</span><span class="fav-game-pick__name">Minecraft</span>
+                    </div>
+                </label>
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="EA SPORTS FC 26" {% if 'EA SPORTS FC 26' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#1A6CFF;">
+                        <span class="fav-game-pick__emoji">⚽</span><span class="fav-game-pick__name">EA FC 26</span>
+                    </div>
+                </label>
+            </div>
+        </div>
 
-            <!-- Supervivencia -->
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="ARK: Survival Evolved" {% if 'ARK: Survival Evolved' in juegos %}checked{% endif %}> ARK: Survival
-            </label>
-            <label class="game-checkbox" style="display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--bg-dark); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-                <input type="checkbox" name="juegos" value="GTA V" {% if 'GTA V' in juegos %}checked{% endif %}> GTA V / Online
-            </label>
+        <!-- 🎯 Shooters & BR -->
+        <div class="fav-games-category">
+            <span class="fav-games-category__title fav-games-category__title--red">
+                <i class="fas fa-crosshairs"></i> Shooters & Battle Royale
+            </span>
+            <div class="fav-games-picker-grid">
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="Call of Duty: Warzone" {% if 'Call of Duty: Warzone' in juegos or 'Call of Duty' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#4CAF50;">
+                        <span class="fav-game-pick__emoji">🔫</span><span class="fav-game-pick__name">CoD: Warzone</span>
+                    </div>
+                </label>
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="Apex Legends" {% if 'Apex Legends' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#DA292A;">
+                        <span class="fav-game-pick__emoji">🦅</span><span class="fav-game-pick__name">Apex Legends</span>
+                    </div>
+                </label>
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="Valorant" {% if 'Valorant' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#FF4655;">
+                        <span class="fav-game-pick__emoji">🎯</span><span class="fav-game-pick__name">Valorant</span>
+                    </div>
+                </label>
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="Fortnite" {% if 'Fortnite' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#00AAFF;">
+                        <span class="fav-game-pick__emoji">🏗️</span><span class="fav-game-pick__name">Fortnite</span>
+                    </div>
+                </label>
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="Free Fire" {% if 'Free Fire' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#FF6600;">
+                        <span class="fav-game-pick__emoji">🔥</span><span class="fav-game-pick__name">Free Fire</span>
+                    </div>
+                </label>
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="Overwatch 2" {% if 'Overwatch 2' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#F99E1A;">
+                        <span class="fav-game-pick__emoji">🛡️</span><span class="fav-game-pick__name">Overwatch 2</span>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- ⚔️ MOBA -->
+        <div class="fav-games-category">
+            <span class="fav-games-category__title fav-games-category__title--purple">
+                <i class="fas fa-chess-knight"></i> MOBA & Tácticos
+            </span>
+            <div class="fav-games-picker-grid">
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="Honor of Kings" {% if 'Honor of Kings' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#C8A04F;">
+                        <span class="fav-game-pick__emoji">👑</span><span class="fav-game-pick__name">Honor of Kings</span>
+                    </div>
+                </label>
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="Mobile Legends: Bang Bang" {% if 'Mobile Legends: Bang Bang' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#2196F3;">
+                        <span class="fav-game-pick__emoji">⚔️</span><span class="fav-game-pick__name">Mobile Legends</span>
+                    </div>
+                </label>
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="Dota 2" {% if 'Dota 2' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#C23C2A;">
+                        <span class="fav-game-pick__emoji">🧙</span><span class="fav-game-pick__name">Dota 2</span>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- 🌲 Supervivencia -->
+        <div class="fav-games-category fav-games-category--last">
+            <span class="fav-games-category__title fav-games-category__title--green">
+                <i class="fas fa-tree"></i> Supervivencia & Mundo Abierto
+            </span>
+            <div class="fav-games-picker-grid">
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="ARK: Survival Evolved" {% if 'ARK: Survival Evolved' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#2ECC71;">
+                        <span class="fav-game-pick__emoji">🦖</span><span class="fav-game-pick__name">ARK: Survival</span>
+                    </div>
+                </label>
+                <label class="fav-game-pick">
+                    <input type="checkbox" name="juegos" value="GTA V" {% if 'GTA V' in juegos %}checked{% endif %}>
+                    <div class="fav-game-pick__inner" style="--accent:#96C93D;">
+                        <span class="fav-game-pick__emoji">🚗</span><span class="fav-game-pick__name">GTA V / Online</span>
+                    </div>
+                </label>
+            </div>
         </div>
         
         <div style="display:flex; justify-content:flex-end; gap:16px;">
@@ -154,8 +291,169 @@
         </div>
     </form>
 </div>
+
+<style>
+    /* Selector de juegos favoritos (editar perfil) — sin conflicto con .game-card del perfil */
+    .fav-games-category {
+        margin-bottom: 22px;
+    }
+    .fav-games-category--last {
+        margin-bottom: 28px;
+    }
+    .fav-games-category__title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 12px;
+    }
+    .fav-games-category__title--gold { color: #FACC15; }
+    .fav-games-category__title--red { color: #EF4444; }
+    .fav-games-category__title--purple { color: #A78BFA; }
+    .fav-games-category__title--green { color: #10B981; }
+
+    .fav-games-picker-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+        gap: 10px;
+        width: 100%;
+    }
+
+    .fav-game-pick {
+        cursor: pointer;
+        display: block;
+        height: auto;
+        min-height: 0;
+        border: none;
+        overflow: visible;
+    }
+    .fav-game-pick input[type="checkbox"] {
+        display: none;
+    }
+
+    .fav-game-pick__inner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        min-height: 52px;
+        height: auto;
+        background: var(--bg-dark);
+        border: 1.5px solid var(--border-color);
+        border-radius: 12px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease;
+        position: relative;
+        box-sizing: border-box;
+    }
+
+    .fav-game-pick__emoji {
+        flex-shrink: 0;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        line-height: 1;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .fav-game-pick__name {
+        color: white;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.25;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .fav-game-pick:hover .fav-game-pick__inner {
+        border-color: var(--accent);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .fav-game-pick input:checked + .fav-game-pick__inner {
+        border-color: var(--accent);
+        background: linear-gradient(
+            135deg,
+            var(--bg-dark) 0%,
+            color-mix(in srgb, var(--accent) 12%, var(--bg-dark)) 100%
+        );
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent),
+                    0 4px 14px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .fav-game-pick input:checked + .fav-game-pick__inner::after {
+        content: '✓';
+        position: absolute;
+        top: 6px;
+        right: 7px;
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--accent);
+        background: rgba(0, 0, 0, 0.55);
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    @media (max-width: 768px) {
+        .fav-games-picker-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .fav-game-pick__inner {
+            min-height: 48px;
+            padding: 9px 10px;
+        }
+        .fav-game-pick__emoji {
+            width: 30px;
+            height: 30px;
+            font-size: 16px;
+        }
+        .fav-game-pick__name {
+            font-size: 12px;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .fav-games-picker-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('avatar-preview').src = e.target.result;
+            document.getElementById('avatar-preview').style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function previewBanner(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('banner-preview').style.backgroundImage = 'url(' + e.target.result + ')';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
 {% endblock %}
 
-{% block right_sidebar %}
-<!-- Reuse the stats right sidebar or leave empty -->
-{% endblock %}

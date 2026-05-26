@@ -15,7 +15,7 @@ class Clan(db.Model):
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     
     # El usuario creador
-    lider_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'), nullable=False)
+    lider_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), nullable=False)
     lider = db.relationship('Usuario', backref=db.backref('clanes_liderados', lazy=True))
     
     miembros = db.relationship('MiembroClan', backref='clan', lazy='dynamic', cascade='all, delete-orphan')
@@ -26,8 +26,8 @@ class MiembroClan(db.Model):
     
     id_miembro = db.Column(db.Integer, primary_key=True, autoincrement=True)
     clan_id = db.Column(db.Integer, db.ForeignKey('clanes.id_clan', ondelete='CASCADE'), nullable=False)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'), nullable=False)
-    rol = db.Column(db.String(20), default='miembro') # Puede ser: lider, oficial, miembro
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), nullable=False)
+    rol = db.Column(db.String(20), default='miembro') # Puede ser: lider, administrador, miembro
     fecha_ingreso = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relación para acceder a los datos del jugador fácilmente
@@ -37,8 +37,8 @@ class SolicitudClan(db.Model):
     __tablename__ = 'solicitudes_clan'
     
     id_solicitud = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    clan_id = db.Column(db.Integer, db.ForeignKey('clanes.id_clan'), nullable=False)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'), nullable=False)
+    clan_id = db.Column(db.Integer, db.ForeignKey('clanes.id_clan', ondelete='CASCADE'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), nullable=False)
     estado = db.Column(db.String(20), default='pendiente') # pendiente, aceptada, rechazada
     fecha_solicitud = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -49,7 +49,7 @@ class MensajeClan(db.Model):
     
     id_mensaje = db.Column(db.Integer, primary_key=True, autoincrement=True)
     clan_id = db.Column(db.Integer, db.ForeignKey('clanes.id_clan', ondelete='CASCADE'), nullable=False)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), nullable=False)
     contenido = db.Column(db.Text, nullable=False)
     fecha_envio = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -61,7 +61,7 @@ class PublicacionClan(db.Model):
     
     id_publicacion = db.Column(db.Integer, primary_key=True, autoincrement=True)
     clan_id = db.Column(db.Integer, db.ForeignKey('clanes.id_clan', ondelete='CASCADE'), nullable=False)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), nullable=False)
     contenido = db.Column(db.Text, nullable=False)
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     

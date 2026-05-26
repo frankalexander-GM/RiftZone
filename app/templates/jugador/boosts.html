@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+
+{% block title %}Boosts - RiftZone{% endblock %}
+
+{% block content %}
+<div class="boosts-container" style="max-width: 960px; margin: 0 auto; padding: clamp(16px,4vw,24px);">
+    
+    <div style="text-align: center; margin-bottom: 32px;">
+        <h2 style="font-size: 32px; color: white; margin-bottom: 12px;"><i class="fas fa-rocket" style="color: var(--accent-purple);"></i> Central de Boosts</h2>
+        <p style="color: var(--text-muted); font-size: 16px;">Cada plan tiene su color para que sepas cuál aplicas. Saldo: <strong style="color:#FACC15;">{{ saldo }} RC</strong></p>
+        <div class="boost-legend" style="display:flex; flex-wrap:wrap; justify-content:center; gap:16px; margin-top:16px;">
+            <span class="boost-legend__item boost-legend__item--rapido"><i class="fas fa-fighter-jet"></i> Azul = Rápido</span>
+            <span class="boost-legend__item boost-legend__item--mega"><i class="fas fa-space-shuttle"></i> Morado = Mega</span>
+            <span class="boost-legend__item boost-legend__item--titan"><i class="fas fa-crown"></i> Dorado = Titán</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13px; margin-top: 12px;">El color del boost en el chat es aparte. Tu <strong>etiqueta/título</strong> colorea tu nombre en perfil, feed y menú (no en chat ni comentarios).</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert {{ category }}" style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid var(--accent-purple); padding: 12px; margin-bottom: 20px; border-radius: 4px; color: white;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 28px;">
+        <label for="post-select" style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Publicación a boostear</label>
+        {% if post_target %}
+        <p style="color: white; margin: 0 0 8px; font-size: 14px;"><i class="fas fa-check-circle" style="color:var(--accent-green);"></i> Seleccionada: "{{ post_target.contenido[:80] }}{% if post_target.contenido|length > 80 %}...{% endif %}"</p>
+        <input type="hidden" id="post-select" value="{{ post_target.id_publicacion }}">
+        {% elif mis_posts %}
+        <select id="post-select" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); color:white; padding:12px; border-radius:8px; font-size:14px;">
+            {% for p in mis_posts %}
+            <option value="{{ p.id_publicacion }}">{{ p.contenido[:70] }}{% if p.contenido|length > 70 %}...{% endif %} ({{ p.juego }})</option>
+            {% endfor %}
+        </select>
+        {% else %}
+        <p style="color: var(--text-muted); margin:0; font-size: 14px;">No tienes publicaciones. <a href="{{ url_for('jugador.dashboard') }}" style="color:var(--accent-purple);">Crea un post</a> y vuelve aquí.</p>
+        {% endif %}
+    </div>
+
+    <div class="boost-plans-grid">
+        {% for key, plan in boost_planes.items() %}
+        <article class="boost-plan-card boost-plan-card--{{ key }}" data-plan="{{ key }}">
+            {% if key == 'mega' %}
+            <span class="boost-plan-card__popular">MÁS POPULAR</span>
+            {% endif %}
+            <span class="boost-plan-card__tag">BOOST {{ plan.etiqueta }}</span>
+            <div class="boost-plan-card__icon-wrap">
+                <i class="fas {{ plan.icon }}"></i>
+            </div>
+            <h3 class="boost-plan-card__title">{{ plan.nombre }}</h3>
+            <p class="boost-plan-card__desc">
+                {% if key == 'rapido' %}Más arriba en el feed · 24 h
+                {% elif key == 'mega' %}Borde morado fijado arriba · 3 días
+                {% else %}Fijado arriba · 7 días · avisa a seguidores{% endif %}
+            </p>
+            <div class="boost-plan-card__price">
+                {{ plan.costo }} <i class="fas fa-coins"></i>
+            </div>
+            {% if mis_posts or post_target %}
+            <form method="POST" action="{{ url_for('jugador.comprar_boost') }}" class="boost-buy-form" data-plan="{{ key }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="plan" value="{{ key }}"/>
+                <input type="hidden" name="post_id" class="boost-post-id" value="{{ post_target.id_publicacion if post_target else (mis_posts[0].id_publicacion if mis_posts else '') }}"/>
+                <button type="submit" class="boost-plan-card__btn" {% if saldo < plan.costo %}disabled title="Saldo insuficiente"{% endif %}>
+                    <i class="fas {{ plan.icon }}"></i> Aplicar {{ plan.etiqueta }}
+                </button>
+            </form>
+            {% else %}
+            <button type="button" class="boost-plan-card__btn" disabled>Sin publicaciones</button>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.boost-plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+}
+
+.boost-legend__item {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid transparent;
+}
+.boost-legend__item--rapido {
+    color: #60A5FA;
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.35);
+}
+.boost-legend__item--mega {
+    color: #C084FC;
+    background: rgba(168, 85, 247, 0.12);
+    border-color: rgba(168, 85, 247, 0.4);
+}
+.boost-legend__item--titan {
+    color: #FDE047;
+    background: rgba(250, 204, 21, 0.12);
+    border-color: rgba(250, 204, 21, 0.4);
+}
+
+.boost-plan-card {
+    --boost-color: #8B5CF6;
+    --boost-rgb: 139, 92, 246;
+    position: relative;
+    text-align: center;
+    padding: 28px 22px 22px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(var(--boost-rgb), 0.08) 0%, var(--bg-card) 55%);
+    border: 2px solid rgba(var(--boost-rgb), 0.45);
+    box-shadow: 0 0 24px rgba(var(--boost-rgb), 0.12);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.boost-plan-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(var(--boost-rgb), 0.22);
+}
+
+.boost-plan-card--rapido {
+    --boost-color: #3B82F6;
+    --boost-rgb: 59, 130, 246;
+}
+.boost-plan-card--mega {
+    --boost-color: #A855F7;
+    --boost-rgb: 168, 85, 247;
+}
+.boost-plan-card--titan {
+    --boost-color: #FACC15;
+    --boost-rgb: 250, 204, 21;
+}
+
+.boost-plan-card__popular {
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--boost-color);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 4px 14px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+.boost-plan-card__tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--boost-color);
+    background: rgba(var(--boost-rgb), 0.15);
+    border: 1px solid rgba(var(--boost-rgb), 0.35);
+    padding: 4px 10px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+}
+
+.boost-plan-card__icon-wrap {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--boost-rgb), 0.18);
+    border: 2px solid rgba(var(--boost-rgb), 0.5);
+    box-shadow: 0 0 20px rgba(var(--boost-rgb), 0.35);
+}
+.boost-plan-card__icon-wrap i {
+    font-size: 26px;
+    color: var(--boost-color);
+}
+
+.boost-plan-card__title {
+    color: white;
+    margin: 0 0 8px;
+    font-size: 20px;
+}
+
+.boost-plan-card__desc {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin: 0 0 16px;
+    line-height: 1.45;
+    min-height: 40px;
+}
+
+.boost-plan-card__price {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--boost-color);
+    margin-bottom: 18px;
+    text-shadow: 0 0 12px rgba(var(--boost-rgb), 0.4);
+}
+.boost-plan-card__price .fa-coins {
+    font-size: 18px;
+    opacity: 0.85;
+}
+
+.boost-plan-card__btn {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 24px;
+    border: none;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    color: #0f172a;
+    background: linear-gradient(135deg, var(--boost-color), color-mix(in srgb, var(--boost-color) 70%, white));
+    box-shadow: 0 4px 16px rgba(var(--boost-rgb), 0.45);
+    transition: opacity 0.2s, transform 0.15s;
+}
+.boost-plan-card--mega .boost-plan-card__btn,
+.boost-plan-card--titan .boost-plan-card__btn {
+    color: var(--boost-color);
+    background: rgba(var(--boost-rgb), 0.2);
+    border: 2px solid var(--boost-color);
+    color: white;
+}
+.boost-plan-card--rapido .boost-plan-card__btn {
+    color: white;
+}
+.boost-plan-card__btn:hover:not(:disabled) {
+    transform: scale(1.02);
+    filter: brightness(1.08);
+}
+.boost-plan-card__btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const postSelect = document.getElementById('post-select');
+    if (postSelect && postSelect.tagName === 'SELECT') {
+        postSelect.addEventListener('change', function() {
+            document.querySelectorAll('.boost-post-id').forEach(function(input) {
+                input.value = postSelect.value;
+            });
+        });
+    }
+    document.querySelectorAll('.boost-buy-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            const pid = form.querySelector('.boost-post-id').value;
+            const plan = form.dataset.plan;
+            if (!pid) {
+                e.preventDefault();
+                alert('Selecciona una publicación primero.');
+                return;
+            }
+            const labels = { rapido: 'Boost Rápido (azul)', mega: 'Mega Boost (morado)', titan: 'Boost Titán (dorado)' };
+            if (!confirm('¿Aplicar ' + (labels[plan] || plan) + ' a esta publicación?')) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

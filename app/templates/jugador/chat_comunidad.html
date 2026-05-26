@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const chatMessages = document.getElementById('chat-messages-comunidad');
     const chatForm = document.getElementById('chat-form-comunidad');
     const chatInput = document.getElementById('chat-input-comunidad');
-    const comunidad_actual = "{{ comunidad }}";
+    const comunidad_actual = {{ comunidad|tojson|safe }};
     
     let isScrolledToBottom = true;
     
@@ -51,12 +51,21 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     function renderMensaje(msg) {
+        let nameColor = 'white';
+        let nameShadow = 'none';
+        if (msg.boost_color) {
+            nameColor = msg.boost_color;
+            nameShadow = '0 0 8px ' + msg.boost_color + '88';
+        } else if (msg.es_premium) {
+            nameColor = '#FACC15';
+            nameShadow = '0 0 5px rgba(250, 204, 21, 0.4)';
+        }
         return `
             <div style="display: flex; gap: 16px;">
                 <img src="${msg.usuario_foto}" alt="${msg.usuario_nombre}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                 <div style="flex: 1;">
                     <div style="display: flex; align-items: baseline; gap: 8px;">
-                        <strong style="color: white; font-size: 15px;">${msg.usuario_nombre}</strong>
+                        <strong style="color: ${nameColor}; font-size: 15px; text-shadow: ${nameShadow};">${msg.usuario_nombre}</strong>
                         <span style="color: var(--text-muted); font-size: 12px;">${msg.fecha_envio}</span>
                     </div>
                     <p style="color: #d1d5db; margin-top: 4px; font-size: 14px; line-height: 1.5; word-break: break-word;">

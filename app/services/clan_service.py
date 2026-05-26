@@ -79,7 +79,7 @@ class ClanService:
             
         clan = Clan.query.get(solicitud.clan_id)
         miembro_lider = MiembroClan.query.filter_by(clan_id=clan.id_clan, usuario_id=lider_id).first()
-        if not miembro_lider or miembro_lider.rol not in ['lider', 'moderador']:
+        if not miembro_lider or miembro_lider.rol not in ['lider', 'administrador']:
             raise ValueError("No tienes permisos para gestionar solicitudes en este clan.")
             
         if accion == 'aceptar':

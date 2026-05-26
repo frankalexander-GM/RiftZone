@@ -76,7 +76,13 @@ def gestionar_solicitud(solicitud_id, accion):
     except ValueError as e:
         flash(str(e), 'error')
         
-    return redirect(request.referrer or url_for('clanes.index'))
+    from urllib.parse import urlparse
+    ref = request.referrer
+    if ref:
+        parsed = urlparse(ref)
+        if parsed.netloc and parsed.netloc != request.host:
+            ref = None
+    return redirect(ref or url_for('clanes.index'))
 
 @clanes_bp.route('/abandonar/<int:clan_id>', methods=['POST'])
 @login_required

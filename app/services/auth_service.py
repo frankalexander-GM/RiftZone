@@ -1,4 +1,5 @@
 from app.factories.app_factory import bcrypt
+from app.utils.banner import DEFAULT_PROFILE_BANNER
 
 class AuthService:
     """Servicio de autenticación - GamesSphere"""
@@ -30,5 +31,6 @@ class AuthService:
             nombre=nombre,
             username=username,
             email=email,
-            password=hashed
+            password=hashed,
+            banner=DEFAULT_PROFILE_BANNER,
         )

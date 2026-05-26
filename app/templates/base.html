@@ -1,3 +1,5 @@
+{% from 'macros/usuario.html' import nombre_usuario %}
+{% from '_ads.html' import ad_square, ad_responsive, ad_banner, ad_skyscraper %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -15,17 +17,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
-<body>
+<body class="has-mobile-nav-padding">
 
 <div class="app-layout">
     <!-- TOP NAVBAR -->
     <nav class="top-nav">
         <div class="nav-left">
-            <a href="/" class="logo">
+            <a href="{{ url_for('public.home') }}" class="logo">
                 <div class="logo-icon">
-                    <i class="fas fa-gamepad" style="color: white; font-size: 18px;"></i>
+                    <i class="fas fa-gamepad"></i>
                 </div>
-                RiftZone
+                <span>RiftZone</span>
             </a>
         </div>
         
@@ -38,8 +40,18 @@
         </div>
         
         <div class="nav-right">
-            <button class="btn-primary">
-                <i class="fas fa-plus"></i> Crear
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('billetera.index') }}" class="btn-primary" style="background: rgba(250, 204, 21, 0.1); color: #FACC15; border: 1px solid rgba(250, 204, 21, 0.3); text-decoration: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px;">
+                <i class="fas fa-coins"></i> {{ current_user.tokens }} RC
+            </a>
+            {% endif %}
+            
+            <button type="button" class="icon-btn nav-panel-toggle" id="nav-panel-toggle" aria-label="Abrir panel de perfil y widgets" title="Panel lateral">
+                <i class="fas fa-id-card"></i>
+            </button>
+
+            <button class="btn-primary nav-create-btn">
+                <i class="fas fa-plus"></i> <span class="nav-create-label">Crear</span>
             </button>
             
             <button class="icon-btn">
@@ -47,7 +59,7 @@
             </button>
             
             <div class="dropdown-container" style="position: relative;">
-                <button class="icon-btn" onclick="document.getElementById('notif-dropdown').classList.toggle('show')">
+                <button type="button" class="icon-btn" id="notif-menu-toggle" aria-label="Notificaciones">
                     <i class="fas fa-bell"></i>
                     {% if current_user.is_authenticated %}
                         {% set no_leidas = current_user.notificaciones.filter_by(leido=False).count() %}
@@ -58,7 +70,7 @@
                 </button>
                 
                 {% if current_user.is_authenticated %}
-                <div id="notif-dropdown" class="dropdown-menu" style="display: none; position: absolute; top: 120%; right: -10px; width: 340px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: 0 10px 40px rgba(0,0,0,0.8); z-index: 1000;">
+                <div id="notif-dropdown" class="dropdown-menu notif-dropdown-menu" style="max-width:340px; width:calc(100vw - 32px);">
                     <div style="padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2);">
                         <h4 style="margin: 0; color: white; font-size: 15px;"><i class="fas fa-bell" style="color: var(--accent-purple); margin-right: 6px;"></i> Notificaciones</h4>
                         <a href="{{ url_for('jugador.leer_notificaciones') }}" style="color: var(--accent-purple); font-size: 12px; text-decoration: none; font-weight: bold;"><i class="fas fa-check-double"></i> Marcar leídas</a>
@@ -67,7 +79,7 @@
                         {% set notifs = current_user.notificaciones.limit(5).all() %}
                         {% if notifs %}
                             {% for n in notifs %}
-                            <div {% if n.enlace %}onclick="window.location.href='{{ n.enlace }}'"{% endif %} style="padding: 12px; border-radius: 8px; margin-bottom: 4px; background: {% if not n.leido %}rgba(139, 92, 246, 0.1){% else %}transparent{% endif %}; border-left: {% if not n.leido %}3px solid var(--accent-purple){% else %}3px solid transparent{% endif %}; display: flex; gap: 12px; align-items: flex-start; transition: background 0.2s; {% if n.enlace %}cursor: pointer;{% endif %}" onmouseover="this.style.background='var(--bg-dark)'" onmouseout="this.style.background='{% if not n.leido %}rgba(139, 92, 246, 0.1){% else %}transparent{% endif %}'">
+                            <div {% if n.enlace %}onclick="window.location.href='{{ n.enlace|tojson|safe }}'"{% endif %} style="padding: 12px; border-radius: 8px; margin-bottom: 4px; background: {% if not n.leido %}rgba(139, 92, 246, 0.1){% else %}transparent{% endif %}; border-left: {% if not n.leido %}3px solid var(--accent-purple){% else %}3px solid transparent{% endif %}; display: flex; gap: 12px; align-items: flex-start; transition: background 0.2s; {% if n.enlace %}cursor: pointer;{% endif %}" onmouseover="this.style.background='var(--bg-dark)'" onmouseout="this.style.background='{% if not n.leido %}rgba(139, 92, 246, 0.1){% else %}transparent{% endif %}'">
                                 <div style="background: var(--bg-dark); width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 1px solid var(--border-color); flex-shrink: 0;">
                                     <i class="{{ n.icono }}" style="color: {% if n.tipo == 'clan' %}var(--accent-purple){% elif n.tipo == 'social' %}var(--accent-magenta){% else %}var(--accent-green){% endif %}; font-size: 14px;"></i>
                                 </div>
@@ -85,47 +97,85 @@
                         {% endif %}
                     </div>
                 </div>
-                <style>
-                    .dropdown-menu.show { display: block !important; animation: slideDown 0.2s ease; }
-                    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-                </style>
                 {% endif %}
             </div>
             
-            <div class="user-profile-btn" style="cursor: pointer;" onclick="window.location.href='{{ url_for('jugador.perfil') }}'">
-                <div class="avatar">
-                    <img src="https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=200&auto=format&fit=crop" alt="Avatar" class="avatar-img">
+            <div class="dropdown-container user-menu-container">
+                {% if current_user.is_authenticated %}
+                <button type="button" class="user-profile-btn" id="user-menu-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="user-menu-dropdown">
+                    <div class="avatar">
+                        <div class="avatar-frame"{% if current_user.marco_perfil %} style="{{ current_user.marco_perfil }}"{% endif %}>
+                            <img src="{{ current_user | user_avatar }}" alt="Avatar" class="avatar-img">
+                        </div>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">
+                            {{ nombre_usuario(current_user, false) }}
+                            {% if current_user.es_premium %}
+                            <i class="fas fa-crown" style="color: #FACC15; margin-left: 4px; font-size: 12px; text-shadow: 0 0 5px rgba(250, 204, 21, 0.5);" title="Usuario Premium"></i>
+                            {% endif %}
+                            <i class="fas fa-chevron-down user-menu-chevron" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                </button>
+
+                <div id="user-menu-dropdown" class="dropdown-menu user-menu-dropdown" role="menu" aria-labelledby="user-menu-toggle">
+                    <div class="user-menu-header">
+                        <div class="user-menu-header-avatar">
+                            <div class="avatar-frame"{% if current_user.marco_perfil %} style="{{ current_user.marco_perfil }}"{% endif %}>
+                                <img src="{{ current_user | user_avatar }}" alt="" class="avatar-img">
+                            </div>
+                        </div>
+                        <div class="user-menu-header-text">
+                            <strong>{{ current_user|nombre_display }}</strong>
+                            <span>@{{ current_user.username }}</span>
+                        </div>
+                    </div>
+                    <div class="user-menu-body">
+                        <a href="{{ url_for('jugador.perfil') }}" class="user-menu-item" role="menuitem"><i class="fas fa-user"></i> Mi perfil</a>
+                        <a href="{{ url_for('jugador.editar_perfil') }}" class="user-menu-item" role="menuitem"><i class="fas fa-cog"></i> Ajustes</a>
+                        <a href="{{ url_for('tienda.inventario') }}" class="user-menu-item" role="menuitem"><i class="fas fa-box-open"></i> Inventario</a>
+                        <a href="{{ url_for('billetera.index') }}" class="user-menu-item" role="menuitem"><i class="fas fa-wallet"></i> Billetera</a>
+                        <a href="{{ url_for('jugador.premium') }}" class="user-menu-item" role="menuitem"><i class="fas fa-crown"></i> Premium</a>
+                    </div>
+                    <div class="user-menu-footer">
+                        <a href="{{ url_for('auth.logout') }}" class="user-menu-item user-menu-item--danger" role="menuitem"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+                    </div>
                 </div>
-                <div class="user-info">
-                    <span class="user-name">{% if current_user.is_authenticated %}{{ current_user.username }}{% else %}Invitado{% endif %} <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 4px;"></i></span>
-                </div>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="user-profile-btn" style="text-decoration:none;">
+                    <div class="avatar">
+                        <div class="avatar-frame">
+                            <img src="{{ none | user_avatar }}" alt="Avatar" class="avatar-img">
+                        </div>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">Invitado <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 4px;"></i></span>
+                    </div>
+                </a>
+                {% endif %}
             </div>
-            
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('auth.logout') }}" class="icon-btn" title="Cerrar sesión" style="text-decoration:none;">
-                <i class="fas fa-sign-out-alt"></i>
-            </a>
-            {% endif %}
         </div>
     </nav>
 
-    <!-- CONTENT WRAPPER -->
-    <div class="content-wrapper">
+    <!-- CONTENT WRAPPER: grid 1 col móvil | 3+9 lg | 3+6+3 xl -->
+    <div class="content-wrapper layout-grid">
         
-        <!-- LEFT SIDEBAR -->
-        <aside class="left-sidebar">
+        <!-- LEFT SIDEBAR (hidden lg:block → col 3) -->
+        <aside class="left-sidebar layout-sidebar">
             <div class="menu-group">
                 <a href="{{ url_for('jugador.dashboard') }}" class="menu-item active"><i class="fas fa-home"></i> Inicio</a>
                 <a href="{{ url_for('chat.chat_global') }}" class="menu-item"><i class="fas fa-comment-dots"></i> Chat Global</a>
-                <a href="#" class="menu-item"><i class="fas fa-compass"></i> Explorar</a>
+                <a href="{{ url_for('jugador.explorar') }}" class="menu-item"><i class="fas fa-compass"></i> Explorar</a>
                 <a href="{{ url_for('jugador.comunidades') }}" class="menu-item"><i class="fas fa-users"></i> Comunidades</a>
                 <a href="{{ url_for('clanes.index') }}" class="menu-item"><i class="fas fa-shield-alt"></i> Clanes</a>
                 <a href="#" class="menu-item"><i class="fas fa-envelope"></i> Mensajes</a>
                 <a href="#" class="menu-item"><i class="fas fa-user-friends"></i> Amigos</a>
                 <a href="#" class="menu-item"><i class="fas fa-trophy"></i> Torneos</a>
-                <a href="#" class="menu-item"><i class="fas fa-rocket"></i> Boosts</a>
-                <a href="#" class="menu-item"><i class="fas fa-store"></i> Tienda</a>
-                <a href="#" class="menu-item premium"><i class="fas fa-crown"></i> Premium</a>
+                <a href="{{ url_for('jugador.boosts') }}" class="menu-item"><i class="fas fa-rocket"></i> Boosts</a>
+                <a href="{{ url_for('tienda.index') }}" class="menu-item"><i class="fas fa-store"></i> Tienda</a>
+                <a href="{{ url_for('billetera.index') }}" class="menu-item"><i class="fas fa-wallet"></i> Billetera</a>
+                <a href="{{ url_for('jugador.premium') }}" class="menu-item premium"><i class="fas fa-crown"></i> Premium</a>
             </div>
             
             <div class="menu-group">
@@ -134,14 +184,14 @@
                     <span style="width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; box-shadow: 0 0 8px var(--accent-green);"></span>
                 </h3>
                 
-                <div id="mini-chat-messages" style="height: 350px; overflow-y: auto; background: var(--bg-dark); border-radius: var(--radius-md); padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border-color);">
+                <div id="mini-chat-messages" style="max-height: 350px; height: 30vh; overflow-y: auto; background: var(--bg-dark); border-radius: var(--radius-md); padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border-color);">
                     <!-- Los mensajes cargarán aquí -->
                     <div style="text-align: center; color: var(--text-muted); font-size: 13px; margin-top: auto; margin-bottom: auto;">
                         <i class="fas fa-spinner fa-spin"></i> Conectando...
                     </div>
                 </div>
                 
-                {% if current_user.rol != 'invitado' %}
+                {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
                 <form id="mini-chat-form" style="display: flex; gap: 8px;">
                     <input type="text" id="mini-chat-input" placeholder="Escribe algo..." autocomplete="off"
                            style="flex: 1; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 10px 12px; border-radius: 8px; color: white; font-size: 13px; outline: none;">
@@ -156,33 +206,52 @@
                 {% endif %}
             </div>
 
+            <!-- Anuncio en sidebar (visible en desktop) -->
+            {{ ad_square() }}
+
         </aside>
 
-        <!-- MAIN FEED -->
-        <main class="main-feed">
+        <!-- FEED CENTRAL (w-full → lg:col-6 / lg:col-9 sin panel xl) -->
+        <main class="main-feed layout-feed">
             {% block content %}{% endblock %}
+            <!-- Anuncio responsive al final del feed -->
+            {{ ad_responsive() }}
         </main>
         
-        <!-- RIGHT SIDEBAR -->
-        {% block right_sidebar %}
-        {% endblock %}
+        <!-- PANEL DERECHO (hidden xl:block → col 3) -->
+        <div class="layout-right-panel" id="layout-right-panel">
+            <div class="layout-right-panel-header">
+                <span><i class="fas fa-columns"></i> Panel</span>
+                <button type="button" class="icon-btn" id="close-right-panel" aria-label="Cerrar panel">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            {% block right_sidebar %}{% endblock %}
+            {{ ad_square() }}
+        </div>
         
     </div>
 </div>
 
-<!-- MOBILE BOTTOM NAVIGATION -->
-<nav class="mobile-bottom-nav">
+<div class="layout-right-overlay" id="layout-right-overlay" aria-hidden="true"></div>
+
+<!-- Barra inferior móvil (lg:hidden) -->
+<nav class="mobile-bottom-nav" aria-label="Navegación principal">
     <a href="{{ url_for('jugador.dashboard') }}" class="mobile-nav-item">
         <i class="fas fa-home"></i>
         <span>Inicio</span>
     </a>
     <a href="{{ url_for('jugador.comunidades') }}" class="mobile-nav-item">
-        <i class="fas fa-users"></i>
-        <span>Grupos</span>
+        <i class="fas fa-compass"></i>
+        <span>Explorar</span>
     </a>
-    <a href="{{ url_for('clanes.index') }}" class="mobile-nav-item">
-        <i class="fas fa-shield-alt"></i>
-        <span>Clanes</span>
+    <a href="#" class="mobile-nav-item">
+        <i class="fas fa-envelope"></i>
+        <span>Mensajes</span>
+    </a>
+    <a href="{{ url_for('tienda.index') }}" class="mobile-nav-item">
+        <i class="fas fa-store"></i>
+        <span>Tienda</span>
     </a>
     {% if current_user.is_authenticated %}
     <a href="{{ url_for('jugador.perfil') }}" class="mobile-nav-item">
@@ -197,88 +266,91 @@
     {% endif %}
 </nav>
 
+<script src="{{ url_for('static', filename='js/feed-interactions.js') }}"></script>
+{% if current_user.is_authenticated %}
+<script>
+window.RIFTZONE_CHAT = Object.assign(window.RIFTZONE_CHAT || {}, {
+    mini: true,
+    messagesUrl: {{ url_for('chat.obtener_mensajes') | tojson }},
+    sendUrl: {{ url_for('chat.enviar_mensaje') | tojson }}
+});
+</script>
+<script src="{{ url_for('static', filename='js/world-chat.js') }}"></script>
+{% endif %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const chatContainer = document.getElementById('mini-chat-messages');
-    const chatForm = document.getElementById('mini-chat-form');
-    const chatInput = document.getElementById('mini-chat-input');
-    let isScrolledToBottom = true;
-    
-    if(!chatContainer) return;
+    /* Panel derecho en móvil / tablet */
+    const panelToggle = document.getElementById('nav-panel-toggle');
+    const rightPanel = document.getElementById('layout-right-panel');
+    const rightOverlay = document.getElementById('layout-right-overlay');
 
-    chatContainer.addEventListener('scroll', () => {
-        isScrolledToBottom = chatContainer.scrollHeight - chatContainer.clientHeight <= chatContainer.scrollTop + 20;
+    function closeRightPanel() {
+        if (!rightPanel) return;
+        rightPanel.classList.remove('is-open');
+        rightOverlay?.classList.remove('is-open');
+        document.body.classList.remove('panel-open');
+        rightOverlay?.setAttribute('aria-hidden', 'true');
+    }
+
+    function openRightPanel() {
+        if (!rightPanel || !rightPanel.querySelector('.feed-right-container')) {
+            window.location.href = "{{ url_for('jugador.perfil') if current_user.is_authenticated else url_for('auth.login') }}";
+            return;
+        }
+        rightPanel.classList.add('is-open');
+        rightOverlay?.classList.add('is-open');
+        document.body.classList.add('panel-open');
+        rightOverlay?.setAttribute('aria-hidden', 'false');
+    }
+
+    panelToggle?.addEventListener('click', function() {
+        if (rightPanel?.classList.contains('is-open')) closeRightPanel();
+        else openRightPanel();
+    });
+    document.getElementById('close-right-panel')?.addEventListener('click', closeRightPanel);
+    rightOverlay?.addEventListener('click', closeRightPanel);
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeRightPanel();
+    });
+    window.addEventListener('resize', function() {
+        if (window.innerWidth >= 1280) closeRightPanel();
     });
 
-    function renderMensajeMini(msg) {
-        return `
-            <div style="display: flex; gap: 8px;">
-                <img src="${msg.usuario_foto}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
-                <div>
-                    <div style="display: flex; align-items: baseline; gap: 6px;">
-                        <strong style="color: white; font-size: 13px;">${msg.usuario_nombre}</strong>
-                        <span style="color: var(--text-muted); font-size: 10px;">${msg.fecha_envio}</span>
-                    </div>
-                    <p style="color: #d1d5db; margin-top: 2px; font-size: 12px; line-height: 1.4; word-break: break-word;">
-                        ${msg.contenido}
-                    </p>
-                </div>
-            </div>
-        `;
+    /* Menús desplegables (notificaciones + usuario) */
+    function closeAllDropdowns() {
+        document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {
+            menu.classList.remove('show');
+        });
+        document.getElementById('user-menu-toggle')?.setAttribute('aria-expanded', 'false');
     }
 
-    async function cargarMiniChat() {
-        try {
-            const res = await fetch("{{ url_for('chat.obtener_mensajes') }}");
-            if (!res.ok) return;
-            const data = await res.json();
-            
-            chatContainer.innerHTML = ''; 
-            if (data.mensajes.length === 0) {
-                chatContainer.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 12px; margin-top:20px;">Sin mensajes recientes</div>';
-            } else {
-                data.mensajes.forEach(msg => {
-                    chatContainer.insertAdjacentHTML('beforeend', renderMensajeMini(msg));
-                });
-            }
-            
-            if (isScrolledToBottom) {
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }
-        } catch (e) {
-            console.log("Error silencioso del mini-chat");
-        }
-    }
+    document.querySelectorAll('.dropdown-container').forEach(function(container) {
+        var toggle = container.querySelector('button.icon-btn, button.user-profile-btn, #user-menu-toggle');
+        var menu = container.querySelector('.dropdown-menu');
+        if (!toggle || !menu) return;
 
-    if (chatForm) {
-        chatForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const contenido = chatInput.value.trim();
-            if (!contenido) return;
-            
-            chatInput.value = ''; 
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            
-            try {
-                await fetch("{{ url_for('chat.enviar_mensaje') }}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": csrfToken
-                    },
-                    body: JSON.stringify({ contenido: contenido })
-                });
-                
-                cargarMiniChat();
-                isScrolledToBottom = true;
-            } catch (e) {
-                console.error(e);
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var wasOpen = menu.classList.contains('show');
+            closeAllDropdowns();
+            if (!wasOpen) {
+                menu.classList.add('show');
+                if (toggle.id === 'user-menu-toggle') {
+                    toggle.setAttribute('aria-expanded', 'true');
+                }
             }
         });
-    }
 
-    setInterval(cargarMiniChat, 3000);
-    cargarMiniChat();
+        menu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+
+    document.addEventListener('click', closeAllDropdowns);
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeAllDropdowns();
+    });
+
 });
 </script>
 </body>

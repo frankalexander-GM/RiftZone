@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+
+{% block title %}Subir diseños - RiftStore Admin{% endblock %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: 0 auto; padding: 24px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:32px; border-bottom:1px solid var(--border-color); padding-bottom:24px;">
+        <div>
+            <h2 style="color:white; margin:0 0 8px; font-size:28px;">
+                <i class="fas fa-palette" style="color:var(--accent-purple);"></i> Subir diseños a la tienda
+            </h2>
+            <p style="color:var(--text-muted); margin:0; max-width:560px; font-size:14px;">
+                Aquí cargas <strong style="color:white;">tus propios diseños</strong> (imagen + color).
+                Al comprarlos y pulsar <strong style="color:white;">Equipar</strong> en el inventario,
+                el marco, fondo o título se aplica al perfil del jugador.
+            </p>
+        </div>
+        <a href="{{ url_for('tienda.index') }}" class="btn-secondary" style="text-decoration:none; padding:10px 18px; border-radius:20px;">
+            <i class="fas fa-store"></i> Ver tienda pública
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div style="background:rgba(139,92,246,0.1); border-left:4px solid var(--accent-purple); padding:12px; margin-bottom:16px; border-radius:8px; color:white;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start;">
+        <!-- Formulario -->
+        <form method="POST" action="{{ url_for('tienda.admin_crear_item') }}" enctype="multipart/form-data"
+              style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px; padding:24px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <h3 style="color:white; margin:0 0 20px; font-size:18px;">Nuevo diseño</h3>
+
+            <label style="display:block; color:var(--text-muted); font-size:13px; margin-bottom:6px;">Nombre</label>
+            <input type="text" name="name" required placeholder="Ej. Marco Rosa Neón / Dios del Aim"
+                   style="width:100%; margin-bottom:16px; background:var(--bg-dark); border:1px solid var(--border-color); padding:12px; border-radius:8px; color:white;">
+
+            <label style="display:block; color:var(--text-muted); font-size:13px; margin-bottom:6px;">Tipo</label>
+            <select name="category" id="item-category" required
+                    style="width:100%; margin-bottom:16px; background:var(--bg-dark); border:1px solid var(--border-color); padding:12px; border-radius:8px; color:white;">
+                <option value="frame">Marco (avatar)</option>
+                <option value="background">Fondo (banner perfil)</option>
+                <option value="title">Título (texto junto al @usuario)</option>
+            </select>
+
+            <label style="display:block; color:var(--text-muted); font-size:13px; margin-bottom:6px;">Color principal</label>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+                {% for key, hex in colores.items() %}
+                <label style="cursor:pointer;">
+                    <input type="radio" name="color" value="{{ key }}" {% if key == 'rosa' %}checked{% endif %} style="display:none;" class="color-radio">
+                    <span class="color-swatch" data-hex="{{ hex }}" title="{{ key }}" style="display:inline-block; width:36px; height:36px; border-radius:50%; background:{{ hex }}; border:2px solid transparent;"></span>
+                </label>
+                {% endfor %}
+            </div>
+            <input type="color" name="color_hex" id="color-picker" value="#FF2D95" style="width:100%; height:40px; margin-bottom:16px; border:none; border-radius:8px; cursor:pointer;">
+
+            <div id="imagen-block">
+                <label style="display:block; color:var(--text-muted); font-size:13px; margin-bottom:6px;">Imagen del diseño</label>
+                <input type="file" name="imagen" id="imagen-input" accept="image/png,image/jpeg,image/jpg,image/webp"
+                       style="width:100%; margin-bottom:8px; color:var(--text-muted); font-size:13px;">
+                <p id="imagen-hint" style="color:var(--text-muted); font-size:12px; margin:0 0 16px;">Obligatoria para marcos y fondos.</p>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+                <div>
+                    <label style="display:block; color:var(--text-muted); font-size:13px; margin-bottom:6px;">Precio (RC)</label>
+                    <input type="number" name="price" min="0" value="150" required
+                           style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); padding:12px; border-radius:8px; color:white;">
+                </div>
+                <div>
+                    <label style="display:block; color:var(--text-muted); font-size:13px; margin-bottom:6px;">Stock</label>
+                    <input type="number" name="stock" min="0" value="10" required
+                           style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); padding:12px; border-radius:8px; color:white;">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width:100%; padding:14px; border-radius:12px;">
+                <i class="fas fa-cloud-upload-alt"></i> Publicar en la tienda
+            </button>
+        </form>
+
+        <!-- Vista previa -->
+        <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px; padding:24px;">
+            <h3 style="color:white; margin:0 0 16px; font-size:18px;">Vista previa</h3>
+            <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Así se verá al equiparlo:</p>
+
+            <div id="preview-frame" style="text-align:center; margin-bottom:24px;">
+                <span id="preview-avatar-wrap" style="display:inline-block; width:100px; height:100px; border-radius:50%; overflow:hidden; border:3px solid #FF2D95; box-shadow:0 0 12px #FF2D95;">
+                    <img src="{{ current_user | user_avatar }}" alt="" style="width:100%; height:100%; object-fit:cover;">
+                </span>
+                <p style="color:var(--text-muted); font-size:12px; margin-top:8px;">Marco en avatar</p>
+            </div>
+
+            <div id="preview-banner" style="height:80px; border-radius:12px; background-size:cover; background-position:center; border:1px solid var(--border-color); margin-bottom:16px; background-color:var(--bg-dark);"></div>
+            <p style="color:var(--text-muted); font-size:12px; margin:-8px 0 16px;">Fondo de perfil</p>
+
+            <div id="preview-title" style="font-size:20px; color:#FF2D95; font-weight:900; text-shadow:0 0 8px #FF2D95; text-align:center;">
+                Título: Ejemplo
+            </div>
+            <p style="color:var(--text-muted); font-size:12px; text-align:center; margin-top:8px;">Título en perfil</p>
+        </div>
+    </div>
+
+    <!-- Listado -->
+    <div style="margin-top:40px;">
+        <h3 style="color:white; margin-bottom:20px;"><i class="fas fa-box"></i> Diseños en la tienda ({{ items|length }})</h3>
+        {% if items %}
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:16px;">
+            {% for item in items %}
+            <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:12px; padding:16px;">
+                <div style="height:100px; display:flex; align-items:center; justify-content:center; background:var(--bg-dark); border-radius:8px; margin-bottom:12px; overflow:hidden;">
+                    {% if item.category == 'background' and item.image_url %}
+                    <img src="{{ item.image_url }}" style="width:100%; height:100%; object-fit:cover;">
+                    {% elif item.category == 'frame' and item.image_url %}
+                    <span style="display:inline-block; width:64px; height:64px; border-radius:50%; overflow:hidden; {{ item.css_class or '' }}">
+                        <img src="{{ item.image_url }}" style="width:100%; height:100%; object-fit:cover;">
+                    </span>
+                    {% elif item.category == 'title' %}
+                    <span style="{{ item.css_class or '' }}">{{ item.name }}</span>
+                    {% else %}
+                    <span style="color:var(--text-muted); font-size:12px;">Sin preview</span>
+                    {% endif %}
+                </div>
+                <div style="font-size:11px; color:var(--accent-purple); text-transform:uppercase;">{{ item.category }}</div>
+                <strong style="color:white; display:block; margin:4px 0 8px;">{{ item.name }}</strong>
+                <div style="color:#FACC15; font-size:14px; margin-bottom:8px;">{{ item.price }} RC · Stock {{ item.stock }}</div>
+                {% if item.color_hex %}
+                <span style="display:inline-block; width:14px; height:14px; border-radius:50%; background:{{ item.color_hex }}; vertical-align:middle;"></span>
+                <span style="color:var(--text-muted); font-size:12px;"> {{ item.color_hex }}</span>
+                {% endif %}
+                <form method="POST" action="{{ url_for('tienda.admin_eliminar_item', item_id=item.id) }}" style="margin-top:12px;" onsubmit="return confirm('¿Eliminar este diseño de la tienda?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" style="width:100%; font-size:12px; padding:6px; border-radius:8px; border:1px solid rgba(239,68,68,0.5); background:rgba(239,68,68,0.12); color:#f87171; cursor:pointer;">Eliminar</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:var(--text-muted);">Aún no hay diseños. Sube el primero con el formulario.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.color-radio:checked + .color-swatch { border-color: white !important; box-shadow: 0 0 0 2px var(--accent-purple); }
+@media (max-width: 900px) {
+    div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+}
+</style>
+
+<script>
+(function() {
+    const category = document.getElementById('item-category');
+    const imagenInput = document.getElementById('imagen-input');
+    const imagenHint = document.getElementById('imagen-hint');
+    const colorPicker = document.getElementById('color-picker');
+    const previewWrap = document.getElementById('preview-avatar-wrap');
+    const previewTitle = document.getElementById('preview-title');
+    const previewBanner = document.getElementById('preview-banner');
+    const radios = document.querySelectorAll('.color-radio');
+
+    function getColor() {
+        return colorPicker.value;
+    }
+
+    function applyPreviewColor(hex) {
+        previewWrap.style.border = '3px solid ' + hex;
+        previewWrap.style.boxShadow = '0 0 12px ' + hex;
+        previewTitle.style.color = hex;
+        previewTitle.style.textShadow = '0 0 8px ' + hex;
+    }
+
+    radios.forEach(r => {
+        r.addEventListener('change', () => {
+            if (r.checked) {
+                const sw = r.nextElementSibling;
+                colorPicker.value = sw.dataset.hex;
+                applyPreviewColor(sw.dataset.hex);
+            }
+        });
+    });
+
+    colorPicker.addEventListener('input', () => applyPreviewColor(getColor()));
+
+    category.addEventListener('change', () => {
+        const cat = category.value;
+        if (cat === 'title') {
+            imagenInput.removeAttribute('required');
+            imagenHint.textContent = 'Opcional para títulos (solo color de texto).';
+        } else {
+            imagenInput.setAttribute('required', 'required');
+            imagenHint.textContent = 'Obligatoria para marcos y fondos.';
+        }
+    });
+
+    imagenInput.addEventListener('change', function() {
+        const f = this.files && this.files[0];
+        if (!f) return;
+        const url = URL.createObjectURL(f);
+        if (category.value === 'background') {
+            previewBanner.style.backgroundImage = 'url(' + url + ')';
+        } else if (category.value === 'frame') {
+            previewWrap.querySelector('img').src = url;
+        }
+    });
+
+    applyPreviewColor(getColor());
+})();
+</script>
+{% endblock %}

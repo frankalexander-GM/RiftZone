@@ -1,18 +1,18 @@
-from datetime import datetime
+from datetime import datetime, date
 from flask_login import UserMixin
 from app.factories.app_factory import db
 
 # Tabla de seguidores (many-to-many self-referential)
 seguidores = db.Table('seguidores',
-    db.Column('seguidor_id', db.Integer, db.ForeignKey('usuarios.id_usuario'), primary_key=True),
-    db.Column('seguido_id', db.Integer, db.ForeignKey('usuarios.id_usuario'), primary_key=True)
+    db.Column('seguidor_id', db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), primary_key=True),
+    db.Column('seguido_id', db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), primary_key=True)
 )
 
 class Notificacion(db.Model):
     __tablename__ = 'notificaciones'
     
     id_notificacion = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), nullable=False)
     mensaje = db.Column(db.String(255), nullable=False)
     icono = db.Column(db.String(50), default='fas fa-bell')
     enlace = db.Column(db.String(255), nullable=True)
@@ -42,9 +42,13 @@ class Usuario(UserMixin, db.Model):
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
     es_premium = db.Column(db.Boolean, default=False)
     juegos_favoritos = db.Column(db.String(255))
+    tokens = db.Column(db.Integer, default=0)
+    ultima_recompensa_diaria = db.Column(db.Date, nullable=True)
     
     # Personalización e Integraciones (Fase 1)
     pais = db.Column(db.String(50))
+    disponibilidad = db.Column(db.String(50))
+    plataformas = db.Column(db.String(150))
     estado_personalizado = db.Column(db.String(100))
     twitch = db.Column(db.String(100))
     kick = db.Column(db.String(100))
@@ -52,6 +56,8 @@ class Usuario(UserMixin, db.Model):
     discord = db.Column(db.String(100))
     steam = db.Column(db.String(100))
     titulo_perfil = db.Column(db.String(50), default='Gamer')
+    membresia_tipo = db.Column(db.String(50), default='ninguna')
+    marco_perfil = db.Column(db.String(255), nullable=True)
     
     # Relación de seguidores
     siguiendo = db.relationship(

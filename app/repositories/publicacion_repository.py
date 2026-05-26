@@ -10,7 +10,24 @@ class PublicacionRepository:
         return Publicacion.query.get(post_id)
     
     def get_all_descending(self):
-        return Publicacion.query.order_by(Publicacion.fecha_creacion.desc()).all()
+        from sqlalchemy.orm import joinedload
+        from app.models.comentario import Comentario
+
+        return (
+            Publicacion.query.options(
+                joinedload(Publicacion.autor),
+                joinedload(Publicacion.usuarios_likes),
+                joinedload(Publicacion.comentarios).joinedload(Comentario.autor),
+            )
+            .order_by(Publicacion.promocionada.desc(), Publicacion.fecha_creacion.desc())
+            .all()
+        )
+    
+    def promocionar(self, post):
+        from app.factories.app_factory import db
+        post.promocionada = True
+        db.session.commit()
+        return True
     
     def create(self, **kwargs):
         from app.factories.app_factory import db
@@ -21,11 +38,15 @@ class PublicacionRepository:
 
     def toggle_like(self, post, usuario):
         from app.factories.app_factory import db
-        if usuario in post.usuarios_likes:
-            post.usuarios_likes.remove(usuario)
+
+        uid = usuario.id_usuario
+        ya_like = next((u for u in post.usuarios_likes if u.id_usuario == uid), None)
+        if ya_like:
+            post.usuarios_likes.remove(ya_like)
             liked = False
         else:
             post.usuarios_likes.append(usuario)
             liked = True
         db.session.commit()
+        db.session.refresh(post)
         return liked

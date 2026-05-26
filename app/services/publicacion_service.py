@@ -18,6 +18,8 @@ class PublicacionService:
         )
         
     def obtener_feed(self):
+        from app.services.boost_service import limpiar_boosts_expirados
+        limpiar_boosts_expirados()
         return self.pub_repo.get_all_descending()
 
     def toggle_like(self, id_publicacion, usuario):
@@ -25,3 +27,12 @@ class PublicacionService:
         if not post:
             raise ValueError("Publicación no encontrada.")
         return self.pub_repo.toggle_like(post, usuario)
+
+    def promocionar_publicacion(self, id_publicacion, id_usuario):
+        post = self.pub_repo.get_by_id(id_publicacion)
+        if not post:
+            raise ValueError("Publicación no encontrada.")
+        if post.id_usuario != id_usuario:
+            raise ValueError("No tienes permiso para promocionar esta publicación.")
+        return self.pub_repo.promocionar(post)
+
