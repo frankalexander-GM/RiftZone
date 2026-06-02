@@ -6,10 +6,29 @@
 {% block content %}
 {% set perfil_user = usuario if usuario is defined else current_user %}
 {% set is_own = perfil_user.id_usuario == current_user.id_usuario %}
+{% set is_guest = perfil_user.rol == 'invitado' %}
+
+{% if is_own and is_guest %}
+<!-- GUEST CONVERSION BANNER -->
+<div class="guest-banner">
+    <div class="guest-banner-content">
+        <div class="guest-banner-icon"><i class="fas fa-user-secret"></i></div>
+        <div class="guest-banner-text">
+            <strong>Estás en modo invitado</strong>
+            <span>Tus datos no se guardarán al cerrar sesión. Crea una cuenta para conservar tu progreso.</span>
+        </div>
+        <a href="{{ url_for('auth.register') }}" class="guest-banner-btn">Registrarse <i class="fas fa-arrow-right"></i></a>
+    </div>
+</div>
+{% endif %}
 
 <!-- PROFILE HEADER -->
 <div class="profile-header">
-    <div class="profile-banner" style="background-image: url('{{ perfil_user | user_banner }}');"></div>
+    <div class="profile-banner" style="background-image: url('{{ perfil_user | user_banner }}');">
+        {% if is_guest %}
+        <div class="profile-banner-guest-tag"><i class="fas fa-user-secret"></i> INVITADO</div>
+        {% endif %}
+    </div>
     <div class="profile-info-container">
         <div class="profile-avatar-wrapper">
             <div class="profile-avatar-frame"{% if perfil_user.marco_perfil %} style="{{ perfil_user.marco_perfil }}"{% endif %}>
@@ -26,6 +45,9 @@
                         <i class="fas fa-check-circle verified-icon"></i>
                         {% if perfil_user.es_premium %}
                         <i class="fas fa-crown profile-crown" title="VIP Premium"></i>
+                        {% endif %}
+                        {% if is_guest %}
+                        <span class="guest-badge"><i class="fas fa-user-secret"></i> Invitado</span>
                         {% endif %}
                     </span>
                 </h1>
@@ -59,8 +81,10 @@
             </div>
             
             <div class="profile-actions">
-                {% if is_own %}
+                {% if is_own and not is_guest %}
                     <a href="{{ url_for('jugador.editar_perfil') }}" class="btn-secondary" style="text-decoration:none;"><i class="fas fa-pen"></i> Editar perfil</a>
+                {% elif is_own and is_guest %}
+                    <a href="{{ url_for('auth.register') }}" class="btn-primary" style="text-decoration:none; padding:10px 24px;"><i class="fas fa-user-plus"></i> Crear cuenta</a>
                 {% else %}
                     <button id="follow-btn" class="btn-primary" onclick="toggleFollow({{ perfil_user.id_usuario }})" style="padding:10px 24px;">
                         {% if current_user.esta_siguiendo(perfil_user) %}
@@ -90,7 +114,7 @@
 <div class="about-section" id="sobre-mi">
     <div class="about-section-header">
         <h2 class="section-title">Sobre mí</h2>
-        {% if is_own %}
+        {% if is_own and not is_guest %}
         <a href="{{ url_for('jugador.editar_perfil') }}#sobre-mi" class="btn-secondary about-edit-btn">
             <i class="fas fa-pen"></i> Editar
         </a>
@@ -168,7 +192,9 @@
 <div class="about-section" style="background:transparent; border:none; padding:0; margin-bottom: 24px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
         <h2 class="section-title" style="margin:0;">Juegos principales</h2>
+        {% if is_own and not is_guest %}
         <a href="{{ url_for('jugador.editar_perfil') }}" style="color: var(--accent-purple); font-size: 14px; font-weight:600;">Editar</a>
+        {% endif %}
     </div>
     
     <div class="games-grid">
@@ -210,18 +236,22 @@
         </div>
         {% endif %}
         
-        {% if not games %}
+        {% if not games and is_own %}
         <p style="color:var(--text-muted); font-size:14px; padding:12px;">No tienes juegos seleccionados. Haz clic en Editar para agregarlos.</p>
+        {% elif not games %}
+        <p style="color:var(--text-muted); font-size:14px; padding:12px;">Este usuario no ha seleccionado juegos.</p>
         {% endif %}
         
+        {% if is_own and not is_guest %}
         <a href="{{ url_for('jugador.editar_perfil') }}" class="game-card game-card-add" style="text-decoration:none;">
             <i class="fas fa-plus"></i>
             <span style="font-weight: 600;">Modificar juegos</span>
         </a>
+        {% endif %}
     </div>
 </div>
 
-{% if is_own %}
+{% if is_own and not is_guest %}
 <!-- CREATE POST -->
 <form action="{{ url_for('jugador.crear_publicacion') }}" method="POST" class="create-post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -239,70 +269,164 @@
         <button type="submit" class="btn-primary" style="padding:8px 24px; border-radius:20px;">Publicar</button>
     </div>
 </form>
+{% elif is_own and is_guest %}
+<div style="background: rgba(139, 92, 246, 0.06); border: 1px dashed rgba(139, 92, 246, 0.15); border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 20px;">
+    <i class="fas fa-lock" style="color: rgba(167, 139, 250, 0.3); font-size: 28px; margin-bottom: 8px;"></i>
+    <p style="color: var(--text-muted); font-size: 14px;">Los invitados no pueden publicar. <a href="{{ url_for('auth.register') }}" style="color: #A78BFA; font-weight: 600; text-decoration: none;">Crea una cuenta</a> para compartir tus momentos.</p>
+</div>
 {% endif %}
 
-<!-- POST 1 -->
-<div class="post-card">
-    <div class="post-header">
-        <div class="post-author">
-            <img src="https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=100&auto=format&fit=crop" alt="NexoBlade" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
-            <div class="author-info">
-                <h4>NexoBlade <i class="fas fa-check-circle verified-icon" style="font-size:14px;"></i></h4>
-                <div class="post-meta">
-                    Hace 2 horas <span class="game-tag">Valorant</span>
+<!-- PUBLICACIONES DEL USUARIO -->
+{% if publicaciones %}
+    {% for post in publicaciones %}
+    <div class="post-card{% if post.promocionada and post.boost_tipo %} post-card--boosted{% elif post.autor.es_premium %} post-card--vip-author{% endif %}" data-post-id="{{ post.id_publicacion }}" data-href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" onclick="navegarPost(event, this)">
+        <div class="post-header">
+            <div class="post-author">
+                <a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" class="post-avatar-link">
+                    <span class="post-avatar-wrap"{% if post.autor.marco_perfil %} style="{{ post.autor.marco_perfil }}"{% elif post.autor.es_premium %} style="border: 2px solid #FACC15; box-shadow: 0 0 8px rgba(250, 204, 21, 0.4);"{% endif %}>
+                        <img src="{{ post.autor | user_avatar }}" alt="{{ post.autor.username }}">
+                    </span>
+                </a>
+                <div class="author-info">
+                    <h4><a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" class="author-name-link">{{ nombre_usuario(post.autor, true) }}</a>{% if post.autor.es_premium %} <i class="fas fa-crown" style="color: #FACC15; font-size:14px; margin-left:4px; text-shadow: 0 0 5px rgba(250, 204, 21, 0.5);" title="Usuario Premium"></i>{% endif %}</h4>
+                    <div class="post-meta">
+                        <a href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" class="post-meta-link">{{ post.fecha_creacion | timeago }}</a> <span class="game-tag" style="background:rgba(139, 92, 246, 0.2);">{{ post.juego }}</span>
+                        {% if post.fijada %}
+                        <span class="pin-badge"><i class="fas fa-thumbtack"></i> Fijado</span>
+                        {% endif %}
+                        {% if post.promocionada and post.boost_tipo %}
+                        <span class="boost-badge boost-{{ post.boost_tipo }}"><i class="fas fa-rocket"></i> {{ {'rapido': 'RÁPIDO', 'mega': 'MEGA', 'titan': 'TITÁN'}.get(post.boost_tipo, post.boost_tipo) }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="post-dropdown">
+                <button class="post-dropdown-btn" data-dropdown-btn aria-label="Más opciones"><i class="fas fa-ellipsis-h"></i></button>
+                <div class="dropdown-menu" data-dropdown-menu>
+                    {% if current_user.is_authenticated and current_user.id_usuario == post.id_usuario %}
+                    <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="fijarPublicacion({{ post.id_publicacion }}, this)"><i class="fas fa-thumbtack"></i> {% if post.fijada %}Desfijar del perfil{% else %}Fijar en el perfil{% endif %}</button>
+                    <button class="dropdown-item dropdown-item-danger" data-post-id="{{ post.id_publicacion }}" onclick="confirmarEliminar({{ post.id_publicacion }})"><i class="fas fa-trash-alt"></i> Eliminar publicación</button>
+                    {% else %}
+                    <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="reportarPublicacion({{ post.id_publicacion }})"><i class="fas fa-flag"></i> Reportar publicación / Spam</button>
+                    <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="ocultarPublicacion({{ post.id_publicacion }}, this)"><i class="fas fa-eye-slash"></i> Ocultar publicación</button>
+                    <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="copiarEnlace({{ post.id_publicacion }})"><i class="fas fa-link"></i> Copiar enlace del post</button>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        <button class="icon-btn" style="background:transparent;"><i class="fas fa-ellipsis-h"></i></button>
-    </div>
-    
-    <div class="post-content">
-        ¡Partidaza anoche con el squad! 💥<br>
-        Logramos remontar un 2-10 😁
-    </div>
-    
-    <div class="post-media">
-        <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop" alt="Valorant Gameplay">
-    </div>
-    
-    <div class="post-actions">
-        <button class="action-btn liked"><i class="fas fa-heart"></i> 124</button>
-        <button class="action-btn"><i class="far fa-comment"></i> 32</button>
-        <button class="action-btn"><i class="fas fa-retweet"></i> 8</button>
-        <button class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
-    </div>
-</div>
+        
+        <div class="post-content" data-href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" onclick="navegarPost(event, this)">{{ post.contenido }}</div>
 
-<!-- POST 2 -->
-<div class="post-card">
-    <div class="post-header">
-        <div class="post-author">
-            <img src="https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?q=80&w=100&auto=format&fit=crop" alt="PixelCraft" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
-            <div class="author-info">
-                <h4>PixelCraft <i class="fas fa-check-circle verified-icon" style="font-size:14px;"></i></h4>
-                <div class="post-meta">
-                    Hace 3 horas <span class="game-tag minecraft">Minecraft</span>
-                </div>
+        {% if post.is_poll %}
+        <div class="post-poll" data-poll-post="{{ post.id_publicacion }}" data-poll-id="{{ post.poll.id_poll }}" data-multiple="{{ '1' if post.poll.multiple_choice else '0' }}" data-change="{{ '1' if post.poll.allow_change else '0' }}">
+            <p class="post-poll-question">{{ post.poll.pregunta }}</p>
+            <div class="post-poll-config-badges">
+                {% if post.poll.multiple_choice %}<span class="poll-badge multiple"><i class="fas fa-check-double"></i> Múltiple</span>{% endif %}
+                {% if post.poll.allow_change %}<span class="poll-badge changeable"><i class="fas fa-sync-alt"></i> Cambiable</span>{% endif %}
             </div>
+            <div class="post-poll-options">
+                {% for opt in post.poll.options %}
+                <button type="button" class="post-poll-option" data-option-id="{{ opt.id_option }}" onclick="votePoll(this, {{ post.id_publicacion }})">
+                    <span class="post-poll-radio"></span>
+                    <span class="post-poll-text">{{ opt.texto }}</span>
+                    <span class="post-poll-bar" style="width:0%"></span>
+                    <span class="post-poll-pct" style="display:none;">0%</span>
+                </button>
+                {% endfor %}
+            </div>
+            <p class="post-poll-total"><i class="far fa-chart-bar"></i> <span class="post-poll-count">{{ post.poll.total_votos }}</span> voto(s)</p>
         </div>
-        <button class="icon-btn" style="background:transparent;"><i class="fas fa-ellipsis-h"></i></button>
+        {% endif %}
+        
+        {% if post.imagen_url %}
+        <div class="post-media" data-href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" onclick="navegarPost(event, this)">
+            <img src="{{ post.imagen_url }}" alt="Media">
+        </div>
+        {% endif %}
+        
+        <div class="post-actions" style="margin-top:16px; margin-bottom:16px;">
+            {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+            <button type="button" class="action-btn {% if post.is_liked_by(current_user) %}liked{% endif %}" data-like-btn data-post-id="{{ post.id_publicacion }}" id="like-btn-{{ post.id_publicacion }}" aria-label="Me gusta">
+                <i class="{% if post.is_liked_by(current_user) %}fas{% else %}far{% endif %} fa-heart"></i> <span id="like-count-{{ post.id_publicacion }}">{{ post.likes }}</span>
+            </button>
+            {% else %}
+            <span class="action-btn" style="cursor:default; opacity:0.7;"><i class="fas fa-heart"></i> {{ post.likes }}</span>
+            {% endif %}
+            <button type="button" class="action-btn" disabled style="opacity:0.5; cursor:not-allowed;"><i class="far fa-comment"></i> {{ post.comentarios|length }}</button>
+            <button type="button" class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
+        </div>
     </div>
-    
-    <div class="post-content">
-        Nuevo diseño para mi base survival, ¿qué les parece? 🧱🌲
-    </div>
-    
-    <div class="post-media">
-        <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=800&auto=format&fit=crop" alt="Minecraft Base">
-    </div>
-    
-    <div class="post-actions">
-        <button class="action-btn"><i class="far fa-heart"></i> 89</button>
-        <button class="action-btn"><i class="far fa-comment"></i> 15</button>
-        <button class="action-btn"><i class="fas fa-retweet"></i> 2</button>
-        <button class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
-    </div>
+    {% endfor %}
+{% else %}
+<div style="text-align:center; padding:clamp(24px,6vw,40px); color:var(--text-muted);">
+    <i class="fas fa-gamepad" style="font-size:48px; margin-bottom:16px; opacity:0.5;"></i>
+    <h3>Sin publicaciones aún</h3>
+    <p>{% if is_own %}Comparte tu primer momento con la comunidad.{% else %}Este usuario no ha publicado nada todavía.{% endif %}</p>
 </div>
+{% endif %}
+
+<script>
+function votePoll(btn, postId) {
+    var optionId = parseInt(btn.getAttribute('data-option-id'));
+    var parent = btn.closest('.post-poll');
+    var multiple = parent.getAttribute('data-multiple') === '1';
+    var changeable = parent.getAttribute('data-change') === '1';
+    var hasVoted = parent.classList.contains('post-poll-voted');
+
+    if (changeable && hasVoted) {
+        var already = btn.classList.contains('post-poll-voted-opt');
+        if (already) {
+            sendVote(postId, optionId, function(data) { applyResults(parent, data); });
+            return;
+        }
+    }
+
+    if (hasVoted && !changeable && !multiple) return;
+
+    sendVote(postId, optionId, function(data) { applyResults(parent, data); });
+}
+
+function sendVote(postId, optionId, callback) {
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    var formData = new FormData();
+    formData.append('option_id', optionId);
+    formData.append('csrf_token', csrfToken);
+
+    fetch('/jugador/poll/vote/' + postId, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrfToken },
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) callback(data);
+        else showToast(data.message || 'Error al votar.', 'error');
+    })
+    .catch(function() { showToast('Error de conexión.', 'error'); });
+}
+
+function applyResults(parent, data) {
+    parent.classList.add('post-poll-voted');
+    var votedIds = data.voted_options || [];
+
+    parent.querySelectorAll('.post-poll-option').forEach(function(opt) {
+        var optId = parseInt(opt.getAttribute('data-option-id'));
+        var result = data.results.find(function(r) { return r.id === optId; });
+        if (result) {
+            opt.querySelector('.post-poll-bar').style.width = result.porcentaje + '%';
+            opt.querySelector('.post-poll-pct').textContent = result.porcentaje + '%';
+            opt.querySelector('.post-poll-pct').style.display = 'inline';
+            opt.querySelector('.post-poll-radio').style.display = 'none';
+            if (votedIds.indexOf(optId) !== -1) {
+                opt.classList.add('post-poll-voted-opt');
+            } else {
+                opt.classList.remove('post-poll-voted-opt');
+            }
+        }
+    });
+    parent.querySelector('.post-poll-count').textContent = data.total_votos;
+}
+</script>
 {% endblock %}
 
 {% block right_sidebar %}
@@ -331,25 +455,10 @@
     <div class="widget">
         <div class="widget-header">
             <h3 class="widget-title">Estadísticas</h3>
-            <span class="widget-link" style="color: var(--text-muted); cursor:pointer;">General <i class="fas fa-chevron-down" style="font-size:10px; margin-left:4px;"></i></span>
         </div>
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-label"><i class="fas fa-gamepad"></i> Partidas jugadas</div>
-                <div class="stat-value">1,256</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label"><i class="fas fa-trophy"></i> Victorias</div>
-                <div class="stat-value">782</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label"><i class="fas fa-chart-line"></i> Winrate</div>
-                <div class="stat-value" style="color: var(--accent-green);">62%</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label"><i class="fas fa-crosshairs"></i> K/D</div>
-                <div class="stat-value">1.45</div>
-            </div>
+        <div style="text-align: center; padding: 20px 16px;">
+            <i class="fas fa-chart-bar" style="color: var(--text-muted); font-size: 24px; margin-bottom: 8px; opacity: 0.3;"></i>
+            <p style="color: var(--text-muted); font-size: 12px; margin: 0;">Las estadísticas llegarán pronto.</p>
         </div>
     </div>
     
@@ -357,33 +466,10 @@
     <div class="widget">
         <div class="widget-header">
             <h3 class="widget-title">Logros recientes</h3>
-            <a href="#" class="widget-link">Ver todos</a>
         </div>
-        <div class="achievement-list">
-            <div class="achievement-item">
-                <div class="achiev-icon gold"><i class="fas fa-fire"></i></div>
-                <div class="achiev-info">
-                    <h4 class="achiev-title">Primera sangre</h4>
-                    <p class="achiev-desc">Realiza tu primera kill</p>
-                </div>
-                <div class="achiev-xp">10 XP</div>
-            </div>
-            <div class="achievement-item">
-                <div class="achiev-icon purple"><i class="fas fa-shield-alt"></i></div>
-                <div class="achiev-info">
-                    <h4 class="achiev-title">Imparable</h4>
-                    <p class="achiev-desc">Gana 10 partidas seguidas</p>
-                </div>
-                <div class="achiev-xp">50 XP</div>
-            </div>
-            <div class="achievement-item">
-                <div class="achiev-icon gold"><i class="fas fa-brain"></i></div>
-                <div class="achiev-info">
-                    <h4 class="achiev-title">Estrataga</h4>
-                    <p class="achiev-desc">Asiste en 100 eliminaciones</p>
-                </div>
-                <div class="achiev-xp">25 XP</div>
-            </div>
+        <div style="text-align: center; padding: 20px 16px;">
+            <i class="fas fa-trophy" style="color: var(--text-muted); font-size: 24px; margin-bottom: 8px; opacity: 0.3;"></i>
+            <p style="color: var(--text-muted); font-size: 12px; margin: 0;">Aún no hay logros disponibles.</p>
         </div>
     </div>
     
@@ -442,57 +528,11 @@
     <div class="widget">
         <div class="widget-header">
             <h3 class="widget-title">Amigos en línea</h3>
-            <a href="#" class="widget-link">Ver todos</a>
+            <a href="{{ url_for('chat.chat_global') }}" class="widget-link">Ver todos</a>
         </div>
-        <div class="friends-list">
-            <div class="friend-item">
-                <div class="friend-info-wrap">
-                    <div class="friend-avatar-wrap">
-                        <img src="https://images.unsplash.com/photo-1618331835717-801e976710b2?w=50&h=50&fit=crop" alt="NexoBlade" class="friend-avatar">
-                        <div class="status-dot online"></div>
-                    </div>
-                    <div class="friend-details">
-                        <h5>NexoBlade</h5>
-                        <span class="friend-state">En línea</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="friend-item">
-                <div class="friend-info-wrap">
-                    <div class="friend-avatar-wrap">
-                        <img src="https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?w=50&h=50&fit=crop" alt="PixelCraft" class="friend-avatar">
-                        <div class="status-dot ingame"></div>
-                    </div>
-                    <div class="friend-details">
-                        <h5>PixelCraft</h5>
-                        <span class="friend-state ingame">En partida</span>
-                    </div>
-                </div>
-                <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=50&h=50&fit=crop" class="friend-game-icon" alt="Minecraft">
-            </div>
-            
-            <div class="friend-item">
-                <div class="friend-info-wrap">
-                    <div class="friend-avatar-wrap">
-                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50&h=50&fit=crop" alt="LunaGamer" class="friend-avatar">
-                        <div class="status-dot ingame"></div>
-                    </div>
-                    <div class="friend-details">
-                        <h5>LunaGamer</h5>
-                        <span class="friend-state ingame">En partida</span>
-                    </div>
-                </div>
-                <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=50&h=50&fit=crop" class="friend-game-icon" alt="Valorant">
-            </div>
-            
-            <div class="friend-item" style="margin-top: 8px;">
-                <div style="display:flex; gap: -10px; margin-left: 8px;">
-                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=50&h=50&fit=crop" style="width:30px; height:30px; border-radius:50%; border:2px solid var(--bg-card); margin-left:-10px; position:relative; z-index:3;">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop" style="width:30px; height:30px; border-radius:50%; border:2px solid var(--bg-card); margin-left:-10px; position:relative; z-index:2;">
-                    <div style="width:30px; height:30px; border-radius:50%; border:2px solid var(--bg-card); margin-left:-10px; position:relative; z-index:1; background:var(--bg-panel); color:var(--text-muted); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">+20</div>
-                </div>
-            </div>
+        <div style="text-align: center; padding: 20px 16px;">
+            <i class="fas fa-users" style="color: var(--text-muted); font-size: 24px; margin-bottom: 8px; opacity: 0.3;"></i>
+            <p style="color: var(--text-muted); font-size: 12px; margin: 0;">Conéctate con otros jugadores en el chat global.</p>
         </div>
     </div>
 </aside>

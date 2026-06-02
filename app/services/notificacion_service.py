@@ -10,4 +10,5 @@ class NotificacionService:
             enlace=enlace,
         )
         db.session.add(notificacion)
+        db.session.commit()
         return notificacion

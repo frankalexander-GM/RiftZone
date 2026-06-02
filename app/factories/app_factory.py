@@ -4,6 +4,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
+from flask_socketio import SocketIO
 
 # Inicializar extensiones
 db = SQLAlchemy()
@@ -11,44 +12,46 @@ bcrypt = Bcrypt()
 login_manager = LoginManager()
 migrate = Migrate()
 csrf = CSRFProtect()
+socketio = SocketIO()
 
 def create_app(config_name='default'):
-    """
-    Fábrica de aplicaciones Flask - GamesSphere
-    """
     import os
     basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-    app = Flask(__name__, template_folder=os.path.join(basedir, 'templates'), static_folder=os.path.join(basedir, 'static'))
+    flask_app = Flask(__name__, template_folder=os.path.join(basedir, 'templates'), static_folder=os.path.join(basedir, 'static'))
     
     from app.config.config import config
-    app.config.from_object(config[config_name])
-    config[config_name].init_app(app)
+    flask_app.config.from_object(config[config_name])
+    config[config_name].init_app(flask_app)
     
-    db.init_app(app)
-    bcrypt.init_app(app)
-    login_manager.init_app(app)
-    migrate.init_app(app, db)
-    csrf.init_app(app)
+    db.init_app(flask_app)
+    bcrypt.init_app(flask_app)
+    login_manager.init_app(flask_app)
+    migrate.init_app(flask_app, db)
+    csrf.init_app(flask_app)
+    socketio.init_app(flask_app, cors_allowed_origins="*")
     
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Inicia sesión para acceder a GamesSphere.'
     login_manager.login_message_category = 'info'
     
-    app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'uploads')
-    upload_folder = app.config['UPLOAD_FOLDER']
+    flask_app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'uploads')
+    upload_folder = flask_app.config['UPLOAD_FOLDER']
     if not os.path.exists(upload_folder):
         os.makedirs(upload_folder)
     
-    register_blueprints(app)
-    register_error_handlers(app)
-    register_template_filters(app)
+    register_blueprints(flask_app)
+    register_error_handlers(flask_app)
+    register_template_filters(flask_app)
+
+    # Inicializar manejadores de SocketIO
+    import app.services.socketio_events
     
     @login_manager.user_loader
     def load_user(user_id):
         from app.models.usuario import Usuario
         return Usuario.query.get(int(user_id))
     
-    @app.after_request
+    @flask_app.after_request
     def add_security_headers(response):
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'SAMEORIGIN'
@@ -57,19 +60,20 @@ def create_app(config_name='default'):
         return response
         
     # Crear tablas faltantes automáticamente al arrancar
-    with app.app_context():
+    with flask_app.app_context():
         try:
             from app.models.usuario import Usuario, Notificacion
             from app.models.chat import MensajeChat
             from app.models.chat_comunidad import MensajeComunidad
             from app.models.clan import Clan, MiembroClan, SolicitudClan, MensajeClan, PublicacionClan
-            from app.models.publicacion import Publicacion, publicacion_likes
+            from app.models.publicacion import Publicacion, publicacion_likes, Poll, PollOption, PollVote, Report, publicacion_oculta
             from app.models.comentario import Comentario
             from app.models.transaccion import Transaccion
             from app.models.tienda import StoreItem, UserInventory
+            from app.models.mensaje_privado import MensajePrivado
             from sqlalchemy import text
             
-            # Actualizar tabla de usuarios con nuevos campos de la Fase 1
+            # Actualizar tabla de usuarios con nuevos campos
             with db.engine.connect() as conn:
                 columnas = [
                     "ALTER TABLE usuarios ADD COLUMN pais VARCHAR(50)",
@@ -87,6 +91,7 @@ def create_app(config_name='default'):
                     "ALTER TABLE usuarios ADD COLUMN ultima_recompensa_diaria DATE",
                     "ALTER TABLE publicaciones ADD COLUMN boost_tipo VARCHAR(20)",
                     "ALTER TABLE publicaciones ADD COLUMN boost_hasta DATETIME",
+                    "ALTER TABLE publicaciones ADD COLUMN fijada BOOLEAN DEFAULT 0",
                 ]
                 for col_sql in columnas:
                     try:
@@ -104,6 +109,30 @@ def create_app(config_name='default'):
                     pass  # Ya existe
                 try:
                     conn.execute(text("ALTER TABLE store_items ADD COLUMN color_hex VARCHAR(20)"))
+                    conn.commit()
+                except Exception:
+                    pass
+
+                # Migrar tabla polls: agregar multiple_choice y allow_change si no existen
+                try:
+                    conn.execute(text("ALTER TABLE polls ADD COLUMN multiple_choice BOOLEAN DEFAULT 0"))
+                    conn.commit()
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE polls ADD COLUMN allow_change BOOLEAN DEFAULT 0"))
+                    conn.commit()
+                except Exception:
+                    pass
+
+                # Migrar tabla polls: agregar hide_results y duracion
+                try:
+                    conn.execute(text("ALTER TABLE polls ADD COLUMN hide_results BOOLEAN DEFAULT 0"))
+                    conn.commit()
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE polls ADD COLUMN duracion VARCHAR(20) DEFAULT '24h'"))
                     conn.commit()
                 except Exception:
                     pass
@@ -141,7 +170,7 @@ def create_app(config_name='default'):
         except Exception as e:
             print(f"\n====== ERROR GRAVE AL CREAR TABLAS ======\n{e}\n========================================\n")
     
-    return app
+    return flask_app
 
 def register_blueprints(app):
     """Registrar todos los blueprints de la aplicación"""
@@ -165,6 +194,9 @@ def register_blueprints(app):
 
     from app.controllers.tienda import tienda_bp
     app.register_blueprint(tienda_bp, url_prefix='/tienda')
+
+    from app.controllers.mensajes import mensajes_bp
+    app.register_blueprint(mensajes_bp, url_prefix='')  # /mensajes
 
 def register_error_handlers(app):
     """Registrar manejadores de errores personalizados"""
@@ -205,6 +237,27 @@ def register_template_filters(app):
         if value is None:
             return ""
         try:
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            if value.tzinfo is None:
+                from datetime import timezone
+                value = value.replace(tzinfo=timezone.utc)
+            diff = now - value
+            seconds = int(diff.total_seconds())
+            if seconds < 60:
+                return 'justo ahora'
+            minutes = seconds // 60
+            if minutes < 60:
+                return f'hace {minutes} min'
+            hours = minutes // 60
+            if hours < 24:
+                return f'hace {hours} h'
+            days = hours // 24
+            if days < 7:
+                return f'hace {days} día{"s" if days != 1 else ""}'
+            weeks = days // 7
+            if weeks < 5:
+                return f'hace {weeks} semana{"s" if weeks != 1 else ""}'
             return value.strftime('%d/%m/%Y')
         except:
             return str(value)

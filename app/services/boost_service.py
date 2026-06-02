@@ -125,7 +125,7 @@ def aplicar_boost(usuario, post_id, plan_key):
     tx = Transaccion(
         user_id=usuario.id_usuario,
         amount=-costo,
-        type='egreso',
+        tipo='egreso',
         description=f"{plan['nombre']} — publicación #{post.id_publicacion}",
     )
     db.session.add(tx)
@@ -146,4 +146,5 @@ def aplicar_boost(usuario, post_id, plan_key):
 
 
 def url_for_dashboard_post(post_id):
-    return f'/jugador/dashboard#post-{post_id}'
+    from flask import url_for
+    return url_for('jugador.dashboard') + f'#post-{post_id}'

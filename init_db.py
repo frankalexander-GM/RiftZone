@@ -7,6 +7,7 @@ from app.factories.app_factory import create_app, db
 from app.models.usuario import Usuario
 from app.models.publicacion import Publicacion
 from app.models.comentario import Comentario
+from app.models.mensaje_privado import MensajePrivado
 
 app = create_app('development')
 

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from 'macros/usuario.html' import nombre_usuario %}
+
+{% block title %}Notificaciones - RiftZone{% endblock %}
+
+{% block content %}
+<div class="notif-page">
+    <div class="notif-page-header">
+        <div>
+            <h1><i class="fas fa-bell" style="color:var(--accent-purple);"></i> Notificaciones</h1>
+            <p class="text-muted">{{ total }} notificación{{ 'es' if total != 1 else '' }}</p>
+        </div>
+        <div style="display:flex; gap:8px;">
+            {% set no_leidas = current_user.notificaciones.filter_by(leido=False).count() %}
+            {% if no_leidas > 0 %}
+            <a href="{{ url_for('jugador.leer_notificaciones') }}" class="btn-primary" style="padding:8px 16px; border-radius:20px; font-size:13px; text-decoration:none;">
+                <i class="fas fa-check-double"></i> Marcar todas leídas ({{ no_leidas }})
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if notificaciones %}
+    <div class="notif-page-list">
+        {% for n in notificaciones %}
+        <a href="{{ n.enlace or '#' }}" class="notif-page-item {% if not n.leido %}notif-unread{% endif %}" {% if n.enlace %}style="cursor:pointer;"{% endif %}>
+            <div class="notif-page-icon">
+                <i class="{{ n.icono }}" style="color: {% if n.tipo == 'clan' %}var(--accent-purple){% elif n.tipo == 'social' %}var(--accent-magenta){% elif n.tipo == 'boost' %}var(--accent-orange){% elif n.tipo == 'seguir' %}var(--accent-green){% else %}var(--accent-cyan){% endif %};"></i>
+            </div>
+            <div class="notif-page-body">
+                <p class="notif-page-message">{{ n.mensaje }}</p>
+                <span class="notif-page-time"><i class="far fa-clock"></i> {{ n.fecha_creacion | timeago }}</span>
+            </div>
+            {% if not n.leido %}
+            <span class="notif-page-dot"></span>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <div class="pagination">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('jugador.notificaciones', page=pagination.prev_num) }}" class="btn-primary" style="padding:8px 16px; border-radius:20px; font-size:13px; text-decoration:none;">
+            <i class="fas fa-chevron-left"></i> Anterior
+        </a>
+        {% endif %}
+        <span style="color:var(--text-muted); font-size:14px; padding:0 12px;">
+            Página {{ pagination.page }} de {{ pagination.pages }}
+        </span>
+        {% if pagination.has_next %}
+        <a href="{{ url_for('jugador.notificaciones', page=pagination.next_num) }}" class="btn-primary" style="padding:8px 16px; border-radius:20px; font-size:13px; text-decoration:none;">
+            Siguiente <i class="fas fa-chevron-right"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="notif-page-empty">
+        <i class="far fa-bell-slash"></i>
+        <h3>Estás al día</h3>
+        <p class="text-muted">No tienes notificaciones. Cuando alguien te siga, comente tus publicaciones o te etiquete, aparecerá aquí.</p>
+        <a href="{{ url_for('jugador.dashboard') }}" class="btn-primary" style="display:inline-block; margin-top:16px; padding:10px 24px; border-radius:20px; text-decoration:none;">
+            <i class="fas fa-home"></i> Ir al inicio
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

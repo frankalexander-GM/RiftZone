@@ -67,7 +67,7 @@
                         {% if en_este_clan.rol == 'lider' %}
                         <button onclick="document.getElementById('modal-configurar-clan').style.display='flex';" class="btn-primary" style="padding: 12px 28px; border-radius: 30px; font-weight: bold; background: transparent; border: 2px solid var(--accent-purple); color: white; transition: 0.2s;"><i class="fas fa-cog"></i> Configurar</button>
                         {% else %}
-                        <form method="POST" action="{{ url_for('clanes.abandonar', clan_id=clan.id_clan) }}" style="margin: 0;" onsubmit="return confirm('¿Estás seguro de que quieres abandonar las filas de este clan?');">
+                        <form method="POST" action="{{ url_for('clanes.abandonar', clan_id=clan.id_clan) }}" style="margin: 0;" onsubmit="return confirm('¿Estás seguro de que quieres abandonar las filas de este clan?');" novalidate>
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn-primary" style="padding: 12px 28px; border-radius: 30px; font-weight: bold; background: rgba(255,255,255,0.1); border: 2px solid transparent; color: white; transition: 0.2s;"><i class="fas fa-sign-out-alt"></i> Abandonar</button>
                         </form>
@@ -77,7 +77,7 @@
                             <i class="fas fa-clock"></i> Solicitud en Revisión
                         </button>
                     {% else %}
-                        <form method="POST" action="{{ url_for('clanes.unirse', clan_id=clan.id_clan) }}" style="margin: 0;">
+                        <form method="POST" action="{{ url_for('clanes.unirse', clan_id=clan.id_clan) }}" style="margin: 0;" novalidate>
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn-primary" style="padding: 14px 36px; border-radius: 30px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); transition: transform 0.2s;">
                                 {% if clan.privacidad == 'privado' %}<i class="fas fa-lock"></i> Solicitar Acceso{% else %}<i class="fas fa-plus"></i> Unirme al Clan{% endif %}
@@ -109,7 +109,7 @@
                     <div style="display: flex; gap: 16px; align-items: flex-start;">
                         <img src="{{ current_user.foto_perfil if current_user.foto_perfil else 'https://ui-avatars.com/api/?name=' + current_user.username }}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-purple);">
                         <div style="flex: 1;">
-                            <form id="clan-post-form" onsubmit="event.preventDefault(); publicarMuro();">
+                            <form id="clan-post-form" onsubmit="event.preventDefault(); publicarMuro();" novalidate>
                                 <textarea id="clan-post-input" placeholder="Comparte una estrategia o anuncio oficial con los miembros de tu clan..." required style="width: 100%; height: 80px; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 12px; border-radius: 12px; color: white; outline: none; resize: none; font-size: 15px;"></textarea>
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
                                     <div style="display: flex; gap: 12px;">
@@ -200,7 +200,7 @@
                 </div>
                 
                 <div style="padding: 12px; background: var(--bg-dark); border-top: 1px solid var(--border-color);">
-                    <form id="clan-chat-form" style="display: flex; gap: 8px; margin: 0;" onsubmit="event.preventDefault(); enviarMensajeChat();">
+                    <form id="clan-chat-form" style="display: flex; gap: 8px; margin: 0;" onsubmit="event.preventDefault(); enviarMensajeChat();" novalidate>
                         <input type="text" id="clan-chat-input" placeholder="Habla con tu escuadrón..." required style="flex: 1; background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 12px; border-radius: 8px; color: white; outline: none; font-size: 13px;">
                         <button type="submit" class="btn-primary" style="padding: 0 16px; border-radius: 8px;"><i class="fas fa-paper-plane"></i></button>
                     </form>
@@ -237,13 +237,13 @@
                             <!-- Menú discreto -->
                             <div id="menu-roster-{{ miembro.id_miembro }}" style="display: none; position: absolute; right: 0; top: 100%; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; width: 160px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); z-index: 100;">
                                 {% if en_este_clan.rol == 'lider' %}
-                                <form method="POST" action="{{ url_for('clanes.transferir_mando', clan_id=clan.id_clan, usuario_id=miembro.usuario_id) }}" style="margin:0; margin-bottom: 4px;" onsubmit="return confirm('¿Seguro que deseas CEDER EL LIDERAZGO a {{ miembro.usuario.username }}? Pasarás a ser Administrador y no podrás revertir esta acción.');">
+                                <form method="POST" action="{{ url_for('clanes.transferir_mando', clan_id=clan.id_clan, usuario_id=miembro.usuario_id) }}" style="margin:0; margin-bottom: 4px;" onsubmit="return confirm('¿Seguro que deseas CEDER EL LIDERAZGO a {{ miembro.usuario.username }}? Pasarás a ser Administrador y no podrás revertir esta acción.');" novalidate>
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" style="width: 100%; text-align: left; background:transparent; border:none; color: #FBBF24; cursor:pointer; padding: 6px; font-size: 12px; border-radius: 4px; transition: 0.2s;" onmouseover="this.style.background='rgba(251, 191, 36, 0.1)'" onmouseout="this.style.background='transparent'"><i class="fas fa-crown"></i> Transferir Mando</button>
                                 </form>
                                 {% endif %}
                                 
-                                <form method="POST" action="{{ url_for('clanes.expulsar', clan_id=clan.id_clan, usuario_id=miembro.usuario_id) }}" style="margin:0;" onsubmit="return confirm('¿Seguro que deseas expulsar a {{ miembro.usuario.username }} del clan?');">
+                                <form method="POST" action="{{ url_for('clanes.expulsar', clan_id=clan.id_clan, usuario_id=miembro.usuario_id) }}" style="margin:0;" onsubmit="return confirm('¿Seguro que deseas expulsar a {{ miembro.usuario.username }} del clan?');" novalidate>
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" style="width: 100%; text-align: left; background:transparent; border:none; color:var(--accent-red); cursor:pointer; padding: 6px; font-size: 12px; border-radius: 4px; transition: 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'"><i class="fas fa-sign-out-alt"></i> Expulsar Miembro</button>
                                 </form>
@@ -272,11 +272,11 @@
                                 <span style="color: white; font-size: 13px; font-weight: bold;">{{ sol.usuario.username }}</span>
                             </div>
                             <div style="display: flex; gap: 8px;">
-                                <form method="POST" action="{{ url_for('clanes.gestionar_solicitud', solicitud_id=sol.id_solicitud, accion='aceptar') }}" style="flex: 1; margin: 0;">
+                                <form method="POST" action="{{ url_for('clanes.gestionar_solicitud', solicitud_id=sol.id_solicitud, accion='aceptar') }}" style="flex: 1; margin: 0;" novalidate>
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" style="width: 100%; background: rgba(16, 185, 129, 0.2); border: 1px solid var(--accent-green); color: var(--accent-green); padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s;"><i class="fas fa-check"></i> Aceptar</button>
                                 </form>
-                                <form method="POST" action="{{ url_for('clanes.gestionar_solicitud', solicitud_id=sol.id_solicitud, accion='rechazar') }}" style="flex: 1; margin: 0;">
+                                <form method="POST" action="{{ url_for('clanes.gestionar_solicitud', solicitud_id=sol.id_solicitud, accion='rechazar') }}" style="flex: 1; margin: 0;" novalidate>
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" style="width: 100%; background: rgba(239, 68, 68, 0.2); border: 1px solid var(--accent-red); color: var(--accent-red); padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s;"><i class="fas fa-times"></i> Rechazar</button>
                                 </form>
@@ -300,7 +300,7 @@
             <h3 style="color: white; margin: 0; font-size: 18px;"><i class="fas fa-cog" style="color: var(--accent-purple);"></i> Configuración del Clan</h3>
             <button onclick="document.getElementById('modal-configurar-clan').style.display='none';" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;"><i class="fas fa-times"></i></button>
         </div>
-        <form method="POST" action="{{ url_for('clanes.editar', clan_id=clan.id_clan) }}" style="padding: 24px;">
+        <form method="POST" action="{{ url_for('clanes.editar', clan_id=clan.id_clan) }}" style="padding: 24px;" novalidate>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div style="margin-bottom: 16px;">

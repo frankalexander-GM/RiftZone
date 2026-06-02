@@ -4,7 +4,7 @@
 
 {% block content %}
 <style>
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
     .plan-card--gold {
         transform: none !important;
     }
@@ -125,14 +125,14 @@ function comprarPremium(plan) {
     .then(res => res.json())
     .then(data => {
         if(data.success) {
-            alert("👑 " + data.message);
+            showToast(data.message, 'success');
             location.reload();
         } else {
-            alert("❌ Error: " + data.message);
+            showToast(data.message, 'error');
         }
     })
     .catch(e => {
-        alert("Error de conexión al procesar el pago.");
+        showToast('Error de conexión al procesar el pago.', 'error');
     });
 }
 </script>

@@ -141,7 +141,7 @@
                     });
                     const data = await res.json().catch(() => ({}));
                     if (!res.ok) {
-                        alert(data.error || 'No se pudo enviar el mensaje.');
+                        showToast(data.error || 'No se pudo enviar el mensaje.', 'error');
                         input.value = contenido;
                         return;
                     }
@@ -149,7 +149,7 @@
                     await cargarMensajes();
                 } catch (err) {
                     console.error(err);
-                    alert('Error de conexión al enviar.');
+                    showToast('Error de conexión al enviar.', 'error');
                     input.value = contenido;
                 } finally {
                     if (submitBtn) submitBtn.disabled = false;

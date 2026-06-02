@@ -372,6 +372,7 @@
   .plan-card { padding: 24px 20px; }
   .compare-table th,
   .compare-table td { padding: 10px 12px; font-size: 12px; }
+  .vip-active-banner { padding: 20px 16px; }
 }
 </style>
 
@@ -510,53 +511,9 @@
 </div>
 
 <script>
-const planesYaReclamados = {{ (planes_reclamados or [])|tojson }};
-
 function comprarPremium(plan, btn) {
-    if (planesYaReclamados.includes(plan)) {
-        alert('Ya activaste este pase. Solo se puede reclamar una vez.');
-        return;
-    }
-    const meta = document.querySelector('meta[name="csrf-token"]');
-    if (!meta) {
-        alert('Error de seguridad. Recarga la página.');
-        return;
-    }
-    const nombrePlan = plan.charAt(0).toUpperCase() + plan.slice(1);
-    if (!confirm(`Activar el Pase ${nombrePlan}? Solo podrás reclamarlo una vez.`)) return;
-
-    if (btn) {
-        btn.disabled = true;
-        btn.dataset.prev = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Activando...';
-    }
-
-    fetch("{{ url_for('jugador.comprar_premium') }}", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": meta.getAttribute("content"),
-            "X-Requested-With": "XMLHttpRequest",
-        },
-        body: JSON.stringify({ plan: plan }),
-    })
-    .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.success) throw new Error(data.message || "No se pudo activar.");
-        return data;
-    })
-    .then((data) => {
-        alert(" " + data.message);
-        location.reload();
-    })
-    .catch((e) => {
-        alert(" " + (e.message || "Error de conexión."));
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = btn.dataset.prev || btn.innerHTML;
-        }
-    });
+    var nombres = { plata: 'Pase Plata ($4.99/mes)', oro: 'Pase Oro ($9.99/mes)', diamante: 'Pase Diamante ($19.99/mes)' };
+    showToast('Próximamente podrás activar ' + (nombres[plan] || plan) + '. ¡Pasarela de pago en camino!', 'info');
 }
 </script>
 {% endblock %}

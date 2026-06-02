@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - RiftZone</title>
     
-    <link href="{{ url_for('static', filename='css/games_sphere.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/games_sphere.css') }}?v=3" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/glassmorphism.css') }}?v=3" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
@@ -103,14 +104,29 @@
             font-weight: 600;
         }
         
-        .alert {
-            background-color: rgba(255, 45, 149, 0.1);
-            border-left: 4px solid var(--accent-magenta);
-            color: white;
-            padding: 12px 16px;
-            margin-bottom: 24px;
-            border-radius: 4px;
-            font-size: 14px;
+        .password-wrapper {
+            position: relative;
+        }
+        .password-wrapper .form-control {
+            padding-right: 44px;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 6px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+        .password-toggle:hover {
+            color: var(--accent-purple);
         }
     </style>
 </head>
@@ -127,34 +143,35 @@
     
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert">
-                    <i class="fas fa-exclamation-circle" style="margin-right:8px; color:var(--accent-magenta);"></i> {{ message }}
-                </div>
-            {% endfor %}
+        <div id="flash-data" style="display:none;" data-messages='{{ messages | tojson | safe }}'></div>
         {% endif %}
     {% endwith %}
 
-    <form method="POST" action="{{ url_for('auth.register') }}">
+    <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="form-group">
             <label class="form-label">Nombre de invocador / GamerTag</label>
-            <input type="text" name="nombre" class="form-control" required placeholder="Ej. Alex Mercer">
+            <input type="text" name="nombre" class="form-control" required placeholder="Ej. Alex Mercer" maxlength="50" value="{{ request.form.get('nombre', '') }}">
         </div>
         
         <div class="form-group">
             <label class="form-label">Username</label>
-            <input type="text" name="username" class="form-control" required placeholder="@tu_user">
+            <input type="text" name="username" class="form-control" required placeholder="@tu_user" maxlength="30" pattern="^[a-zA-Z0-9_]+$" title="Solo letras, números y guion bajo" value="{{ request.form.get('username', '') }}">
         </div>
         
         <div class="form-group">
             <label class="form-label">Correo Electrónico</label>
-            <input type="email" name="email" class="form-control" required placeholder="correo@ejemplo.com">
+            <input type="email" name="email" class="form-control" required placeholder="correo@ejemplo.com" maxlength="100" value="{{ request.form.get('email', '') }}">
         </div>
         
         <div class="form-group">
             <label class="form-label">Contraseña</label>
-            <input type="password" name="password" class="form-control" required placeholder="Mínimo 6 caracteres" minlength="6">
+            <div class="password-wrapper">
+                <input type="password" name="password" class="form-control" required placeholder="Mínimo 6 caracteres" minlength="6" maxlength="100" value="{{ request.form.get('password', '') }}" id="reg-password">
+                <button type="button" class="password-toggle" onclick="togglePassword('reg-password', this)" tabindex="-1" aria-label="Mostrar contraseña">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
         </div>
         
         <button type="submit" class="btn-primary btn-block">Registrarse <i class="fas fa-arrow-right"></i></button>
@@ -165,5 +182,50 @@
     </div>
 </div>
 
+<script>
+function togglePassword(id, btn) {
+    var input = document.getElementById(id);
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        btn.setAttribute('aria-label', 'Ocultar contraseña');
+    } else {
+        input.type = 'password';
+        btn.innerHTML = '<i class="fas fa-eye"></i>';
+        btn.setAttribute('aria-label', 'Mostrar contraseña');
+    }
+}
+</script>
+<!-- Flash messages as toasts -->
+<script>
+if (typeof showToast !== 'function') {
+  function showToast(msg, type) {
+    type = type || 'success';
+    var c = document.getElementById('toast-container');
+    if (!c) { c = document.createElement('div'); c.id='toast-container'; document.body.appendChild(c); }
+    var icons = { error: 'fa-exclamation-circle', info: 'fa-info-circle', success: 'fa-check-circle' };
+    var t = document.createElement('div');
+    t.className = 'toast toast--' + type;
+    t.innerHTML = '<i class="fas ' + (icons[type] || 'fa-check-circle') + '"></i> ' + msg;
+    c.appendChild(t);
+    setTimeout(function(){ t.classList.add('toast--exiting'); setTimeout(function(){ t.remove(); }, 350); }, 4000);
+  }
+}
+(function() {
+  var el = document.getElementById('flash-data');
+  if (!el) return;
+  try {
+    var messages = JSON.parse(el.getAttribute('data-messages') || '[]');
+    if (Array.isArray(messages)) {
+      messages.forEach(function(item) {
+        if (Array.isArray(item)) {
+          showToast(item[1], item[0] === 'error' ? 'error' : 'success');
+        }
+      });
+    }
+  } catch(e) {}
+  el.remove();
+})();
+</script>
 </body>
 </html>

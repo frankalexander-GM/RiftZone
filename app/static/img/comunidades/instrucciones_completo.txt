@@ -1,0 +1,75 @@
+INSTRUCCIONES PARA LAS IMÁGENES DE COMUNIDADES
+================================================
+
+Carpeta: shooters/  (poner todas aquí)
+----------------------------------------
+cs2.jpg        - Counter-Strike 2
+valorant.jpg   - Valorant
+rainbow6.jpg   - Rainbow Six Siege
+overwatch2.jpg - Overwatch 2
+thefinals.jpg  - The Finals
+destiny2.jpg   - Destiny 2
+bo6.jpg        - Call of Duty: Black Ops 6
+tf2.jpg        - Team Fortress 2
+bf2042.jpg     - Battlefield 2042
+tarkov.jpg     - Escape from Tarkov
+hunt.jpg       - Hunt: Showdown
+splitgate.jpg  - Splitgate
+xdefiant.jpg   - XDefiant
+fortnite.jpg   - Fortnite
+warzone.jpg    - Call of Duty: Warzone
+apex.jpg       - Apex Legends
+pubg.jpg       - PUBG: Battlegrounds
+freefire.jpg   - Free Fire
+fallguys.jpg   - Fall Guys
+codm.jpg       - Call of Duty Mobile
+stumble.jpg    - Stumble Guys
+lol.jpg        - League of Legends
+mlbb.jpg       - Mobile Legends: Bang Bang
+hok.jpg        - Honor of Kings
+genshin.jpg    - Genshin Impact
+warframe.jpg   - Warframe
+wow.jpg        - World of Warcraft
+ffxiv.jpg      - Final Fantasy XIV
+bg3.jpg        - Baldur's Gate 3
+d4.jpg         - Diablo IV
+poe.jpg        - Path of Exile
+lostark.jpg    - Lost Ark
+bdo.jpg        - Black Desert Online
+eldenring.jpg  - Elden Ring
+minecraft.jpg  - Minecraft
+roblox.jpg     - Roblox
+palworld.jpg   - Palworld
+ark.jpg        - ARK: Survival Evolved
+rust.jpg       - Rust
+terraria.jpg   - Terraria
+valheim.jpg    - Valheim
+nms.jpg        - No Man's Sky
+rdr2.jpg       - Red Dead Redemption 2
+cyberpunk.jpg  - Cyberpunk 2077
+sot.jpg        - Sea of Thieves
+forest.jpg     - The Forest
+eafc26.jpg     - EA Sports FC 26
+rocket.jpg     - Rocket League
+helldivers2.jpg - Helldivers 2
+amongus.jpg    - Among Us
+dbd.jpg        - Dead by Daylight
+phasmo.jpg     - Phasmophobia
+lethal.jpg     - Lethal Company
+brawlhalla.jpg - Brawlhalla
+sf6.jpg        - Street Fighter 6
+tekken8.jpg    - Tekken 8
+mk8.jpg        - Mario Kart 8 Deluxe
+gt7.jpg        - Gran Turismo 7
+fh5.jpg        - Forza Horizon 5
+
+Carpeta: mobas/
+----------------
+dota2.jpg      - Dota 2
+
+Carpeta: supervivencia/
+------------------------
+gtav.jpg       - GTA V / GTA Online
+
+RECOMENDACIÓN: Buscar en Google "NOMBRE_DEL_JUEGO logo" o "NOMBRE_DEL_JUEGO key art"
+y guardar como .jpg de al menos 460x215 px aproximadamente.

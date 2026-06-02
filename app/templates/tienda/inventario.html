@@ -369,7 +369,7 @@ document.addEventListener('keydown', function(e) {
 function inventarioAccion(url, errorMsg, btn) {
     const meta = document.querySelector('meta[name="csrf-token"]');
     if (!meta) {
-        alert('Error de seguridad (CSRF). Recarga la página.');
+        showToast('Error de seguridad (CSRF). Recarga la página.', 'error');
         return Promise.resolve();
     }
     if (btn) {
@@ -395,11 +395,11 @@ function inventarioAccion(url, errorMsg, btn) {
         return data;
     })
     .then((data) => {
-        alert('✅ ' + (data.message || 'Listo'));
+        showToast(data.message || 'Listo', 'success');
         location.reload();
     })
     .catch((err) => {
-        alert('❌ ' + (err.message || errorMsg));
+        showToast(err.message || errorMsg, 'error');
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = btn.dataset.prevHtml || btn.innerHTML;

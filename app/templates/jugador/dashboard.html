@@ -42,38 +42,216 @@
     </div>
 </div>
 
-<!-- CREATE POST -->
+<!-- CREATE POST (Facebook style) -->
 {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
-<div class="create-post" style="margin-bottom:16px;">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert" style="background:rgba(16, 185, 129, 0.1); border-left:4px solid var(--accent-green); padding:8px 12px; margin-bottom:16px; border-radius:4px; font-size:13px;">
-                    <i class="fas fa-check-circle" style="color:var(--accent-green);"></i> {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    <form id="create-post-form" method="POST" action="{{ url_for('jugador.crear_publicacion') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <div class="create-post-header" style="margin-bottom:12px;">
-            <img src="{{ current_user | user_avatar }}" alt="Avatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
-            <textarea name="contenido" class="post-input" placeholder="¿Qué estás pensando, {{ current_user.username }}?" required style="height:50px; padding:12px; font-size:14px; border:none; background:transparent; border-bottom:1px solid rgba(255,255,255,0.1); border-radius:0;"></textarea>
-        </div>
+
+<!-- Facebook-style compact bar -->
+<div class="fb-create-post">
+    <div class="fb-create-post-top" onclick="openPostModal('texto')">
+        <img src="{{ current_user | user_avatar }}" alt="Avatar" class="fb-avatar">
+        <span class="fb-placeholder">¿Qué estás pensando, {{ current_user.username }}?</span>
+    </div>
+    <div class="fb-create-post-divider"></div>
+    <div class="fb-create-post-actions">
+        <button type="button" class="fb-action-btn" data-action="image" onclick="openPostModal('image')">
+            <i class="far fa-image" style="color:#10B981;"></i> Imagen
+        </button>
+        <button type="button" class="fb-action-btn" data-action="clip" onclick="openPostModal('clip')">
+            <i class="fas fa-video" style="color:#8B5CF6;"></i> Clip
+        </button>
+        <button type="button" class="fb-action-btn" data-action="poll" onclick="openPostModal('poll')">
+            <i class="fas fa-poll" style="color:#3B82F6;"></i> Encuesta
+        </button>
+        <button type="button" class="fb-action-btn" data-action="tournament" onclick="openPostModal('tournament')">
+            <i class="fas fa-trophy" style="color:#FF2D95;"></i> Torneo
+        </button>
+    </div>
+</div>
+
+<!-- Modal overlay -->
+<div id="post-modal" class="post-modal-overlay" style="display:none;" onclick="closePostModal(event)">
+    <div class="post-modal-container" onclick="event.stopPropagation()">
         
-        <div id="image-url-container" style="display:none; padding:0 0 12px 56px;">
-            <input type="url" name="imagen_url" placeholder="Pega la URL de tu imagen aquí..." style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); padding:10px 12px; border-radius:var(--radius-sm); color:white; font-size:13px;">
+        <!-- Modal header -->
+        <div class="post-modal-header">
+            <span class="post-modal-title">Crear publicación</span>
+            <button type="button" class="post-modal-x" onclick="closePostModal()"><i class="fas fa-times"></i></button>
         </div>
 
-        <div class="create-post-actions" style="padding-left:56px; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 12px;">
-            <div class="post-types" style="display:flex; gap:12px; flex-wrap: wrap;">
-                <button type="button" class="post-type-btn image" onclick="document.getElementById('image-url-container').style.display = 'block';"><i class="far fa-image"></i> Imagen</button>
-                <button type="button" class="post-type-btn clip"><i class="fas fa-video"></i> Clip</button>
-                <button type="button" class="post-type-btn poll"><i class="fas fa-poll"></i> Encuesta</button>
-                <button type="button" class="post-type-btn tournament"><i class="fas fa-trophy"></i> Torneo</button>
+        <form method="POST" action="{{ url_for('jugador.crear_publicacion') }}" enctype="multipart/form-data" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="tipo_post" id="modal-tipo-post" value="texto">
+
+            <!-- Avatar + textarea row -->
+            <div class="post-modal-body">
+                <img src="{{ current_user | user_avatar }}" alt="Avatar" class="fb-avatar">
+                <textarea name="contenido" id="modal-contenido" class="modal-textarea" placeholder="¿Qué estás pensando, {{ current_user.username }}?" rows="3"></textarea>
             </div>
-            <div style="display:flex; gap:12px; align-items:center; flex-wrap: wrap;">
-                <select name="juego" style="background:var(--bg-card); border:1px solid var(--border-color); padding:8px 12px; border-radius:20px; color:white; font-size:13px; cursor:pointer;" required>
+
+            <!-- Section: Image (upload gallery + URL) -->
+            <div id="modal-section-image" class="modal-section" style="display:none;">
+                <div class="modal-section-inner">
+                    <div class="modal-upload-row">
+                        <label class="modal-file-label" for="modal-image-file">
+                            <i class="fas fa-folder-open"></i> Subir imagen
+                            <input type="file" name="imagen_archivo" id="modal-image-file" accept="image/*" style="display:none;">
+                        </label>
+                        <span class="modal-or">o</span>
+                        <input type="url" name="imagen_url" id="modal-image-url" class="modal-url-input" placeholder="Pega URL de la imagen...">
+                    </div>
+                    <div id="modal-image-preview" class="modal-preview" style="display:none;">
+                        <img src="#" alt="Vista previa">
+                        <button type="button" class="modal-preview-clear" onclick="clearImagePreview()"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="modal-section-label"><i class="far fa-image"></i> La imagen aparecerá al final de tu publicación</div>
+                </div>
+            </div>
+
+            <!-- Section: Clip (upload video + URL embed) -->
+            <div id="modal-section-clip" class="modal-section" style="display:none;">
+                <div class="modal-section-inner">
+                    <div class="modal-upload-row">
+                        <label class="modal-file-label" for="modal-video-file">
+                            <i class="fas fa-video"></i> Subir video
+                            <input type="file" name="video_archivo" id="modal-video-file" accept="video/*" style="display:none;">
+                        </label>
+                        <span class="modal-or">o</span>
+                        <input type="url" name="clip_url" id="modal-clip-url" class="modal-url-input" placeholder="Pega URL (YouTube, Twitch...)...">
+                    </div>
+                    <div id="modal-clip-preview" class="modal-preview" style="display:none;">
+                        <video src="#" controls style="max-height:200px; width:100%; border-radius:8px;"></video>
+                        <button type="button" class="modal-preview-clear" onclick="clearClipPreview()"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="modal-section-label"><i class="fas fa-video"></i> Tu clip aparecerá incrustado en la publicación</div>
+                </div>
+            </div>
+
+            <!-- Section: Poll -->
+            <div id="modal-section-poll" class="modal-section" style="display:none;">
+                <div class="modal-section-inner">
+                    <div class="modal-poll-question">
+                        <i class="fas fa-question-circle" style="color:var(--accent-purple);"></i>
+                        <input type="text" name="poll_pregunta" id="poll-pregunta" class="modal-poll-input" placeholder="Ej: ¿Cuál es tu juego favorito de 2026?" style="flex:1;">
+                    </div>
+
+                    <div class="modal-poll-opts" id="poll-opts-container">
+                        <!-- JS renders options here -->
+                    </div>
+
+                    <button type="button" class="modal-poll-add" id="poll-add-btn" onclick="addPollOption()">
+                        <i class="fas fa-plus"></i> Añadir opción
+                    </button>
+
+                    <div class="poll-config">
+                        <div class="poll-config-row">
+                            <label class="poll-config-label">
+                                <i class="fas fa-clock"></i> Duración de la encuesta
+                            </label>
+                            <select name="poll_duration" class="poll-duration-select">
+                                <option value="24h">24 horas</option>
+                                <option value="3d">3 días</option>
+                                <option value="1w">1 semana</option>
+                                <option value="custom">Personalizada</option>
+                            </select>
+                        </div>
+                        <label class="poll-config-label">
+                            <input type="checkbox" name="poll_multiple" value="1">
+                            <span class="poll-config-toggle"></span>
+                            <span class="poll-config-text">Permitir elegir varias opciones</span>
+                        </label>
+                        <label class="poll-config-label">
+                            <input type="checkbox" name="poll_change" value="1">
+                            <span class="poll-config-toggle"></span>
+                            <span class="poll-config-text">Permitir cambiar voto después</span>
+                        </label>
+                        <label class="poll-config-label">
+                            <input type="checkbox" name="poll_hide_results" value="1">
+                            <span class="poll-config-toggle"></span>
+                            <span class="poll-config-text">Mostrar resultados solo al votar</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Tournament -->
+            <div id="modal-section-tournament" class="modal-section" style="display:none;">
+                <div class="modal-section-inner">
+                    <div class="tourn-row">
+                        <div class="tourn-field tourn-name">
+                            <label><i class="fas fa-trophy"></i> Nombre del torneo</label>
+                            <input type="text" name="tour_nombre" placeholder="Ej: Valorant Cup #4">
+                        </div>
+                        <div class="tourn-field tourn-game">
+                            <label><i class="fas fa-gamepad"></i> Juego / Categoría</label>
+                            <select name="tour_juego">
+                                <option value="">Seleccionar juego...</option>
+                                <optgroup label="🔥 Los Titanes Mundiales">
+                                    <option value="Roblox">Roblox</option>
+                                    <option value="Counter-Strike 2">Counter-Strike 2</option>
+                                    <option value="Minecraft">Minecraft</option>
+                                    <option value="EA SPORTS FC 26">EA SPORTS FC 26</option>
+                                </optgroup>
+                                <optgroup label="🎯 Shooters y Battle Royales">
+                                    <option value="Call of Duty: Warzone">Call of Duty: Warzone</option>
+                                    <option value="Apex Legends">Apex Legends</option>
+                                    <option value="Valorant">Valorant</option>
+                                    <option value="Fortnite">Fortnite</option>
+                                </optgroup>
+                                <optgroup label="🎮 Más populares">
+                                    <option value="Grand Theft Auto V">Grand Theft Auto V</option>
+                                    <option value="Honor of Kings">Honor of Kings</option>
+                                    <option value="League of Legends">League of Legends</option>
+                                    <option value="Dota 2">Dota 2</option>
+                                    <option value="Free Fire">Free Fire</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="tourn-row">
+                        <div class="tourn-field tourn-small">
+                            <label><i class="fas fa-calendar-alt"></i> Fecha</label>
+                            <input type="date" name="tour_fecha">
+                        </div>
+                        <div class="tourn-field tourn-small">
+                            <label><i class="fas fa-clock"></i> Hora</label>
+                            <input type="time" name="tour_hora">
+                        </div>
+                        <div class="tourn-field tourn-small">
+                            <label><i class="fas fa-users"></i> Cupos máx.</label>
+                            <input type="number" name="tour_cupos" placeholder="Ej: 16" min="2" max="256">
+                        </div>
+                    </div>
+
+                    <div class="tourn-row">
+                        <div class="tourn-field tourn-prize">
+                            <label><i class="fas fa-coins"></i> Premio / Recompensa</label>
+                            <input type="text" name="tour_premio" placeholder="Ej: 1000 Pavos o $50 USD">
+                        </div>
+                        <div class="tourn-field tourn-format">
+                            <label><i class="fas fa-sitemap"></i> Formato del torneo</label>
+                            <select name="tour_formato">
+                                <option value="">Seleccionar formato...</option>
+                                <option value="1v1">1v1</option>
+                                <option value="5v5">5v5</option>
+                                <option value="Battle Royale">Battle Royale</option>
+                                <option value="Todos contra todos">Todos contra todos</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="tourn-row">
+                        <div class="tourn-field tourn-full">
+                            <label><i class="fas fa-align-left"></i> Reglas y descripción</label>
+                            <textarea name="tour_desc" placeholder="Escribe un mensaje de bienvenida, reglas o requisitos del torneo aquí..." rows="4"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer: game selector + submit -->
+            <div class="post-modal-footer">
+                <select name="juego" class="modal-game-select">
                     <option value="General" selected>General</option>
                     <optgroup label="🔥 Los Titanes Mundiales">
                         <option value="Roblox">Roblox</option>
@@ -99,55 +277,295 @@
                         <option value="GTA V">GTA V</option>
                     </optgroup>
                 </select>
-                <button type="submit" class="btn-primary" style="padding:8px 24px; border-radius:20px;">Publicar</button>
+                <button type="submit" class="modal-submit-btn">
+                    <i class="fas fa-paper-plane"></i> Publicar
+                </button>
             </div>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
+
+<script>
+var currentModalType = 'texto';
+var modal = document.getElementById('post-modal');
+var tipoInput = document.getElementById('modal-tipo-post');
+
+function openPostModal(type) {
+    currentModalType = type;
+    tipoInput.value = type;
+    
+    // Hide all sections
+    document.querySelectorAll('.modal-section').forEach(function(s) { s.style.display = 'none'; });
+    
+    // Show the relevant section
+    var section = document.getElementById('modal-section-' + type);
+    if (section) section.style.display = 'block';
+    
+    // Set title
+    var titles = { 'texto': 'Crear publicación', 'image': 'Agregar imagen', 'clip': 'Compartir clip', 'poll': 'Crear encuesta', 'tournament': 'Crear torneo' };
+    document.querySelector('.post-modal-title').textContent = titles[type] || 'Crear publicación';
+    
+    // Update textarea placeholder
+    var ta = document.getElementById('modal-contenido');
+    if (type === 'texto') {
+        ta.placeholder = '¿Qué estás pensando, {{ current_user.username }}?';
+    } else {
+        ta.placeholder = 'Describe tu publicación (opcional)';
+    }
+    
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closePostModal(e) {
+    if (e && e.target !== modal) return;
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+    // Reset type to texto
+    tipoInput.value = 'texto';
+    currentModalType = 'texto';
+    // Clear fields
+    document.getElementById('modal-contenido').value = '';
+    clearImagePreview();
+    clearClipPreview();
+    var urlInputs = document.querySelectorAll('.modal-url-input');
+    urlInputs.forEach(function(i) { i.value = ''; });
+    var pollInputs = document.querySelectorAll('.modal-poll-input');
+    pollInputs.forEach(function(i) { i.value = ''; });
+}
+
+// Close on Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modal.style.display === 'flex') closePostModal();
+});
+
+// Image preview (URL)
+document.getElementById('modal-image-url').addEventListener('input', function() {
+    var preview = document.getElementById('modal-image-preview');
+    var img = preview.querySelector('img');
+    if (this.value) {
+        img.src = this.value;
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+});
+
+// Image file preview
+document.getElementById('modal-image-file').addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+        var file = this.files[0];
+        if (!file.type.startsWith('image/')) {
+            showToast('Solo se permiten imágenes en la sección Imagen.', 'error');
+            this.value = '';
+            clearImagePreview();
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var preview = document.getElementById('modal-image-preview');
+            var img = preview.querySelector('img');
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+function clearImagePreview() {
+    document.getElementById('modal-image-preview').style.display = 'none';
+    document.getElementById('modal-image-url').value = '';
+    document.getElementById('modal-image-file').value = '';
+}
+
+// Clip video file preview
+document.getElementById('modal-video-file').addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+        var file = this.files[0];
+        if (!file.type.startsWith('video/')) {
+            showToast('Solo se permiten archivos de video en la sección Clip.', 'error');
+            this.value = '';
+            clearClipPreview();
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var preview = document.getElementById('modal-clip-preview');
+            var video = preview.querySelector('video');
+            video.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+document.getElementById('modal-clip-url').addEventListener('input', function() {
+    var preview = document.getElementById('modal-clip-preview');
+    var video = preview.querySelector('video');
+    if (this.value) {
+        video.src = this.value;
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+});
+
+function clearClipPreview() {
+    document.getElementById('modal-clip-preview').style.display = 'none';
+    document.getElementById('modal-clip-url').value = '';
+    document.getElementById('modal-video-file').value = '';
+}
+
+// === Dynamic Poll Options ===
+var pollOpts = ['', ''];
+var MAX_POLL_OPTS = 5;
+
+function renderPollOptions() {
+    var container = document.getElementById('poll-opts-container');
+    var letters = 'ABCDEFGHIJ';
+    var html = '';
+    for (var i = 0; i < pollOpts.length; i++) {
+        html += '<div class="modal-poll-opt">';
+        html += '  <span class="modal-poll-letter">' + letters[i] + '</span>';
+        html += '  <input type="text" name="poll_op[]" class="modal-poll-input" placeholder="Opción ' + letters[i] + '" value="' + pollOpts[i].replace(/"/g, '&quot;') + '" oninput="pollOpts[' + i + ']=this.value">';
+        html += '  <button type="button" class="modal-poll-opt-del" onclick="removePollOption(' + i + ')" title="Eliminar opción"><i class="fas fa-times"></i></button>';
+        html += '</div>';
+    }
+    container.innerHTML = html;
+    var addBtn = document.getElementById('poll-add-btn');
+    addBtn.style.display = pollOpts.length >= MAX_POLL_OPTS ? 'none' : '';
+}
+
+function addPollOption() {
+    if (pollOpts.length >= MAX_POLL_OPTS) return;
+    pollOpts.push('');
+    renderPollOptions();
+    // Focus the new input
+    var inputs = document.querySelectorAll('#poll-opts-container .modal-poll-input');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+function removePollOption(index) {
+    if (pollOpts.length <= 2) return;
+    pollOpts.splice(index, 1);
+    renderPollOptions();
+}
+
+// Init with 2 empty options
+renderPollOptions();
+
+// === Post dropdown toggle ===
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-dropdown-btn]');
+    if (btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        var menu = btn.parentNode.querySelector('[data-dropdown-menu]');
+        if (!menu) return;
+        var isOpen = menu.classList.contains('open');
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-menu.open').forEach(function(m) {
+            if (m !== menu) m.classList.remove('open');
+        });
+        menu.classList.toggle('open');
+        return;
+    }
+    // Close dropdown if click outside
+    var openMenu = e.target.closest('.dropdown-menu');
+    if (!openMenu) {
+        document.querySelectorAll('.dropdown-menu.open').forEach(function(m) {
+            m.classList.remove('open');
+        });
+    }
+});
+</script>
 {% endif %}
 
 <!-- TABS -->
 <div class="feed-tabs">
-    <div class="feed-tab active">Para ti</div>
-    <div class="feed-tab">Siguiendo</div>
-    <div class="feed-tab">Populares</div>
-    <div class="feed-tab">Recientes</div>
+    <a href="{{ url_for('jugador.dashboard', tab='para-ti') }}" class="feed-tab{% if active_tab == 'para-ti' %} active{% endif %}">Para ti</a>
+    <a href="{{ url_for('jugador.dashboard', tab='siguiendo') }}" class="feed-tab{% if active_tab == 'siguiendo' %} active{% endif %}">Siguiendo</a>
+    <a href="{{ url_for('jugador.dashboard', tab='populares') }}" class="feed-tab{% if active_tab == 'populares' %} active{% endif %}">Populares</a>
+    <a href="{{ url_for('jugador.dashboard', tab='recientes') }}" class="feed-tab{% if active_tab == 'recientes' %} active{% endif %}">Recientes</a>
+    <a href="{{ url_for('jugador.dashboard', tab='encuestas') }}" class="feed-tab{% if active_tab == 'encuestas' %} active{% endif %}"><i class="fas fa-chart-bar"></i> Encuestas</a>
+    <a href="{{ url_for('jugador.dashboard', tab='torneos') }}" class="feed-tab{% if active_tab == 'torneos' %} active{% endif %}"><i class="fas fa-trophy"></i> Torneos</a>
 </div>
 
 <!-- POSTS FEED -->
 {% if publicaciones %}
     {% for post in publicaciones %}
-    <div class="post-card{% if post.autor.es_premium and not post.promocionada %} post-card--vip-author{% endif %}">
+    <div class="post-card{% if post.promocionada and post.boost_tipo %} post-card--boosted{% elif post.autor.es_premium %} post-card--vip-author{% endif %}" data-post-id="{{ post.id_publicacion }}" data-href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" onclick="navegarPost(event, this)">
         <div class="post-header">
             <div class="post-author">
-                <span class="post-avatar-wrap"{% if post.autor.marco_perfil %} style="{{ post.autor.marco_perfil }}"{% elif post.autor.es_premium %} style="border: 2px solid #FACC15; box-shadow: 0 0 8px rgba(250, 204, 21, 0.4);"{% endif %}>
-                    <img src="{{ post.autor | user_avatar }}" alt="{{ post.autor.username }}">
-                </span>
+                <a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" class="post-avatar-link">
+                    <span class="post-avatar-wrap"{% if post.autor.marco_perfil %} style="{{ post.autor.marco_perfil }}"{% elif post.autor.es_premium %} style="border: 2px solid #FACC15; box-shadow: 0 0 8px rgba(250, 204, 21, 0.4);"{% endif %}>
+                        <img src="{{ post.autor | user_avatar }}" alt="{{ post.autor.username }}">
+                    </span>
+                </a>
                 <div class="author-info">
-                    <h4>{{ nombre_usuario(post.autor, true) }}{% if post.autor.es_premium %} <i class="fas fa-crown" style="color: #FACC15; font-size:14px; margin-left:4px; text-shadow: 0 0 5px rgba(250, 204, 21, 0.5);" title="Usuario Premium"></i>{% endif %}</h4>
+                    <h4><a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" class="author-name-link">{{ nombre_usuario(post.autor, true) }}</a>{% if post.autor.es_premium %} <i class="fas fa-crown" style="color: #FACC15; font-size:14px; margin-left:4px; text-shadow: 0 0 5px rgba(250, 204, 21, 0.5);" title="Usuario Premium"></i>{% endif %}</h4>
                     <div class="post-meta">
-                        {{ post.fecha_creacion | timeago }} <span class="game-tag" style="background:rgba(139, 92, 246, 0.2);">{{ post.juego }}</span>
+                        <a href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" class="post-meta-link">{{ post.fecha_creacion | timeago }}</a> <span class="game-tag" style="background:rgba(139, 92, 246, 0.2);">{{ post.juego }}</span>
+                        {% if post.fijada %}
+                        <span class="pin-badge"><i class="fas fa-thumbtack"></i> Fijado</span>
+                        {% endif %}
+                        {% if post.promocionada and post.boost_tipo %}
+                        <span class="boost-badge boost-{{ post.boost_tipo }}"><i class="fas fa-rocket"></i> {{ {'rapido': 'RÁPIDO', 'mega': 'MEGA', 'titan': 'TITÁN'}.get(post.boost_tipo, post.boost_tipo) }}</span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
             
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 8px; position:relative;">
                 {% if current_user.is_authenticated and current_user.id_usuario == post.id_usuario and not post.promocionada %}
                 <a href="{{ url_for('jugador.boosts', post_id=post.id_publicacion) }}" class="btn-primary" style="padding: 4px 12px; font-size: 12px; border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 4px;">
                     <i class="fas fa-rocket"></i> Boost
                 </a>
                 {% endif %}
-                <button class="icon-btn" style="background:transparent;"><i class="fas fa-ellipsis-h"></i></button>
+                <div class="post-dropdown">
+                    <button class="post-dropdown-btn" data-dropdown-btn aria-label="Más opciones"><i class="fas fa-ellipsis-h"></i></button>
+                    <div class="dropdown-menu" data-dropdown-menu>
+                        {% if current_user.is_authenticated and current_user.id_usuario == post.id_usuario %}
+                        <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="fijarPublicacion({{ post.id_publicacion }}, this)"><i class="fas fa-thumbtack"></i> {% if post.fijada %}Desfijar del perfil{% else %}Fijar en el perfil{% endif %}</button>
+                        <button class="dropdown-item dropdown-item-danger" data-post-id="{{ post.id_publicacion }}" onclick="confirmarEliminar({{ post.id_publicacion }})"><i class="fas fa-trash-alt"></i> Eliminar publicación</button>
+                        {% else %}
+                        <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="reportarPublicacion({{ post.id_publicacion }})"><i class="fas fa-flag"></i> Reportar publicación / Spam</button>
+                        <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="ocultarPublicacion({{ post.id_publicacion }}, this)"><i class="fas fa-eye-slash"></i> Ocultar publicación</button>
+                        <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="copiarEnlace({{ post.id_publicacion }})"><i class="fas fa-link"></i> Copiar enlace del post</button>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
         
-        <div class="post-content">
+        <div class="post-content" data-href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" onclick="navegarPost(event, this)">
             {{ post.contenido }}
         </div>
+
+        {% if post.is_poll %}
+        <div class="post-poll" data-poll-post="{{ post.id_publicacion }}" data-poll-id="{{ post.poll.id_poll }}" data-multiple="{{ '1' if post.poll.multiple_choice else '0' }}" data-change="{{ '1' if post.poll.allow_change else '0' }}">
+            <p class="post-poll-question">{{ post.poll.pregunta }}</p>
+            <div class="post-poll-config-badges">
+                {% if post.poll.multiple_choice %}<span class="poll-badge multiple"><i class="fas fa-check-double"></i> Múltiple</span>{% endif %}
+                {% if post.poll.allow_change %}<span class="poll-badge changeable"><i class="fas fa-sync-alt"></i> Cambiable</span>{% endif %}
+            </div>
+            <div class="post-poll-options">
+                {% for opt in post.poll.options %}
+                <button type="button" class="post-poll-option" data-option-id="{{ opt.id_option }}" onclick="votePoll(this, {{ post.id_publicacion }})">
+                    <span class="post-poll-radio"></span>
+                    <span class="post-poll-text">{{ opt.texto }}</span>
+                    <span class="post-poll-bar" style="width:0%"></span>
+                    <span class="post-poll-pct" style="display:none;">0%</span>
+                </button>
+                {% endfor %}
+            </div>
+            <p class="post-poll-total"><i class="far fa-chart-bar"></i> <span class="post-poll-count">{{ post.poll.total_votos }}</span> voto(s)</p>
+        </div>
+        {% endif %}
         
         {% if post.imagen_url %}
-        <div class="post-media">
-            <img src="{{ post.imagen_url }}" alt="Media" style="width:100%; border-radius:var(--radius-md); margin-top:12px;">
+        <div class="post-media" data-href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" onclick="navegarPost(event, this)">
+            <img src="{{ post.imagen_url }}" alt="Media">
         </div>
         {% endif %}
         
@@ -201,12 +619,85 @@
     </div>
     {% endfor %}
 {% else %}
-    <div style="text-align:center; padding:40px; color:var(--text-muted);">
+    <div style="text-align:center; padding:clamp(24px,6vw,40px); color:var(--text-muted);">
         <i class="fas fa-gamepad" style="font-size:48px; margin-bottom:16px; opacity:0.5;"></i>
         <h3>No hay publicaciones recientes</h3>
         <p>Sé el primero en compartir algo con la comunidad.</p>
     </div>
 {% endif %}
+
+<script>
+function votePoll(btn, postId) {
+    var optionId = parseInt(btn.getAttribute('data-option-id'));
+    var parent = btn.closest('.post-poll');
+    var multiple = parent.getAttribute('data-multiple') === '1';
+    var changeable = parent.getAttribute('data-change') === '1';
+    var hasVoted = parent.classList.contains('post-poll-voted');
+
+    // If changeable and already voted, allow toggle
+    if (changeable && hasVoted) {
+        var already = btn.classList.contains('post-poll-voted-opt');
+        if (already) {
+            // Un-vote this option
+            sendVote(postId, optionId, function(data) {
+                applyResults(parent, data);
+            });
+            return;
+        }
+    }
+
+    if (hasVoted && !changeable && !multiple) return;
+
+    sendVote(postId, optionId, function(data) {
+        applyResults(parent, data);
+    });
+}
+
+function sendVote(postId, optionId, callback) {
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    var formData = new FormData();
+    formData.append('option_id', optionId);
+    formData.append('csrf_token', csrfToken);
+
+    fetch('/jugador/poll/vote/' + postId, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrfToken },
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            callback(data);
+        } else {
+            showToast(data.message || 'Error al votar.', 'error');
+        }
+    })
+    .catch(function() { showToast('Error de conexión.', 'error'); });
+}
+
+function applyResults(parent, data) {
+    parent.classList.add('post-poll-voted');
+    var votedIds = data.voted_options || [];
+    
+    parent.querySelectorAll('.post-poll-option').forEach(function(opt) {
+        var optId = parseInt(opt.getAttribute('data-option-id'));
+        var result = data.results.find(function(r) { return r.id === optId; });
+        if (result) {
+            opt.querySelector('.post-poll-bar').style.width = result.porcentaje + '%';
+            opt.querySelector('.post-poll-pct').textContent = result.porcentaje + '%';
+            opt.querySelector('.post-poll-pct').style.display = 'inline';
+            opt.querySelector('.post-poll-radio').style.display = 'none';
+            if (votedIds.indexOf(optId) !== -1) {
+                opt.classList.add('post-poll-voted-opt');
+            } else {
+                opt.classList.remove('post-poll-voted-opt');
+            }
+        }
+    });
+    parent.querySelector('.post-poll-count').textContent = data.total_votos;
+}
+</script>
+
 {% endblock %}
 
 {% block right_sidebar %}

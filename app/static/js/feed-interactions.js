@@ -52,7 +52,7 @@
                 if (countSpan) countSpan.textContent = data.likes_count;
             })
             .catch((err) => {
-                alert(err.message || 'Error de conexión al dar like.');
+                showToast(err.message || 'Error de conexión al dar like.', 'error');
             })
             .finally(() => {
                 btn.disabled = false;
@@ -130,7 +130,7 @@
                 if (section) section.style.display = 'block';
             })
             .catch((err) => {
-                alert(err.message || 'Error al enviar el comentario.');
+                showToast(err.message || 'Error al enviar el comentario.', 'error');
             })
             .finally(() => {
                 if (submitBtn) submitBtn.disabled = false;

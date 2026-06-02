@@ -20,19 +20,11 @@
         </a>
     </div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-            <div style="background:rgba(139,92,246,0.1); border-left:4px solid var(--accent-purple); padding:12px; margin-bottom:16px; border-radius:8px; color:white;">
-                {{ message }}
-            </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start;">
         <!-- Formulario -->
-        <form method="POST" action="{{ url_for('tienda.admin_crear_item') }}" enctype="multipart/form-data"
+        <form method="POST" action="{{ url_for('tienda.admin_crear_item') }}" enctype="multipart/form-data" novalidate
               style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px; padding:24px;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
@@ -135,7 +127,7 @@
                 <span style="display:inline-block; width:14px; height:14px; border-radius:50%; background:{{ item.color_hex }}; vertical-align:middle;"></span>
                 <span style="color:var(--text-muted); font-size:12px;"> {{ item.color_hex }}</span>
                 {% endif %}
-                <form method="POST" action="{{ url_for('tienda.admin_eliminar_item', item_id=item.id) }}" style="margin-top:12px;" onsubmit="return confirm('¿Eliminar este diseño de la tienda?');">
+                <form method="POST" action="{{ url_for('tienda.admin_eliminar_item', item_id=item.id) }}" style="margin-top:12px;" onsubmit="return confirm('¿Eliminar este diseño de la tienda?');" novalidate>
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" style="width:100%; font-size:12px; padding:6px; border-radius:8px; border:1px solid rgba(239,68,68,0.5); background:rgba(239,68,68,0.12); color:#f87171; cursor:pointer;">Eliminar</button>
                 </form>

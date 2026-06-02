@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Buscar: {{ query }} - RiftZone{% endblock %}
+{% block content %}
+<div class="search-results-page">
+    <div class="search-results-header">
+        <h1><i class="fas fa-search"></i> Resultados para "{{ query }}"</h1>
+    </div>
+
+    {% if not usuarios and not clanes and not juegos %}
+    <div class="empty-state">
+        <i class="fas fa-search-minus"></i>
+        <h3>Sin resultados</h3>
+        <p>No encontramos nada para "{{ query }}". Intenta con otro término.</p>
+    </div>
+    {% endif %}
+
+    {% if usuarios %}
+    <section class="search-section">
+        <h2><i class="fas fa-users"></i> Jugadores <span class="count">{{ usuarios|length }}</span></h2>
+        <div class="search-user-list">
+            {% for u in usuarios %}
+            <a href="{{ url_for('jugador.perfil_publico', username=u.username) }}" class="search-user-card">
+                <div class="avatar">
+                    <div class="avatar-frame">
+                        <img src="{{ u | user_avatar }}" alt="" class="avatar-img">
+                    </div>
+                </div>
+                <div class="search-user-info">
+                    <strong>{{ u | nombre_display }}</strong>
+                    <span>@{{ u.username }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if clanes %}
+    <section class="search-section">
+        <h2><i class="fas fa-shield-alt"></i> Clanes <span class="count">{{ clanes|length }}</span></h2>
+        <div class="search-clan-list">
+            {% for c in clanes %}
+            <a href="{{ url_for('clanes.detalle', clan_id=c.id_clan) }}" class="search-clan-card">
+                <div class="search-clan-icon">
+                    {% if c.logo_url %}
+                    <img src="{{ c.logo_url }}" alt="">
+                    {% else %}
+                    <i class="fas fa-shield-alt"></i>
+                    {% endif %}
+                </div>
+                <div class="search-clan-info">
+                    <strong>{{ c.nombre }}</strong>
+                    <span>{{ c.descripcion[:80] if c.descripcion else 'Sin descripción' }}{% if c.descripcion and c.descripcion|length > 80 %}...{% endif %}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if juegos %}
+    <section class="search-section">
+        <h2><i class="fas fa-gamepad"></i> Comunidades <span class="count">{{ juegos|length }}</span></h2>
+        <div class="search-clan-list">
+            {% for j in juegos %}
+            <a href="{{ url_for('jugador.comunidad_detalle', juego=j.nombre) }}" class="search-clan-card">
+                <div class="search-clan-icon">
+                    <i class="fas fa-gamepad"></i>
+                </div>
+                <div class="search-clan-info">
+                    <strong>{{ j.nombre }}</strong>
+                    <span>Comunidad de {{ j.categoria }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

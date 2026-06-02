@@ -7,8 +7,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}RiftZone{% endblock %}</title>
     
+    <!-- Anti-flash: fondo oscuro inmediato -->
+    <style>html,body{background:#0d0b1a!important;margin:0;}</style>
+    
     <!-- CSS -->
-    <link href="{{ url_for('static', filename='css/games_sphere.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/games_sphere.css') }}?v=6" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/glassmorphism.css') }}?v=7" rel="stylesheet">
     
     <!-- Fonts & Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -16,13 +20,30 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <!-- Socket.IO client -->
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
 </head>
 <body class="has-mobile-nav-padding">
+
+<div class="bg-anim"></div>
+<canvas id="particles-canvas"></canvas>
+<div class="glow-orb glow-orb--purple"></div>
+<div class="glow-orb glow-orb--pink"></div>
+<div class="glow-orb glow-orb--cyan"></div>
+<i class="fas fa-gamepad floating-icon"></i>
+<i class="fas fa-crown floating-icon"></i>
+<i class="fas fa-bolt floating-icon"></i>
+<i class="fas fa-skull floating-icon"></i>
+<i class="fas fa-dice-d6 floating-icon"></i>
+<i class="fas fa-crosshairs floating-icon"></i>
 
 <div class="app-layout">
     <!-- TOP NAVBAR -->
     <nav class="top-nav">
         <div class="nav-left">
+            <button class="hamburger-btn" id="sidebar-toggle" aria-label="Abrir menú">
+                <i class="fas fa-bars"></i>
+            </button>
             <a href="{{ url_for('public.home') }}" class="logo">
                 <div class="logo-icon">
                     <i class="fas fa-gamepad"></i>
@@ -32,10 +53,13 @@
         </div>
         
         <div class="nav-center">
-            <form action="{{ url_for('public.buscar') }}" method="GET" class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" name="q" placeholder="Buscar jugadores, clanes, publicaciones..." required>
-                <button type="submit" style="display:none;"></button>
+            <form action="{{ url_for('public.buscar') }}" method="GET" class="nav-search-form" id="search-form" data-no-validate>
+                <div class="search-bar">
+                    <input type="text" name="q" placeholder="Buscar..." required>
+                </div>
+                <button type="submit" class="search-btn-plane" aria-label="Buscar">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
             </form>
         </div>
         
@@ -48,14 +72,6 @@
             
             <button type="button" class="icon-btn nav-panel-toggle" id="nav-panel-toggle" aria-label="Abrir panel de perfil y widgets" title="Panel lateral">
                 <i class="fas fa-id-card"></i>
-            </button>
-
-            <button class="btn-primary nav-create-btn">
-                <i class="fas fa-plus"></i> <span class="nav-create-label">Crear</span>
-            </button>
-            
-            <button class="icon-btn">
-                <i class="fas fa-comment-dots"></i>
             </button>
             
             <div class="dropdown-container" style="position: relative;">
@@ -71,24 +87,27 @@
                 
                 {% if current_user.is_authenticated %}
                 <div id="notif-dropdown" class="dropdown-menu notif-dropdown-menu" style="max-width:340px; width:calc(100vw - 32px);">
-                    <div style="padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2);">
+                    <div style="padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); flex-shrink: 0;">
                         <h4 style="margin: 0; color: white; font-size: 15px;"><i class="fas fa-bell" style="color: var(--accent-purple); margin-right: 6px;"></i> Notificaciones</h4>
                         <a href="{{ url_for('jugador.leer_notificaciones') }}" style="color: var(--accent-purple); font-size: 12px; text-decoration: none; font-weight: bold;"><i class="fas fa-check-double"></i> Marcar leídas</a>
                     </div>
-                    <div style="max-height: 350px; overflow-y: auto; padding: 8px;">
-                        {% set notifs = current_user.notificaciones.limit(5).all() %}
+                    <div style="max-height: 400px; overflow-y: auto; padding: 8px;">
+                        {% set notifs = current_user.notificaciones.limit(20).all() %}
                         {% if notifs %}
                             {% for n in notifs %}
-                            <div {% if n.enlace %}onclick="window.location.href='{{ n.enlace|tojson|safe }}'"{% endif %} style="padding: 12px; border-radius: 8px; margin-bottom: 4px; background: {% if not n.leido %}rgba(139, 92, 246, 0.1){% else %}transparent{% endif %}; border-left: {% if not n.leido %}3px solid var(--accent-purple){% else %}3px solid transparent{% endif %}; display: flex; gap: 12px; align-items: flex-start; transition: background 0.2s; {% if n.enlace %}cursor: pointer;{% endif %}" onmouseover="this.style.background='var(--bg-dark)'" onmouseout="this.style.background='{% if not n.leido %}rgba(139, 92, 246, 0.1){% else %}transparent{% endif %}'">
+                            <div class="notif-dropdown-item {% if not n.leido %}notif-unread{% endif %}" data-href="{{ n.enlace or '' }}" style="padding: 12px; border-radius: 8px; margin-bottom: 6px; background: {% if not n.leido %}rgba(139, 92, 246, 0.1){% else %}transparent{% endif %}; border-left: 3px solid {% if not n.leido %}var(--accent-purple){% else %}transparent{% endif %}; display: flex; gap: 12px; align-items: flex-start; cursor: {% if n.enlace %}pointer{% else %}default{% endif %};">
                                 <div style="background: var(--bg-dark); width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 1px solid var(--border-color); flex-shrink: 0;">
                                     <i class="{{ n.icono }}" style="color: {% if n.tipo == 'clan' %}var(--accent-purple){% elif n.tipo == 'social' %}var(--accent-magenta){% else %}var(--accent-green){% endif %}; font-size: 14px;"></i>
                                 </div>
-                                <div style="flex: 1;">
+                                <div style="flex: 1; min-width: 0;">
                                     <p style="margin: 0; color: white; font-size: 13px; line-height: 1.4;">{{ n.mensaje }}</p>
-                                    <span style="font-size: 10px; color: var(--text-muted); margin-top: 6px; display: block;"><i class="far fa-clock"></i> Hace unos instantes</span>
+                                    <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;"><i class="far fa-clock"></i> {{ n.fecha_creacion | timeago }}</span>
                                 </div>
                             </div>
                             {% endfor %}
+                            <a href="{{ url_for('jugador.notificaciones') }}" style="display:block; text-align:center; padding:10px; color:var(--accent-purple); font-size:13px; font-weight:600; text-decoration:none; border-top:1px solid var(--border-color); margin-top:4px;">
+                                <i class="fas fa-eye"></i> Ver todas
+                            </a>
                         {% else %}
                             <div style="padding: 40px 20px; text-align: center; color: var(--text-muted);">
                                 <i class="far fa-bell-slash" style="font-size: 40px; margin-bottom: 16px; opacity: 0.2;"></i>
@@ -158,52 +177,55 @@
         </div>
     </nav>
 
+    <!-- MOBILE SEARCH ROW (visible solo en < 1024px) -->
+    <div class="mobile-search-row">
+        <form action="{{ url_for('public.buscar') }}" method="GET" class="mobile-search-form" id="mobile-search-form" data-no-validate>
+            <input type="text" name="q" placeholder="Buscar jugadores, clanes, comunidades..." required>
+        </form>
+    </div>
+
+    <!-- GLOBAL FLASH MESSAGES → convertidos a toasts -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div id="flash-data" style="display:none;" data-messages='{{ messages | tojson | safe }}'></div>
+    {% endif %}
+    {% endwith %}
+
     <!-- CONTENT WRAPPER: grid 1 col móvil | 3+9 lg | 3+6+3 xl -->
     <div class="content-wrapper layout-grid">
         
-        <!-- LEFT SIDEBAR (hidden lg:block → col 3) -->
-        <aside class="left-sidebar layout-sidebar">
+        <!-- LEFT SIDEBAR (hamburguesa en < 1024px, estática en >= 1024px) -->
+        <aside class="left-sidebar layout-sidebar" id="main-sidebar">
+            <div class="sidebar-header">
+                <a href="{{ url_for('public.home') }}" class="logo">
+                    <div class="logo-icon"><i class="fas fa-gamepad"></i></div>
+                    <span>RiftZone</span>
+                </a>
+                <button class="sidebar-close-btn" id="sidebar-close" aria-label="Cerrar menú">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <div class="menu-group">
                 <a href="{{ url_for('jugador.dashboard') }}" class="menu-item active"><i class="fas fa-home"></i> Inicio</a>
                 <a href="{{ url_for('chat.chat_global') }}" class="menu-item"><i class="fas fa-comment-dots"></i> Chat Global</a>
                 <a href="{{ url_for('jugador.explorar') }}" class="menu-item"><i class="fas fa-compass"></i> Explorar</a>
                 <a href="{{ url_for('jugador.comunidades') }}" class="menu-item"><i class="fas fa-users"></i> Comunidades</a>
                 <a href="{{ url_for('clanes.index') }}" class="menu-item"><i class="fas fa-shield-alt"></i> Clanes</a>
-                <a href="#" class="menu-item"><i class="fas fa-envelope"></i> Mensajes</a>
-                <a href="#" class="menu-item"><i class="fas fa-user-friends"></i> Amigos</a>
-                <a href="#" class="menu-item"><i class="fas fa-trophy"></i> Torneos</a>
+                <a href="{{ url_for('mensajes.index') }}" class="menu-item"><i class="fas fa-envelope"></i> Mensajes</a>
+                <a href="{{ url_for('jugador.notificaciones') }}" class="menu-item"><i class="fas fa-bell"></i> Notificaciones {% if current_user.is_authenticated %}{% set no_leidas = current_user.notificaciones.filter_by(leido=False).count() %}{% if no_leidas > 0 %}<span class="menu-badge">{{ no_leidas }}</span>{% endif %}{% endif %}</a>
+                <a href="{{ url_for('jugador.explorar') }}" class="menu-item"><i class="fas fa-user-friends"></i> Amigos</a>
+                <a href="{{ url_for('jugador.boosts') }}" class="menu-item"><i class="fas fa-trophy"></i> Torneos</a>
                 <a href="{{ url_for('jugador.boosts') }}" class="menu-item"><i class="fas fa-rocket"></i> Boosts</a>
+                <a href="{{ url_for('jugador.subir_clip') }}" class="menu-item"><i class="fas fa-video"></i> Subir Clip</a>
                 <a href="{{ url_for('tienda.index') }}" class="menu-item"><i class="fas fa-store"></i> Tienda</a>
                 <a href="{{ url_for('billetera.index') }}" class="menu-item"><i class="fas fa-wallet"></i> Billetera</a>
                 <a href="{{ url_for('jugador.premium') }}" class="menu-item premium"><i class="fas fa-crown"></i> Premium</a>
             </div>
             
             <div class="menu-group">
-                <h3 class="menu-title" style="display: flex; align-items: center; justify-content: space-between;">
-                    <span><i class="fas fa-globe" style="color: var(--accent-purple); margin-right: 6px;"></i> CHAT MUNDIAL</span>
-                    <span style="width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; box-shadow: 0 0 8px var(--accent-green);"></span>
-                </h3>
-                
-                <div id="mini-chat-messages" style="max-height: 350px; height: 30vh; overflow-y: auto; background: var(--bg-dark); border-radius: var(--radius-md); padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border-color);">
-                    <!-- Los mensajes cargarán aquí -->
-                    <div style="text-align: center; color: var(--text-muted); font-size: 13px; margin-top: auto; margin-bottom: auto;">
-                        <i class="fas fa-spinner fa-spin"></i> Conectando...
-                    </div>
-                </div>
-                
-                {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
-                <form id="mini-chat-form" style="display: flex; gap: 8px;">
-                    <input type="text" id="mini-chat-input" placeholder="Escribe algo..." autocomplete="off"
-                           style="flex: 1; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 10px 12px; border-radius: 8px; color: white; font-size: 13px; outline: none;">
-                    <button type="submit" class="btn-primary" style="padding: 0 16px; border-radius: 8px;">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </form>
-                {% else %}
-                <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid var(--accent-purple); border-radius: 8px; padding: 12px; text-align: center;">
-                    <span style="font-size: 12px; color: var(--text-muted);">Solo modo lectura. <a href="{{ url_for('auth.register') }}" style="color: var(--accent-purple); font-weight: bold; text-decoration: none;">Crea una cuenta</a> para hablar.</span>
-                </div>
-                {% endif %}
+                <a href="{{ url_for('chat.chat_global') }}" class="menu-item">
+                    <i class="fas fa-globe" style="color: var(--accent-purple);"></i> Acceder al Chat Mundial
+                </a>
             </div>
 
             <!-- Anuncio en sidebar (visible en desktop) -->
@@ -233,6 +255,7 @@
     </div>
 </div>
 
+<div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
 <div class="layout-right-overlay" id="layout-right-overlay" aria-hidden="true"></div>
 
 <!-- Barra inferior móvil (lg:hidden) -->
@@ -248,6 +271,10 @@
     <a href="#" class="mobile-nav-item">
         <i class="fas fa-envelope"></i>
         <span>Mensajes</span>
+    </a>
+    <a href="{{ url_for('jugador.notificaciones') }}" class="mobile-nav-item">
+        <i class="fas fa-bell"></i>
+        <span>Notis</span>
     </a>
     <a href="{{ url_for('tienda.index') }}" class="mobile-nav-item">
         <i class="fas fa-store"></i>
@@ -279,6 +306,32 @@ window.RIFTZONE_CHAT = Object.assign(window.RIFTZONE_CHAT || {}, {
 {% endif %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    /* Sidebar hamburguesa */
+    const sidebar = document.getElementById('main-sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    function openSidebar() {
+        if (!sidebar) return;
+        sidebar.classList.add('open');
+        sidebarOverlay?.classList.add('is-open');
+        sidebarOverlay?.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+        if (!sidebar) return;
+        sidebar.classList.remove('open');
+        sidebarOverlay?.classList.remove('is-open');
+        sidebarOverlay?.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    sidebarToggle?.addEventListener('click', openSidebar);
+    sidebarClose?.addEventListener('click', closeSidebar);
+    sidebarOverlay?.addEventListener('click', closeSidebar);
+
     /* Panel derecho en móvil / tablet */
     const panelToggle = document.getElementById('nav-panel-toggle');
     const rightPanel = document.getElementById('layout-right-panel');
@@ -310,7 +363,10 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('close-right-panel')?.addEventListener('click', closeRightPanel);
     rightOverlay?.addEventListener('click', closeRightPanel);
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeRightPanel();
+        if (e.key === 'Escape') {
+            closeSidebar();
+            closeRightPanel();
+        }
     });
     window.addEventListener('resize', function() {
         if (window.innerWidth >= 1280) closeRightPanel();
@@ -346,6 +402,26 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
+    // Post 3-dots dropdown (delegated)
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-dropdown-btn]');
+        if (!btn) return;
+        e.stopPropagation();
+        var menu = btn.parentNode.querySelector('[data-dropdown-menu]');
+        if (!menu) return;
+        var wasOpen = menu.classList.contains('show');
+        closeAllDropdowns();
+        if (!wasOpen) menu.classList.add('show');
+    });
+
+    // Click handler for notification items with links
+    document.addEventListener('click', function(e) {
+        var item = e.target.closest('.notif-dropdown-item');
+        if (item && item.dataset.href) {
+            window.location.href = item.dataset.href;
+        }
+    });
+
     document.addEventListener('click', closeAllDropdowns);
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeAllDropdowns();
@@ -353,5 +429,468 @@ document.addEventListener("DOMContentLoaded", function() {
 
 });
 </script>
+
+<!-- Global form validation -->
+<script>
+(function() {
+    function showFieldError(field, message) {
+        var wrapper = field.closest('.form-group, .field-wrapper') || field.parentNode;
+        var error = wrapper.querySelector('.field-error');
+        if (!error) return;
+        field.classList.add('error');
+        error.querySelector('span').textContent = message;
+        error.classList.add('visible');
+    }
+
+    function clearFieldError(field) {
+        var wrapper = field.closest('.form-group, .field-wrapper') || field.parentNode;
+        var error = wrapper.querySelector('.field-error');
+        if (!error) return;
+        field.classList.remove('error');
+        error.classList.remove('visible');
+    }
+
+    function clearAllErrors(form) {
+        form.querySelectorAll('.field-error.visible').forEach(function(e) { e.classList.remove('visible'); });
+        form.querySelectorAll('.error').forEach(function(e) { e.classList.remove('error'); });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('form:not([data-no-validate])').forEach(function(form) {
+            form.querySelectorAll('input[required], select[required], textarea[required]').forEach(function(field) {
+                var wrapper = field.closest('.form-group, .field-wrapper') || field.parentNode;
+                if (!wrapper.querySelector('.field-error')) {
+                    var err = document.createElement('div');
+                    err.className = 'field-error';
+                    err.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span></span>';
+                    wrapper.appendChild(err);
+                }
+                field.addEventListener('input', function() { clearFieldError(field); });
+                field.addEventListener('change', function() { clearFieldError(field); });
+            });
+
+            form.addEventListener('submit', function(e) {
+                var firstError = null;
+                clearAllErrors(form);
+                form.querySelectorAll('input[required], select[required], textarea[required]').forEach(function(field) {
+                    var val = field.value.trim();
+                    var label = '';
+                    var prev = field.previousElementSibling;
+                    if (prev && prev.tagName === 'LABEL') label = prev.textContent.trim().replace('*','').trim();
+                    if (!val) {
+                        showFieldError(field, label ? 'Completa el campo ' + label : 'Completa este campo');
+                        if (!firstError) firstError = field;
+                    }
+                    if (field.pattern && val) {
+                        var regex = new RegExp(field.pattern);
+                        if (!regex.test(val)) {
+                            showFieldError(field, label ? 'Formato inválido en ' + label : 'Formato inválido');
+                            if (!firstError) firstError = field;
+                        }
+                    }
+                });
+                if (firstError) {
+                    e.preventDefault();
+                    firstError.focus();
+                }
+            });
+        });
+    });
+})();
+</script>
+
+<!-- Image Lightbox -->
+<div id="lightbox" class="lightbox-overlay" style="display:none;" onclick="closeLightbox(event)">
+    <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+    <img class="lightbox-img" id="lightbox-img" src="" alt="Imagen completa">
+</div>
+
+<script>
+// Lightbox - click any post image to view full size
+document.addEventListener('click', function(e) {
+    var target = e.target.closest('.post-media img, .post-media video');
+    if (target && target.tagName === 'IMG') {
+        var lb = document.getElementById('lightbox');
+        var lbImg = document.getElementById('lightbox-img');
+        lbImg.src = target.src;
+        lb.style.display = 'flex';
+    }
+});
+
+function closeLightbox(e) {
+    if (e && e.target !== document.getElementById('lightbox')) return;
+    document.getElementById('lightbox').style.display = 'none';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        var lb = document.getElementById('lightbox');
+        if (lb.style.display === 'flex') lb.style.display = 'none';
+    }
+});
+</script>
+
+{% block extra_js %}{% endblock %}
+
+<!-- Background particles -->
+<script>
+(function() {
+    var canvas = document.getElementById('particles-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var particles = [];
+    var w, h;
+
+    function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    var COLORS = [
+        'rgba(167, 139, 250,', 'rgba(255, 45, 149,', 'rgba(34, 211, 238,',
+        'rgba(250, 204, 21,', 'rgba(52, 211, 153,'
+    ];
+    var PARTICLE_COUNT = 100;
+
+    for (var i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            vx: (Math.random() - 0.5) * 0.6,
+            vy: (Math.random() - 0.5) * 0.6,
+            r: Math.random() * 2.5 + 1,
+            color: COLORS[Math.floor(Math.random() * COLORS.length)],
+            alpha: Math.random() * 0.35 + 0.05
+        });
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, w, h);
+        for (var i = 0; i < particles.length; i++) {
+            for (var j = i + 1; j < particles.length; j++) {
+                var dx = particles[i].x - particles[j].x;
+                var dy = particles[i].y - particles[j].y;
+                var dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 130) {
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = 'rgba(167, 139, 250, ' + (1 - dist / 130) * 0.05 + ')';
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+            }
+        }
+        for (var i = 0; i < particles.length; i++) {
+            var p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < -10) p.x = w + 10;
+            if (p.x > w + 10) p.x = -10;
+            if (p.y < -10) p.y = h + 10;
+            if (p.y > h + 10) p.y = -10;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = p.color + p.alpha + ')';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r * 4, 0, Math.PI * 2);
+            ctx.fillStyle = p.color + '0.02)';
+            ctx.fill();
+        }
+        requestAnimationFrame(animate);
+    }
+    animate();
+})();
+</script>
+
+<!-- Socket.IO – Notificaciones en tiempo real -->
+{% if current_user.is_authenticated %}
+<script>
+(function() {
+    var socket = io('/', {
+        transports: ['websocket', 'polling'],
+    });
+
+    socket.on('connect', function() {
+        socket.emit('join', { user_id: {{ current_user.id_usuario }} });
+    });
+
+    socket.on('notificacion', function(data) {
+        renderNotificacionToast(data);
+        // Actualizar badge del navbar si existe
+        var badge = document.querySelector('.nav-right .badge');
+        if (badge) {
+            var count = parseInt(badge.textContent) || 0;
+            badge.textContent = count + 1;
+        }
+    });
+
+    function renderNotificacionToast(data) {
+        var container = document.getElementById('notif-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'notif-toast-container';
+            container.className = 'notif-toast-container';
+            document.body.appendChild(container);
+        }
+
+        var toast = document.createElement('div');
+        toast.className = 'notif-toast';
+
+        var icon = data.icono || 'fas fa-bell';
+
+        var hasLink = data.enlace ? true : false;
+
+        toast.innerHTML =
+            '<div class="notif-toast-icon"><i class="' + icon + '"></i></div>' +
+            '<div class="notif-toast-body">' +
+                '<div class="notif-toast-msg">' + data.mensaje + '</div>' +
+                '<div class="notif-toast-time">Ahora</div>' +
+            '</div>' +
+            '<button class="notif-toast-close" onclick="this.parentElement.remove()">&times;</button>';
+
+        if (hasLink) {
+            toast.style.cursor = 'pointer';
+            toast.addEventListener('click', function(e) {
+                if (e.target.closest('.notif-toast-close')) return;
+                window.location.href = data.enlace;
+            });
+        }
+
+        container.appendChild(toast);
+
+        setTimeout(function() {
+            toast.classList.add('notif-toast--exiting');
+            setTimeout(function() { toast.remove(); }, 400);
+        }, 5000);
+    }
+})();
+</script>
+{% endif %}
+
+<!-- Dropdown actions for posts (eliminar, fijar, reportar, ocultar) -->
+<script>
+function getCSRFToken() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
+var POST_URLS = {
+    eliminar: '{{ url_for("jugador.eliminar_publicacion", post_id=0) }}',
+    fijar: '{{ url_for("jugador.fijar_publicacion", post_id=0) }}',
+    reportar: '{{ url_for("jugador.reportar_publicacion", post_id=0) }}',
+    ocultar: '{{ url_for("jugador.ocultar_publicacion", post_id=0) }}'
+};
+
+function confirmarEliminar(postId) {
+    var modal = document.getElementById('confirm-modal');
+    if (!modal) return;
+    modal.querySelector('.confirm-message').textContent = '¿Eliminar esta publicación? Esta acción no se puede deshacer.';
+    modal.querySelector('.btn-confirm-yes').onclick = function() {
+        eliminarPublicacion(postId);
+        closeModal('confirm-modal');
+    };
+    modal.classList.add('is-open');
+}
+
+function eliminarPublicacion(postId) {
+    fetch(POST_URLS.eliminar.replace('0', postId), {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    }).then(function(r) { return r.json(); }).then(function(data) {
+        if (data.success) {
+            var card = document.querySelector('.post-card[data-post-id="' + postId + '"]');
+            if (card) card.style.display = 'none';
+            showToast('Publicación eliminada.', 'success');
+        } else {
+            showToast(data.message || 'Error al eliminar.', 'error');
+        }
+    }).catch(function() {
+        showToast('Error de conexión.', 'error');
+    });
+}
+
+function fijarPublicacion(postId, btn) {
+    fetch(POST_URLS.fijar.replace('0', postId), {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    }).then(function(r) { return r.json(); }).then(function(data) {
+        if (data.success) {
+            var estabaFijada = data.fijada;
+            var card = btn.closest('.post-card');
+            if (card) {
+                var badge = card.querySelector('.pin-badge');
+                if (estabaFijada) {
+                    if (!badge) {
+                        var h = card.querySelector('.post-header');
+                        var b = document.createElement('span');
+                        b.className = 'pin-badge';
+                        b.innerHTML = '<i class="fas fa-thumbtack"></i> Fijado';
+                        if (h) h.querySelector('.post-meta')?.after(b);
+                    }
+                } else if (badge) {
+                    badge.remove();
+                }
+            }
+            showToast(estabaFijada ? 'Publicación fijada en tu perfil.' : 'Publicación desfijada.', 'success');
+        } else {
+            showToast(data.message || 'Error.', 'error');
+        }
+    }).catch(function() {
+        showToast('Error de conexión.', 'error');
+    });
+}
+
+function reportarPublicacion(postId) {
+    var modal = document.getElementById('report-modal');
+    if (!modal) return;
+    modal.querySelector('.btn-report-submit').onclick = function() {
+        var motivo = modal.querySelector('select[name="motivo"]')?.value || 'spam';
+        var descripcion = modal.querySelector('textarea[name="descripcion"]')?.value || '';
+        fetch(POST_URLS.reportar.replace('0', postId), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+            body: JSON.stringify({ motivo: motivo, descripcion: descripcion })
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.success) {
+                showToast(data.message || 'Reporte enviado.', 'success');
+                closeModal('report-modal');
+            } else {
+                showToast(data.message || 'Error.', 'error');
+            }
+        }).catch(function() {
+            showToast('Error de conexión.', 'error');
+        });
+    };
+    modal.classList.add('is-open');
+}
+
+function ocultarPublicacion(postId, btn) {
+    fetch(POST_URLS.ocultar.replace('0', postId), {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    }).then(function(r) { return r.json(); }).then(function(data) {
+        if (data.success) {
+            var card = btn.closest('.post-card');
+            if (card) card.style.display = 'none';
+            showToast('Publicación ocultada.', 'success');
+        } else {
+            showToast(data.message || 'Error.', 'error');
+        }
+    }).catch(function() {
+        showToast('Error de conexión.', 'error');
+    });
+}
+
+function copiarEnlace(postId) {
+    var url = window.location.origin + '/publicacion/' + postId;
+    navigator.clipboard.writeText(url).then(function() {
+        showToast('Enlace copiado al portapapeles.', 'success');
+    }).catch(function() {
+        showToast('No se pudo copiar el enlace.', 'error');
+    });
+}
+
+function showToast(msg, type) {
+    var container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
+    type = type || 'success';
+    var icons = { error: 'fa-exclamation-circle', info: 'fa-info-circle', success: 'fa-check-circle' };
+    var toast = document.createElement('div');
+    toast.className = 'toast toast--' + type;
+    toast.innerHTML = '<i class="fas ' + (icons[type] || 'fa-check-circle') + '"></i> ' + msg;
+    container.appendChild(toast);
+    setTimeout(function() {
+        toast.classList.add('toast--exiting');
+        setTimeout(function() { toast.remove(); }, 350);
+    }, 4000);
+}
+
+function closeModal(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('is-open');
+}
+
+function navegarPost(event, el) {
+    if (!el) return;
+    var target = event.target;
+    if (target.closest('button, a, .action-btn, .post-poll-option, .post-dropdown-btn, .dropdown-menu, input, textarea, form, .comment-form, img[onclick]')) return;
+    var href = el.getAttribute('data-href') || el.dataset.href;
+    if (href) window.location.href = href;
+}
+
+/* Convertir flash messages a glass toasts */
+(function() {
+  var el = document.getElementById('flash-data');
+  if (!el) return;
+  try {
+    var messages = JSON.parse(el.getAttribute('data-messages') || '[]');
+    if (typeof messages === 'object' && !Array.isArray(messages)) {
+      messages = Object.entries(messages).map(function(e) { return [e[0], e[1]]; });
+    }
+    if (Array.isArray(messages)) {
+      messages.forEach(function(item) {
+        if (Array.isArray(item)) {
+          showToast(item[1], item[0] === 'error' ? 'error' : 'success');
+        }
+      });
+    }
+  } catch(e) {}
+  el.remove();
+})();
+</script>
+
+<!-- Confirm Modal -->
+<div id="confirm-modal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-exclamation-triangle" style="color:var(--accent-magenta);"></i> Confirmar</h3>
+            <button class="modal-close" onclick="closeModal('confirm-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="confirm-message"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('confirm-modal')">Cancelar</button>
+            <button class="btn btn-danger btn-confirm-yes">Eliminar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Report Modal -->
+<div id="report-modal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-flag" style="color:var(--accent-magenta);"></i> Reportar publicación</h3>
+            <button class="modal-close" onclick="closeModal('report-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Motivo</label>
+                <select name="motivo" class="form-input">
+                    <option value="spam">Spam</option>
+                    <option value="contenido_inapropiado">Contenido inapropiado</option>
+                    <option value="acoso">Acoso</option>
+                    <option value="otro">Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Descripción (opcional)</label>
+                <textarea name="descripcion" class="form-input" rows="3" placeholder="Describe el problema..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('report-modal')">Cancelar</button>
+            <button class="btn btn-danger btn-report-submit">Enviar reporte</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

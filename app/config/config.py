@@ -18,8 +18,9 @@ class Config:
     SQLALCHEMY_ECHO = False
     
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'static', 'uploads')
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+    MAX_CONTENT_LENGTH = 200 * 1024 * 1024
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+    ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi'}
     
     PERMANENT_SESSION_LIFETIME = timedelta(hours=2)
     SESSION_COOKIE_HTTPONLY = True

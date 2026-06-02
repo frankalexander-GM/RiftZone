@@ -3,270 +3,531 @@
 {% block title %}Boosts - RiftZone{% endblock %}
 
 {% block content %}
-<div class="boosts-container" style="max-width: 960px; margin: 0 auto; padding: clamp(16px,4vw,24px);">
-    
-    <div style="text-align: center; margin-bottom: 32px;">
-        <h2 style="font-size: 32px; color: white; margin-bottom: 12px;"><i class="fas fa-rocket" style="color: var(--accent-purple);"></i> Central de Boosts</h2>
-        <p style="color: var(--text-muted); font-size: 16px;">Cada plan tiene su color para que sepas cuál aplicas. Saldo: <strong style="color:#FACC15;">{{ saldo }} RC</strong></p>
-        <div class="boost-legend" style="display:flex; flex-wrap:wrap; justify-content:center; gap:16px; margin-top:16px;">
-            <span class="boost-legend__item boost-legend__item--rapido"><i class="fas fa-fighter-jet"></i> Azul = Rápido</span>
-            <span class="boost-legend__item boost-legend__item--mega"><i class="fas fa-space-shuttle"></i> Morado = Mega</span>
-            <span class="boost-legend__item boost-legend__item--titan"><i class="fas fa-crown"></i> Dorado = Titán</span>
-        </div>
-        <p style="color: var(--text-muted); font-size: 13px; margin-top: 12px;">El color del boost en el chat es aparte. Tu <strong>etiqueta/título</strong> colorea tu nombre en perfil, feed y menú (no en chat ni comentarios).</p>
+<div class="boosts-page">
+
+  <!-- HEADER: Saldo flotante + título -->
+  <div class="boosts-header">
+    <div class="boosts-header__left">
+      <h2 class="boosts-title"><i class="fas fa-rocket"></i> Central de Boosts</h2>
+      <p class="boosts-subtitle">Elige un plan y dispara tu publicación al top</p>
     </div>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert {{ category }}" style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid var(--accent-purple); padding: 12px; margin-bottom: 20px; border-radius: 4px; color: white;">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 28px;">
-        <label for="post-select" style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Publicación a boostear</label>
-        {% if post_target %}
-        <p style="color: white; margin: 0 0 8px; font-size: 14px;"><i class="fas fa-check-circle" style="color:var(--accent-green);"></i> Seleccionada: "{{ post_target.contenido[:80] }}{% if post_target.contenido|length > 80 %}...{% endif %}"</p>
-        <input type="hidden" id="post-select" value="{{ post_target.id_publicacion }}">
-        {% elif mis_posts %}
-        <select id="post-select" style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); color:white; padding:12px; border-radius:8px; font-size:14px;">
-            {% for p in mis_posts %}
-            <option value="{{ p.id_publicacion }}">{{ p.contenido[:70] }}{% if p.contenido|length > 70 %}...{% endif %} ({{ p.juego }})</option>
-            {% endfor %}
-        </select>
-        {% else %}
-        <p style="color: var(--text-muted); margin:0; font-size: 14px;">No tienes publicaciones. <a href="{{ url_for('jugador.dashboard') }}" style="color:var(--accent-purple);">Crea un post</a> y vuelve aquí.</p>
-        {% endif %}
+    <div class="boosts-saldo-badge">
+      <i class="fas fa-coins"></i>
+      <span class="boosts-saldo-badge__label">Saldo</span>
+      <span class="boosts-saldo-badge__amount">{{ saldo }} RC</span>
     </div>
+  </div>
 
-    <div class="boost-plans-grid">
-        {% for key, plan in boost_planes.items() %}
-        <article class="boost-plan-card boost-plan-card--{{ key }}" data-plan="{{ key }}">
-            {% if key == 'mega' %}
-            <span class="boost-plan-card__popular">MÁS POPULAR</span>
-            {% endif %}
-            <span class="boost-plan-card__tag">BOOST {{ plan.etiqueta }}</span>
-            <div class="boost-plan-card__icon-wrap">
-                <i class="fas {{ plan.icon }}"></i>
-            </div>
-            <h3 class="boost-plan-card__title">{{ plan.nombre }}</h3>
-            <p class="boost-plan-card__desc">
-                {% if key == 'rapido' %}Más arriba en el feed · 24 h
-                {% elif key == 'mega' %}Borde morado fijado arriba · 3 días
-                {% else %}Fijado arriba · 7 días · avisa a seguidores{% endif %}
-            </p>
-            <div class="boost-plan-card__price">
-                {{ plan.costo }} <i class="fas fa-coins"></i>
-            </div>
-            {% if mis_posts or post_target %}
-            <form method="POST" action="{{ url_for('jugador.comprar_boost') }}" class="boost-buy-form" data-plan="{{ key }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="plan" value="{{ key }}"/>
-                <input type="hidden" name="post_id" class="boost-post-id" value="{{ post_target.id_publicacion if post_target else (mis_posts[0].id_publicacion if mis_posts else '') }}"/>
-                <button type="submit" class="boost-plan-card__btn" {% if saldo < plan.costo %}disabled title="Saldo insuficiente"{% endif %}>
-                    <i class="fas {{ plan.icon }}"></i> Aplicar {{ plan.etiqueta }}
-                </button>
-            </form>
-            {% else %}
-            <button type="button" class="boost-plan-card__btn" disabled>Sin publicaciones</button>
-            {% endif %}
-        </article>
+  <!-- LEYENDA -->
+  <div class="boost-legend">
+    <span class="boost-legend__item boost-legend__item--rapido"><i class="fas fa-fighter-jet"></i> Rápido</span>
+    <span class="boost-legend__item boost-legend__item--mega"><i class="fas fa-space-shuttle"></i> Mega</span>
+    <span class="boost-legend__item boost-legend__item--titan"><i class="fas fa-crown"></i> Titán</span>
+  </div>
+
+  <!-- SELECTOR DE PUBLICACIÓN (Glassmorphism) -->
+  <div class="boost-selector">
+    <label class="boost-selector__label"><i class="fas fa-newspaper"></i> Publicación a boostear</label>
+    {% if post_target %}
+    <div class="boost-selector__selected">
+      <i class="fas fa-check-circle" style="color:var(--accent-green);"></i>
+      <span>"{{ post_target.contenido[:80] }}{% if post_target.contenido|length > 80 %}...{% endif %}"</span>
+    </div>
+    <input type="hidden" id="post-select" value="{{ post_target.id_publicacion }}">
+    {% elif mis_posts %}
+    <div class="boost-selector__wrapper">
+      <select id="post-select" class="boost-selector__select">
+        <option value="" disabled selected>— Selecciona una publicación —</option>
+        {% for p in mis_posts %}
+        <option value="{{ p.id_publicacion }}">
+          {% if p.is_poll %}[Encuesta] {% elif p.contenido.startswith('[Torneo]') %}[Torneo] {% endif %}
+          {{ p.contenido[:65] }}{% if p.contenido|length > 65 %}…{% endif %}
+          · {{ p.juego }}
+        </option>
         {% endfor %}
+      </select>
+      <i class="fas fa-chevron-down boost-selector__arrow"></i>
     </div>
+    {% else %}
+    <p class="boost-selector__empty">No tienes publicaciones. <a href="{{ url_for('jugador.dashboard') }}">Crea un post</a> y vuelve aquí.</p>
+    {% endif %}
+  </div>
+
+  <!-- TARJETAS DE PLANES -->
+  <div class="boost-plans-grid">
+    {% for key, plan in boost_planes.items() %}
+    <article class="boost-plan-card boost-plan-card--{{ key }}" data-plan="{{ key }}">
+      {% if key == 'mega' %}
+      <span class="boost-plan-card__popular">MÁS POPULAR</span>
+      {% endif %}
+      <span class="boost-plan-card__tag">BOOST {{ plan.etiqueta }}</span>
+      <div class="boost-plan-card__icon-wrap">
+        <i class="fas {{ plan.icon }}"></i>
+      </div>
+      <h3 class="boost-plan-card__title">{{ plan.nombre }}</h3>
+      <p class="boost-plan-card__desc">
+        {% if key == 'rapido' %}Más arriba en el feed · 24 h
+        {% elif key == 'mega' %}Borde morado fijado arriba · 3 días
+        {% else %}Fijado arriba · 7 días · avisa a seguidores{% endif %}
+      </p>
+      <div class="boost-plan-card__price">
+        {{ plan.costo }} <i class="fas fa-coins"></i>
+      </div>
+      {% if mis_posts or post_target %}
+      <form method="POST" action="{{ url_for('jugador.comprar_boost') }}" class="boost-buy-form" data-plan="{{ key }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="plan" value="{{ key }}"/>
+        <input type="hidden" name="post_id" class="boost-post-id" value="{{ post_target.id_publicacion if post_target else (mis_posts[0].id_publicacion if mis_posts else '') }}"/>
+        <button type="submit" class="boost-plan-card__btn" {% if saldo < plan.costo %}disabled title="Saldo insuficiente — te faltan {{ plan.costo - saldo }} RC"{% endif %}>
+          <i class="fas {{ plan.icon }}"></i> Aplicar {{ plan.etiqueta }}
+        </button>
+        {% if saldo < plan.costo %}
+        <span class="boost-plan-card__insufficient">Faltan {{ plan.costo - saldo }} RC</span>
+        {% endif %}
+      </form>
+      {% else %}
+      <button type="button" class="boost-plan-card__btn" disabled>Sin publicaciones</button>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
 </div>
 
 <style>
-.boost-plans-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 24px;
+/* ── Layout general ── */
+.boosts-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: clamp(16px, 4vw, 32px);
+}
+
+/* ── HEADER con saldo flotante ── */
+.boosts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.boosts-header__left {
+  flex: 1;
+  min-width: 200px;
+}
+
+.boosts-title {
+  font-size: clamp(22px, 4vw, 30px);
+  color: #f0f0ff;
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.boosts-title .fa-rocket {
+  color: var(--accent-purple);
+  font-size: 0.85em;
+}
+
+.boosts-subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ── Badge de saldo ── */
+.boosts-saldo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(22, 18, 38, 0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  border-radius: 40px;
+  padding: 10px 20px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 30px rgba(167,139,250,0.06);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.boosts-saldo-badge .fa-coins {
+  font-size: 18px;
+  color: #facc15;
+  filter: drop-shadow(0 0 6px rgba(250,204,21,0.4));
+}
+.boosts-saldo-badge__label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.boosts-saldo-badge__amount {
+  font-size: 16px;
+  font-weight: 800;
+  color: #facc15;
+  text-shadow: 0 0 12px rgba(250,204,21,0.35);
+}
+
+/* ── Leyenda ── */
+.boost-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
 }
 
 .boost-legend__item {
-    font-size: 12px;
-    font-weight: 700;
-    padding: 6px 14px;
-    border-radius: 20px;
-    border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .boost-legend__item--rapido {
-    color: #60A5FA;
-    background: rgba(59, 130, 246, 0.12);
-    border-color: rgba(59, 130, 246, 0.35);
+  color: #60A5FA;
+  background: rgba(59, 130, 246, 0.10);
+  border-color: rgba(59, 130, 246, 0.30);
 }
 .boost-legend__item--mega {
-    color: #C084FC;
-    background: rgba(168, 85, 247, 0.12);
-    border-color: rgba(168, 85, 247, 0.4);
+  color: #C084FC;
+  background: rgba(168, 85, 247, 0.10);
+  border-color: rgba(168, 85, 247, 0.30);
 }
 .boost-legend__item--titan {
-    color: #FDE047;
-    background: rgba(250, 204, 21, 0.12);
-    border-color: rgba(250, 204, 21, 0.4);
+  color: #FDE047;
+  background: rgba(250, 204, 21, 0.10);
+  border-color: rgba(250, 204, 21, 0.30);
 }
 
+/* ── Selector Glassmorphism ── */
+.boost-selector {
+  background: rgba(22, 18, 38, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 28px;
+  transition: border-color 0.25s;
+}
+.boost-selector:hover {
+  border-color: rgba(167, 139, 250, 0.30);
+}
+
+.boost-selector__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.boost-selector__label .fa-newspaper {
+  color: var(--accent-purple);
+}
+
+.boost-selector__selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #f0f0ff;
+  font-size: 14px;
+  padding: 6px 0;
+}
+
+.boost-selector__empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0;
+}
+.boost-selector__empty a {
+  color: var(--accent-purple);
+  font-weight: 600;
+}
+
+.boost-selector__wrapper {
+  position: relative;
+}
+
+.boost-selector__select {
+  width: 100%;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 14px;
+  color: #f0f0ff;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color 0.25s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.boost-selector__select:focus {
+  border-color: rgba(167, 139, 250, 0.45);
+}
+.boost-selector__select option {
+  background: #1a162e;
+  color: #f0f0ff;
+  padding: 8px;
+}
+
+.boost-selector__arrow {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  font-size: 12px;
+}
+
+/* ── Grid de planes ── */
+.boost-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 28px;
+}
+
+/* ── Tarjeta de plan ── */
 .boost-plan-card {
-    --boost-color: #8B5CF6;
-    --boost-rgb: 139, 92, 246;
-    position: relative;
-    text-align: center;
-    padding: 28px 22px 22px;
-    border-radius: 16px;
-    background: linear-gradient(180deg, rgba(var(--boost-rgb), 0.08) 0%, var(--bg-card) 55%);
-    border: 2px solid rgba(var(--boost-rgb), 0.45);
-    box-shadow: 0 0 24px rgba(var(--boost-rgb), 0.12);
-    transition: transform 0.2s, box-shadow 0.2s;
+  --boost-color: #8B5CF6;
+  --boost-rgb: 139, 92, 246;
+  position: relative;
+  text-align: center;
+  padding: 32px 24px 24px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(var(--boost-rgb), 0.08) 0%, var(--bg-card) 55%);
+  border: 2px solid rgba(var(--boost-rgb), 0.45);
+  box-shadow: 0 0 30px rgba(var(--boost-rgb), 0.10);
+  transition: transform 0.25s, box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .boost-plan-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(var(--boost-rgb), 0.22);
+  transform: translateY(-5px);
+  box-shadow: 0 16px 40px rgba(var(--boost-rgb), 0.20);
 }
 
 .boost-plan-card--rapido {
-    --boost-color: #3B82F6;
-    --boost-rgb: 59, 130, 246;
+  --boost-color: #3B82F6;
+  --boost-rgb: 59, 130, 246;
 }
 .boost-plan-card--mega {
-    --boost-color: #A855F7;
-    --boost-rgb: 168, 85, 247;
+  --boost-color: #A855F7;
+  --boost-rgb: 168, 85, 247;
 }
 .boost-plan-card--titan {
-    --boost-color: #FACC15;
-    --boost-rgb: 250, 204, 21;
+  --boost-color: #FACC15;
+  --boost-rgb: 250, 204, 21;
 }
 
+/* ── Badge "MÁS POPULAR" ── */
 .boost-plan-card__popular {
-    position: absolute;
-    top: -11px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--boost-color);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    padding: 4px 14px;
-    border-radius: 10px;
-    white-space: nowrap;
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #A855F7, #ec4899);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 5px 18px;
+  border-radius: 0 0 12px 12px;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.35);
+  text-transform: uppercase;
 }
 
+/* ── Tag del plan ── */
 .boost-plan-card__tag {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    color: var(--boost-color);
-    background: rgba(var(--boost-rgb), 0.15);
-    border: 1px solid rgba(var(--boost-rgb), 0.35);
-    padding: 4px 10px;
-    border-radius: 8px;
-    margin-bottom: 14px;
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--boost-color);
+  background: rgba(var(--boost-rgb), 0.12);
+  border: 1px solid rgba(var(--boost-rgb), 0.30);
+  padding: 4px 12px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  align-self: center;
 }
 
+/* ── Icono grande con neón ── */
 .boost-plan-card__icon-wrap {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 14px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(var(--boost-rgb), 0.18);
-    border: 2px solid rgba(var(--boost-rgb), 0.5);
-    box-shadow: 0 0 20px rgba(var(--boost-rgb), 0.35);
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--boost-rgb), 0.15);
+  border: 2px solid rgba(var(--boost-rgb), 0.45);
+  box-shadow: 0 0 30px rgba(var(--boost-rgb), 0.30), inset 0 0 20px rgba(var(--boost-rgb), 0.08);
+  transition: box-shadow 0.3s;
+}
+.boost-plan-card:hover .boost-plan-card__icon-wrap {
+  box-shadow: 0 0 50px rgba(var(--boost-rgb), 0.45), inset 0 0 20px rgba(var(--boost-rgb), 0.08);
 }
 .boost-plan-card__icon-wrap i {
-    font-size: 26px;
-    color: var(--boost-color);
+  font-size: 32px;
+  color: var(--boost-color);
+  filter: drop-shadow(0 0 8px rgba(var(--boost-rgb), 0.5));
 }
 
+/* ── Título ── */
 .boost-plan-card__title {
-    color: white;
-    margin: 0 0 8px;
-    font-size: 20px;
+  color: #f0f0ff;
+  margin: 0 0 8px;
+  font-size: 21px;
+  font-weight: 700;
 }
 
+/* ── Descripción ── */
 .boost-plan-card__desc {
-    color: var(--text-muted);
-    font-size: 13px;
-    margin: 0 0 16px;
-    line-height: 1.45;
-    min-height: 40px;
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 0 0 18px;
+  line-height: 1.5;
+  min-height: 40px;
 }
 
+/* ── Precio ── */
 .boost-plan-card__price {
-    font-size: 26px;
-    font-weight: 800;
-    color: var(--boost-color);
-    margin-bottom: 18px;
-    text-shadow: 0 0 12px rgba(var(--boost-rgb), 0.4);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--boost-color);
+  margin-bottom: 20px;
+  text-shadow: 0 0 14px rgba(var(--boost-rgb), 0.35);
 }
 .boost-plan-card__price .fa-coins {
-    font-size: 18px;
-    opacity: 0.85;
+  font-size: 20px;
+  opacity: 0.85;
 }
 
+/* ── Botón ── */
 .boost-plan-card__btn {
-    width: 100%;
-    padding: 12px 16px;
-    border-radius: 24px;
-    border: none;
-    font-size: 14px;
-    font-weight: 800;
-    cursor: pointer;
-    color: #0f172a;
-    background: linear-gradient(135deg, var(--boost-color), color-mix(in srgb, var(--boost-color) 70%, white));
-    box-shadow: 0 4px 16px rgba(var(--boost-rgb), 0.45);
-    transition: opacity 0.2s, transform 0.15s;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 30px;
+  border: none;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s, filter 0.2s, box-shadow 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
 }
-.boost-plan-card--mega .boost-plan-card__btn,
-.boost-plan-card--titan .boost-plan-card__btn {
-    color: var(--boost-color);
-    background: rgba(var(--boost-rgb), 0.2);
-    border: 2px solid var(--boost-color);
-    color: white;
-}
+
 .boost-plan-card--rapido .boost-plan-card__btn {
-    color: white;
+  background: linear-gradient(135deg, #3B82F6, #60A5FA);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.45);
 }
+
+.boost-plan-card--mega .boost-plan-card__btn {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.08));
+  color: #C084FC;
+  border: 2px solid #A855F7;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.25);
+}
+
+.boost-plan-card--titan .boost-plan-card__btn {
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.15), rgba(250, 204, 21, 0.08));
+  color: #FDE047;
+  border: 2px solid #FACC15;
+  box-shadow: 0 4px 20px rgba(250, 204, 21, 0.25);
+}
+
 .boost-plan-card__btn:hover:not(:disabled) {
-    transform: scale(1.02);
-    filter: brightness(1.08);
+  transform: scale(1.03);
+  filter: brightness(1.10);
 }
+
+/* ── Botón DESHABILITADO ── */
 .boost-plan-card__btn:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none !important;
+  filter: grayscale(0.8) !important;
+  box-shadow: none !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-muted) !important;
+}
+
+/* ── Texto "Faltan X RC" ── */
+.boost-plan-card__insufficient {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #f87171;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .boost-plans-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .boosts-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .boosts-saldo-badge {
+    align-self: flex-start;
+  }
+  .boost-plan-card {
+    padding: 26px 18px 20px;
+  }
+  .boost-plan-card__icon-wrap {
+    width: 68px;
+    height: 68px;
+  }
+  .boost-plan-card__icon-wrap i {
+    font-size: 26px;
+  }
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const postSelect = document.getElementById('post-select');
-    if (postSelect && postSelect.tagName === 'SELECT') {
-        postSelect.addEventListener('change', function() {
-            document.querySelectorAll('.boost-post-id').forEach(function(input) {
-                input.value = postSelect.value;
-            });
-        });
-    }
-    document.querySelectorAll('.boost-buy-form').forEach(function(form) {
-        form.addEventListener('submit', function(e) {
-            const pid = form.querySelector('.boost-post-id').value;
-            const plan = form.dataset.plan;
-            if (!pid) {
-                e.preventDefault();
-                alert('Selecciona una publicación primero.');
-                return;
-            }
-            const labels = { rapido: 'Boost Rápido (azul)', mega: 'Mega Boost (morado)', titan: 'Boost Titán (dorado)' };
-            if (!confirm('¿Aplicar ' + (labels[plan] || plan) + ' a esta publicación?')) {
-                e.preventDefault();
-            }
-        });
+  const postSelect = document.getElementById('post-select');
+  if (postSelect && postSelect.tagName === 'SELECT') {
+    postSelect.addEventListener('change', function() {
+      document.querySelectorAll('.boost-post-id').forEach(function(input) {
+        input.value = postSelect.value;
+      });
     });
+  }
+  document.querySelectorAll('.boost-buy-form').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+      const pid = form.querySelector('.boost-post-id').value;
+      const plan = form.dataset.plan;
+      if (!pid) {
+        e.preventDefault();
+        showToast('Selecciona una publicación primero.', 'error');
+        return;
+      }
+      const labels = { rapido: 'Boost Rápido', mega: 'Mega Boost', titan: 'Boost Titán' };
+      if (!confirm('¿Aplicar ' + (labels[plan] || plan) + ' a esta publicación?')) {
+        e.preventDefault();
+      }
+    });
+  });
 });
 </script>
 {% endblock %}

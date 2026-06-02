@@ -1,5 +1,5 @@
 import os
-from app.factories.app_factory import create_app
+from app.factories.app_factory import create_app, socketio
 
 # Determinar el entorno de configuración
 config_name = os.environ.get('FLASK_ENV', 'development')
@@ -16,8 +16,10 @@ if __name__ == '__main__':
     print(f"Debug: {debug_mode}")
     print(f"Port: {port}")
     
-    app.run(
+    socketio.run(
+        app,
         host='0.0.0.0',
         port=port,
-        debug=debug_mode
+        debug=debug_mode,
+        allow_unsafe_werkzeug=True
     )

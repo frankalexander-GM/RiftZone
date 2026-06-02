@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="messages-page-wrapper">
+    <div class="mensajes-app">
+        <div class="mensajes-sidebar" id="mensajes-sidebar">
+            <div class="mensajes-sidebar-header">
+                <h3><i class="fas fa-comment-dots"></i> Mensajes</h3>
+                <button class="icon-btn" id="nueva-conversacion-btn" title="Nueva conversación">
+                    <i class="fas fa-pen"></i>
+                </button>
+            </div>
+            <div class="mensajes-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="buscar-usuarios-input" placeholder="Buscar o iniciar chat...">
+                <div id="resultados-busqueda" class="busqueda-usuarios" style="display:none;"></div>
+            </div>
+            <div class="conversaciones-list" id="conversaciones-list">
+                <div class="conversaciones-loading"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+            </div>
+        </div>
+
+        <div class="mensajes-chat-panel" id="chat-panel">
+            <div class="chat-placeholder" id="chat-placeholder">
+                <div class="chat-placeholder-icon"><i class="fas fa-comment-dots"></i></div>
+                <h3>Tus mensajes</h3>
+                <p>Selecciona una conversación o inicia una nueva.</p>
+            </div>
+            <div class="chat-activo" id="chat-activo" style="display:none;">
+                <div class="chat-header" id="chat-header">
+                    <button class="chat-back-btn" id="chat-back-btn"><i class="fas fa-arrow-left"></i></button>
+                    <img src="" alt="" class="chat-header-avatar" id="chat-header-avatar">
+                    <div class="chat-header-info">
+                        <strong id="chat-header-name"></strong>
+                        <span id="chat-header-status"></span>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="chat-loading"><i class="fas fa-spinner fa-spin"></i></div>
+                </div>
+                <div class="chat-input-area">
+                    <form id="chat-send-form" autocomplete="off">
+                        <input type="text" id="chat-input-msg" placeholder="Escribe un mensaje..." maxlength="1000" required>
+                        <button type="submit" class="chat-send-btn" aria-label="Enviar">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="nueva-conv-modal" style="display:none;">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3>Nueva conversación</h3>
+            <button class="icon-btn" onclick="document.getElementById('nueva-conv-modal').style.display='none'"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <input type="text" id="modal-buscar" placeholder="Buscar usuario..." style="width:100%; padding:12px; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); color:white; font-size:14px; outline:none;">
+            <div id="modal-resultados" style="margin-top:12px;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+(function() {
+    var conversaciones = [];
+    var otroId = null;
+    var pollInterval = null;
+    var searchTimeout = null;
+    var enviando = false;
+
+    var sidebar = document.getElementById('mensajes-sidebar');
+    var chatActivo = document.getElementById('chat-activo');
+    var chatPlaceholder = document.getElementById('chat-placeholder');
+    var conversacionesList = document.getElementById('conversaciones-list');
+    var chatMessages = document.getElementById('chat-messages');
+    var chatInput = document.getElementById('chat-input-msg');
+    var chatSendForm = document.getElementById('chat-send-form');
+    var buscarInput = document.getElementById('buscar-usuarios-input');
+    var resultadosBusqueda = document.getElementById('resultados-busqueda');
+
+    function getCsrf() {
+        var m = document.querySelector('meta[name="csrf-token"]');
+        return m ? m.getAttribute('content') : '';
+    }
+
+    function escapeHtml(text) {
+        var d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+
+    function cargarConversaciones() {
+        fetch('/mensajes/api/conversaciones')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                conversaciones = data;
+                renderConversaciones(data);
+            })
+            .catch(function() {});
+    }
+
+    function renderConversaciones(data) {
+        if (data.length === 0) {
+            conversacionesList.innerHTML = '<div class="conversaciones-empty"><i class="far fa-comment-dots"></i><p>Sin conversaciones aún</p></div>';
+            return;
+        }
+        var html = '';
+        data.forEach(function(c) {
+            var active = (otroId === c.usuario_id) ? ' conv-item-active' : '';
+            var badge = c.no_leidas > 0 ? '<span class="conv-badge">' + c.no_leidas + '</span>' : '';
+            html += '<div class="conv-item' + active + '" data-id="' + c.usuario_id + '">';
+            html += '<img src="' + escapeHtml(c.foto) + '" alt="" class="conv-avatar">';
+            html += '<div class="conv-info"><div class="conv-top"><strong>' + escapeHtml(c.nombre) + '</strong><span class="conv-time">' + escapeHtml(c.ultimo_time) + '</span></div>';
+            html += '<div class="conv-preview"><span class="conv-last-msg">' + escapeHtml(c.ultimo_mensaje) + '</span>' + badge + '</div></div></div>';
+        });
+        conversacionesList.innerHTML = html;
+
+        document.querySelectorAll('.conv-item').forEach(function(item) {
+            item.addEventListener('click', function() {
+                abrirChat(parseInt(this.getAttribute('data-id')));
+            });
+        });
+    }
+
+    function abrirChat(id) {
+        if (pollInterval) clearInterval(pollInterval);
+        otroId = id;
+
+        document.querySelectorAll('.conv-item').forEach(function(el) {
+            el.classList.toggle('conv-item-active', parseInt(el.getAttribute('data-id')) === id);
+        });
+
+        chatPlaceholder.style.display = 'none';
+        chatActivo.style.display = 'flex';
+
+        if (window.innerWidth < 768) {
+            sidebar.style.display = 'none';
+        }
+
+        var conv = conversaciones.find(function(c) { return c.usuario_id === id; });
+        if (conv) {
+            document.getElementById('chat-header-avatar').src = conv.foto;
+            document.getElementById('chat-header-name').textContent = conv.nombre;
+        }
+
+        cargarMensajes(id);
+        pollInterval = setInterval(function() {
+            if (otroId === id) cargarMensajes(id);
+        }, 2500);
+    }
+
+    function cargarMensajes(id) {
+        fetch('/mensajes/api/mensajes/' + id)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var prevScrollTop = chatMessages.scrollTop;
+                var prevScrollHeight = chatMessages.scrollHeight;
+                var isNearBottom = prevScrollHeight - prevScrollTop - chatMessages.clientHeight < 100;
+
+                renderMensajes(data);
+
+                var badge = document.querySelector('.conv-item[data-id="' + id + '"] .conv-badge');
+                if (badge) badge.remove();
+
+                if (isNearBottom) {
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                } else {
+                    chatMessages.scrollTop = chatMessages.scrollHeight - prevScrollHeight + prevScrollTop;
+                }
+
+                cargarConversaciones();
+            })
+            .catch(function() {});
+    }
+
+    function renderMensajes(data) {
+        if (data.length === 0) {
+            chatMessages.innerHTML = '<div class="chat-empty-msg">Envía un mensaje para iniciar la conversación</div>';
+            return;
+        }
+        var html = '';
+        var lastDate = '';
+        var userId = {{ current_user.id_usuario }};
+        data.forEach(function(m) {
+            var msgDate = m.fecha_completa ? m.fecha_completa.split(' ')[0] : '';
+            if (msgDate && msgDate !== lastDate) {
+                html += '<div class="chat-date-sep"><span>' + msgDate + '</span></div>';
+                lastDate = msgDate;
+            }
+            var isMine = m.emisor_id === userId;
+            html += '<div class="msg ' + (isMine ? 'msg-mine' : 'msg-other') + '">';
+            if (!isMine) {
+                html += '<img src="' + escapeHtml(m.emisor_foto) + '" alt="" class="msg-avatar">';
+            }
+            html += '<div class="msg-bubble"><div class="msg-text">' + escapeHtml(m.contenido) + '</div>';
+            html += '<div class="msg-meta"><span class="msg-time">' + escapeHtml(m.fecha) + '</span>';
+            if (isMine) {
+                html += '<span class="msg-read ' + (m.leido ? 'msg-read-yes' : '') + '"><i class="fas fa-check' + (m.leido ? '-double' : '') + '"></i></span>';
+            }
+            html += '</div></div></div>';
+        });
+        chatMessages.innerHTML = html;
+        if (data.length > 0) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    }
+
+    chatSendForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var contenido = chatInput.value.trim();
+        if (!contenido || !otroId || enviando) return;
+        enviando = true;
+        chatInput.disabled = true;
+
+        fetch('/mensajes/api/enviar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
+            body: JSON.stringify({receptor_id: otroId, contenido: contenido})
+        }).then(function(r) {
+            if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || 'Error'); });
+            return r.json();
+        }).then(function() {
+            chatInput.value = '';
+            cargarMensajes(otroId);
+        }).catch(function(err) {
+            console.error('Error enviando mensaje:', err);
+        }).then(function() {
+            enviando = false;
+            chatInput.disabled = false;
+            chatInput.focus();
+        });
+    });
+
+    buscarInput.addEventListener('input', function() {
+        var q = this.value.trim();
+        if (searchTimeout) clearTimeout(searchTimeout);
+        if (!q) {
+            resultadosBusqueda.style.display = 'none';
+            return;
+        }
+        searchTimeout = setTimeout(function() {
+            fetch('/mensajes/api/buscar?q=' + encodeURIComponent(q))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.length === 0) {
+                        resultadosBusqueda.innerHTML = '<div class="busqueda-empty">No se encontraron usuarios</div>';
+                    } else {
+                        var html = '<div class="busqueda-title">Usuarios:</div>';
+                        data.forEach(function(u) {
+                            html += '<div class="busqueda-item" data-id="' + u.usuario_id + '">';
+                            html += '<img src="' + escapeHtml(u.foto) + '" alt="" class="busqueda-avatar">';
+                            html += '<div><strong>' + escapeHtml(u.nombre) + '</strong><span>@' + escapeHtml(u.username) + '</span></div></div>';
+                        });
+                        resultadosBusqueda.innerHTML = html;
+                        document.querySelectorAll('.busqueda-item').forEach(function(item) {
+                            item.addEventListener('click', function() {
+                                var id = parseInt(this.getAttribute('data-id'));
+                                buscarInput.value = '';
+                                resultadosBusqueda.style.display = 'none';
+                                abrirChat(id);
+                            });
+                        });
+                    }
+                    resultadosBusqueda.style.display = 'block';
+                });
+        }, 300);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.mensajes-search')) {
+            resultadosBusqueda.style.display = 'none';
+        }
+    });
+
+    document.getElementById('nueva-conversacion-btn').onclick = function() {
+        document.getElementById('nueva-conv-modal').style.display = 'flex';
+        document.getElementById('modal-buscar').value = '';
+        document.getElementById('modal-resultados').innerHTML = '';
+        document.getElementById('modal-buscar').focus();
+    };
+
+    document.getElementById('modal-buscar').addEventListener('input', function() {
+        var q = this.value.trim();
+        if (!q) { document.getElementById('modal-resultados').innerHTML = ''; return; }
+        fetch('/mensajes/api/buscar?q=' + encodeURIComponent(q))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var container = document.getElementById('modal-resultados');
+                if (data.length === 0) {
+                    container.innerHTML = '<div style="color:var(--text-muted);padding:20px;text-align:center;">Sin resultados</div>';
+                } else {
+                    var html = '';
+                    data.forEach(function(u) {
+                        html += '<div class="modal-usuario-item" data-id="' + u.usuario_id + '">';
+                        html += '<img src="' + escapeHtml(u.foto) + '" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">';
+                        html += '<div><strong>' + escapeHtml(u.nombre) + '</strong><span style="color:var(--text-muted);font-size:13px;"> @' + escapeHtml(u.username) + '</span></div></div>';
+                    });
+                    container.innerHTML = html;
+                    document.querySelectorAll('.modal-usuario-item').forEach(function(item) {
+                        item.addEventListener('click', function() {
+                            var id = parseInt(this.getAttribute('data-id'));
+                            document.getElementById('nueva-conv-modal').style.display = 'none';
+                            abrirChat(id);
+                        });
+                    });
+                }
+            });
+    });
+
+    document.getElementById('chat-back-btn').addEventListener('click', function() {
+        if (window.innerWidth < 768) {
+            sidebar.style.display = 'flex';
+        }
+        chatActivo.style.display = 'none';
+        chatPlaceholder.style.display = 'flex';
+        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+        otroId = null;
+    });
+
+    cargarConversaciones();
+
+    if (window.innerWidth < 768) {
+        sidebar.style.display = 'flex';
+    }
+})();
+</script>
+{% endblock %}

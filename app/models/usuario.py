@@ -108,3 +108,15 @@ class Usuario(UserMixin, db.Model):
     def is_jugador(self):
         return self.rol == 'jugador'
 
+    def is_invitado(self):
+        return self.rol == 'invitado'
+
+class Sugerencia(db.Model):
+    __tablename__ = 'sugerencias'
+    id_sugerencia = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='SET NULL'), nullable=True)
+    juego_nombre = db.Column(db.String(200), nullable=False)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    usuario = db.relationship('Usuario', backref='sugerencias')
+

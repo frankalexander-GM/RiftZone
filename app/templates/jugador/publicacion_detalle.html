@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% from 'macros/usuario.html' import nombre_usuario %}
+{% block title %}Publicación - RiftZone{% endblock %}
+
+{% block content %}
+<div class="post-detail-page">
+  <a href="{{ url_for('jugador.dashboard') }}" class="post-detail-back"><i class="fas fa-arrow-left"></i> Volver</a>
+
+  <div class="post-detail-card">
+    <div class="post-detail-header">
+      <div class="post-detail-author">
+        <a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}">
+          <img src="{{ post.autor | user_avatar }}" alt="" class="post-detail-avatar">
+        </a>
+        <div class="post-detail-author-info">
+          <h4><a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" style="text-decoration:none;color:white;">{{ nombre_usuario(post.autor, true) }}</a>{% if post.autor.es_premium %} <i class="fas fa-crown" style="color:#FACC15;font-size:14px;margin-left:4px;"></i>{% endif %}</h4>
+          <div class="post-detail-meta">{{ post.fecha_creacion | timeago }} · <span style="color:var(--accent-purple);">{{ post.juego }}</span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        {% if current_user.is_authenticated and current_user.id_usuario == post.id_usuario and not post.promocionada %}
+        <a href="{{ url_for('jugador.boosts', post_id=post.id_publicacion) }}" class="btn-primary" style="padding:4px 12px;font-size:12px;border-radius:12px;text-decoration:none;display:flex;align-items:center;gap:4px;"><i class="fas fa-rocket"></i> Boost</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="post-detail-content">{{ post.contenido }}</div>
+
+    {% if post.is_poll %}
+    <div class="post-poll" data-poll-post="{{ post.id_publicacion }}" data-poll-id="{{ post.poll.id_poll }}" data-multiple="{{ '1' if post.poll.multiple_choice else '0' }}" data-change="{{ '1' if post.poll.allow_change else '0' }}">
+      <p class="post-poll-question">{{ post.poll.pregunta }}</p>
+      <div class="post-poll-config-badges">
+        {% if post.poll.multiple_choice %}<span class="poll-badge multiple"><i class="fas fa-check-double"></i> Múltiple</span>{% endif %}
+        {% if post.poll.allow_change %}<span class="poll-badge changeable"><i class="fas fa-sync-alt"></i> Cambiable</span>{% endif %}
+      </div>
+      <div class="post-poll-options">
+        {% for opt in post.poll.options %}
+        <button type="button" class="post-poll-option" data-option-id="{{ opt.id_option }}" onclick="votePoll(this, {{ post.id_publicacion }})">
+          <span class="post-poll-radio"></span>
+          <span class="post-poll-text">{{ opt.texto }}</span>
+          <span class="post-poll-bar" style="width:0%"></span>
+          <span class="post-poll-pct" style="display:none;">0%</span>
+        </button>
+        {% endfor %}
+      </div>
+      <p class="post-poll-total"><i class="far fa-chart-bar"></i> <span class="post-poll-count">{{ post.poll.total_votos }}</span> voto(s)</p>
+    </div>
+    {% endif %}
+
+    {% if post.imagen_url %}
+    <div class="post-detail-media">
+      <img src="{{ post.imagen_url }}" alt="Media">
+    </div>
+    {% endif %}
+
+    <div class="post-detail-stats">
+      <span><i class="fas fa-heart" style="color:#EF4444;"></i> {{ post.likes }} Me gusta</span>
+      <span><i class="far fa-comment"></i> {{ post.comentarios|length }} Comentarios</span>
+    </div>
+
+    {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+    <form class="detail-comment-form" method="POST" action="{{ url_for('jugador.comentar', post_id=post.id_publicacion) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <img src="{{ current_user | user_avatar }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+      <input type="text" name="contenido" placeholder="Escribe un comentario..." autocomplete="off" required>
+      <button type="submit" aria-label="Enviar"><i class="fas fa-paper-plane"></i></button>
+    </form>
+    {% endif %}
+
+    <div class="post-detail-comments">
+      <h4 class="detail-comments-header">Comentarios</h4>
+      {% if post.comentarios %}
+        {% for comment in post.comentarios %}
+        <div style="display:flex;gap:12px;margin-bottom:12px;">
+          <img src="{{ comment.autor | user_avatar }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+          <div style="background:var(--bg-dark);padding:10px 14px;border-radius:12px;flex:1;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;gap:8px;">
+              <span style="font-size:13px;font-weight:700;">{{ comment.autor.nombre if comment.autor.nombre else comment.autor.username }}</span>
+              <span style="font-size:11px;color:var(--text-muted);flex-shrink:0;">{{ comment.fecha_creacion | timeago }}</span>
+            </div>
+            <p style="font-size:14px;color:white;line-height:1.4;margin:0;">{{ comment.contenido }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+      <p style="color:var(--text-muted);font-size:14px;margin:0;">No hay comentarios aún. Sé el primero en comentar.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function votePoll(btn, postId) {
+    var optionId = parseInt(btn.getAttribute('data-option-id'));
+    var parent = btn.closest('.post-poll');
+    var multiple = parent.getAttribute('data-multiple') === '1';
+    var changeable = parent.getAttribute('data-change') === '1';
+    var hasVoted = parent.classList.contains('post-poll-voted');
+    if (changeable && hasVoted) {
+        var already = btn.classList.contains('post-poll-voted-opt');
+        if (already) { sendVote(postId, optionId, function(data) { applyResults(parent, data); }); return; }
+    }
+    if (hasVoted && !changeable && !multiple) return;
+    sendVote(postId, optionId, function(data) { applyResults(parent, data); });
+}
+function sendVote(postId, optionId, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '{{ url_for("jugador.poll_vote", post_id=0) }}'.replace('0', postId), true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token() }}');
+    xhr.onload = function() { if (xhr.status === 200) callback(JSON.parse(xhr.responseText)); };
+    xhr.send(JSON.stringify({option_id: optionId}));
+}
+function applyResults(parent, data) {
+    parent.classList.add('post-poll-voted');
+    var btns = parent.querySelectorAll('.post-poll-option');
+    var voted = data.voted_options || [];
+    btns.forEach(function(b) {
+        var oid = parseInt(b.getAttribute('data-option-id'));
+        var bar = b.querySelector('.post-poll-bar');
+        var pct = b.querySelector('.post-poll-pct');
+        b.classList.toggle('post-poll-voted-opt', voted.indexOf(oid) !== -1);
+        if (data.results && data.results[oid] !== undefined) {
+            bar.style.width = data.results[oid].pct + '%';
+            pct.textContent = data.results[oid].pct + '%';
+            pct.style.display = 'inline';
+        }
+    });
+    var count = parent.querySelector('.post-poll-count');
+    if (count && data.total_votes !== undefined) count.textContent = data.total_votes;
+}
+</script>
+{% endblock %}

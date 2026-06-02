@@ -143,7 +143,7 @@ def comprar(item_id):
         tx = Transaccion(
             user_id=current_user.id_usuario,
             amount=-precio_final,
-            type='egreso',
+            tipo='egreso',
             description=f'Compra en tienda: {item.name}'
         )
         db.session.add(tx)

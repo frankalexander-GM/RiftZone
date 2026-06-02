@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="comunidades-container" style="padding: 20px;">
-    <h2 style="font-size: 28px; color: white; margin-bottom: 12px;"><i class="fas fa-users" style="color: var(--accent-purple);"></i> Explora nuestras Comunidades</h2>
+<div class="comunidades-container" style="padding: clamp(12px, 3vw, 20px);">
+    <h2 style="font-size: 28px; color: white; margin-bottom: 12px;"><i class="fas fa-trophy" style="color: var(--accent-purple);"></i> Top 20 juegos más jugados</h2>
     <p style="color: rgba(255,255,255,0.8); font-size: 15px; margin-bottom: 30px; max-width: 800px; line-height: 1.5;">
         <strong>¿A qué vas a jugar hoy?</strong> Selecciona tu videojuego favorito a continuación para entrar a su comunidad exclusiva. Allí podrás encontrar compañeros de equipo, ver clips increíbles y compartir tus propias jugadas con personas que juegan lo mismo que tú. ¡Elige tu zona!
     </p>
@@ -16,7 +16,7 @@
             {% for juego in categoria.juegos %}
                 <div class="game-card" style="background: var(--bg-card); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-color); transition: transform 0.2s, box-shadow 0.2s;">
                     <a href="{{ url_for('jugador.comunidad_detalle', juego=juego.nombre) }}" style="display: block; text-decoration: none;">
-                        <div style="height: 140px; background-image: url('{{ juego.imagen }}'); background-size: cover; background-position: center;"></div>
+                        <div style="height: 140px; background-image: url('{{ juego.imagen }}'); background-size: cover; background-position: center; background-color: var(--bg-dark);"></div>
                     </a>
                     <div style="padding: 16px;">
                         <h3 style="color: white; margin-bottom: 8px; font-size: 18px;">{{ juego.nombre }}</h3>
@@ -35,6 +35,20 @@
         </div>
     </div>
     {% endfor %}
+
+    <!-- Buzón de sugerencias -->
+    <div style="margin-top: 60px; padding: 32px; background: linear-gradient(135deg, var(--bg-card), rgba(139,92,246,0.05)); border: 1px solid var(--border-color); border-radius: var(--radius-lg); text-align: center;">
+        <i class="fas fa-lightbulb" style="font-size: 36px; color: var(--accent-purple); margin-bottom: 12px;"></i>
+        <h3 style="color: white; font-size: 22px; margin-bottom: 8px;">¿No encuentras tu juego?</h3>
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px; max-width: 500px; margin-left: auto; margin-right: auto;">
+            Sugiérenos qué comunidad agregar. Lo revisaremos y la añadimos si es posible.
+        </p>
+        <form method="POST" action="{{ url_for('jugador.sugerir_juego') }}" style="display: flex; gap: 12px; max-width: 500px; margin: 0 auto;" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="text" name="juego" placeholder="Ej. Elden Ring, FIFA, Zelda..." required maxlength="200" style="flex: 1; padding: 12px 16px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: white; font-size: 14px; outline: none;">
+            <button type="submit" class="btn-primary" style="white-space: nowrap; padding: 12px 24px;"><i class="fas fa-paper-plane"></i> Sugerir</button>
+        </form>
+    </div>
 </div>
 
 <style>

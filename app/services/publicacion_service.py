@@ -17,10 +17,22 @@ class PublicacionService:
             imagen_url=imagen_url
         )
         
-    def obtener_feed(self):
+    def obtener_feed(self, tab='para-ti', user_id=None):
         from app.services.boost_service import limpiar_boosts_expirados
         limpiar_boosts_expirados()
-        return self.pub_repo.get_all_descending()
+
+        if tab == 'siguiendo' and user_id:
+            return self.pub_repo.get_following(user_id)
+        elif tab == 'populares':
+            return self.pub_repo.get_popular(user_id)
+        elif tab == 'recientes':
+            return self.pub_repo.get_recent(user_id)
+        elif tab == 'encuestas':
+            return self.pub_repo.get_encuestas(user_id)
+        elif tab == 'torneos':
+            return self.pub_repo.get_torneos(user_id)
+        else:
+            return self.pub_repo.get_all_descending(user_id)
 
     def toggle_like(self, id_publicacion, usuario):
         post = self.pub_repo.get_by_id(id_publicacion)
@@ -35,4 +47,3 @@ class PublicacionService:
         if post.id_usuario != id_usuario:
             raise ValueError("No tienes permiso para promocionar esta publicación.")
         return self.pub_repo.promocionar(post)
-
