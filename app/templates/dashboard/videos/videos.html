@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% from 'macros/usuario.html' import nombre_usuario %}
+
+{% block title %}Videos - RiftZone{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/dashboard/videos/videos.css') }}?v=1" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="videos-wrap">
+
+  <div class="videos-header">
+    <div class="vh-left">
+      <h1><i class="fas fa-video" style="color:var(--accent-purple);"></i> Videos</h1>
+      <p>Descubre y comparte los mejores momentos de la comunidad</p>
+    </div>
+    <button class="btn btn-primary" onclick="openPostModal('video')" style="border-radius:12px;padding:10px 20px;font-size:14px;">
+      <i class="fas fa-upload"></i> Subir video
+    </button>
+  </div>
+
+  <div class="videos-filter-tabs">
+    <button class="vf-tab active" data-filter="all">Todos</button>
+    <button class="vf-tab" data-filter="recientes">Más recientes</button>
+    <button class="vf-tab" data-filter="populares">Populares</button>
+  </div>
+
+  {% if videos %}
+  <div class="videos-grid">
+    {% for v in videos %}
+    <div class="video-card" data-video-id="{{ v.id_publicacion }}">
+      <div class="vc-player">
+        {% if v.video_archivo %}
+        <video src="{{ v.video_archivo }}" controls preload="metadata" poster=""></video>
+        {% elif v.imagen_url and (v.imagen_url.endswith('.mp4') or v.imagen_url.endswith('.mov') or v.imagen_url.endswith('.avi')) %}
+        <video src="{{ v.imagen_url }}" controls preload="metadata" poster=""></video>
+        {% elif v.contenido and v.contenido.startswith('[Clip]') %}
+        {% set clip_url = v.contenido.replace('[Clip]','').strip() %}
+        <div class="vc-embed">
+          {% if 'youtube.com' in clip_url or 'youtu.be' in clip_url %}
+          <iframe src="{{ clip_url.replace('watch?v=', 'embed/') if 'watch?v=' in clip_url else clip_url }}" frameborder="0" allowfullscreen></iframe>
+          {% elif 'twitch.tv' in clip_url %}
+          <iframe src="https://clips.twitch.tv/embed?clip={{ clip_url.split('/')[-1] }}&parent=127.0.0.1" frameborder="0" allowfullscreen></iframe>
+          {% else %}
+          <a href="{{ clip_url }}" target="_blank" class="vc-external-link"><i class="fas fa-external-link-alt"></i> Ver video externo</a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      <div class="vc-info">
+        <div class="vc-head">
+          <a href="{{ url_for('jugador.perfil_publico', username=v.autor.username) }}">
+            <img src="{{ v.autor | user_avatar }}" alt="" class="vc-avatar">
+          </a>
+          <div class="vc-meta">
+            <a href="{{ url_for('jugador.ver_publicacion', post_id=v.id_publicacion) }}" class="vc-title">{{ v.contenido|truncate(80) if v.contenido and not v.contenido.startswith('[Clip]') else 'Video' }}</a>
+            <span class="vc-author">@{{ v.autor.username }}</span>
+          </div>
+        </div>
+        <div class="vc-stats">
+          <span><i class="far fa-heart"></i> {{ v.likes_count or 0 }}</span>
+          <span><i class="far fa-comment"></i> {{ v.comentarios_count or 0 }}</span>
+          {% if v.juego %}
+          <span class="badge badge-purple" style="font-size:10px;">{{ v.juego }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="videos-empty">
+    <i class="fas fa-video"></i>
+    <h3>Aún no hay videos</h3>
+    <p>Sé el primero en compartir un video con la comunidad.</p>
+    <button class="btn btn-primary" onclick="openPostModal('video')" style="border-radius:12px;padding:12px 24px;font-size:14px;">
+      <i class="fas fa-upload"></i> Subir el primer video
+    </button>
+  </div>
+  {% endif %}
+
+</div>
+
+{% include 'dashboard/_post_modal.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard/inicio/inicio.js') }}?v=3"></script>
+<script src="{{ url_for('static', filename='js/dashboard/videos/videos.js') }}?v=1"></script>
+{% endblock %}

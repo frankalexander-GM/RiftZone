@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from flask_migrate import Migrate
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 from flask_socketio import SocketIO
 
 # Inicializar extensiones
@@ -65,7 +65,6 @@ def create_app(config_name='default'):
             from app.models.usuario import Usuario, Notificacion
             from app.models.chat import MensajeChat
             from app.models.chat_comunidad import MensajeComunidad
-            from app.models.clan import Clan, MiembroClan, SolicitudClan, MensajeClan, PublicacionClan
             from app.models.publicacion import Publicacion, publicacion_likes, Poll, PollOption, PollVote, Report, publicacion_oculta
             from app.models.comentario import Comentario
             from app.models.transaccion import Transaccion
@@ -89,9 +88,11 @@ def create_app(config_name='default'):
                     "ALTER TABLE usuarios ADD COLUMN membresia_tipo VARCHAR(50) DEFAULT 'ninguna'",
                     "ALTER TABLE usuarios ADD COLUMN marco_perfil VARCHAR(255)",
                     "ALTER TABLE usuarios ADD COLUMN ultima_recompensa_diaria DATE",
+                    "ALTER TABLE usuarios ADD COLUMN chat_ultimo_visto INTEGER DEFAULT 0",
                     "ALTER TABLE publicaciones ADD COLUMN boost_tipo VARCHAR(20)",
                     "ALTER TABLE publicaciones ADD COLUMN boost_hasta DATETIME",
                     "ALTER TABLE publicaciones ADD COLUMN fijada BOOLEAN DEFAULT 0",
+                    "ALTER TABLE publicaciones ADD COLUMN video_archivo VARCHAR(255)",
                 ]
                 for col_sql in columnas:
                     try:
@@ -147,14 +148,51 @@ def create_app(config_name='default'):
                 except Exception:
                     pass  # Ya existe
 
-            # Limpiar mensajes y publicaciones huérfanas de clanes borrados en sesiones anteriores
-            with db.engine.connect() as conn:
-                from sqlalchemy import text
-                conn.execute(text("DELETE FROM mensajes_clan WHERE clan_id NOT IN (SELECT id_clan FROM clanes)"))
-                conn.execute(text("DELETE FROM publicaciones_clan WHERE clan_id NOT IN (SELECT id_clan FROM clanes)"))
-                conn.execute(text("DELETE FROM miembros_clan WHERE clan_id NOT IN (SELECT id_clan FROM clanes)"))
-                conn.commit()
-            
+            # Migrar publicaciones: agregar repost_id
+            try:
+                with db.engine.connect() as conn:
+                    from sqlalchemy import text
+                    conn.execute(text("ALTER TABLE publicaciones ADD COLUMN repost_id INTEGER REFERENCES publicaciones(id_publicacion) ON DELETE SET NULL"))
+                    conn.commit()
+            except Exception:
+                pass
+
+            # Migrar mensajes_privados: agregar leido_en y editado
+            try:
+                with db.engine.connect() as conn:
+                    from sqlalchemy import text
+                    conn.execute(text("ALTER TABLE mensajes_privados ADD COLUMN leido_en DATETIME"))
+                    conn.commit()
+            except Exception:
+                pass
+            try:
+                with db.engine.connect() as conn:
+                    from sqlalchemy import text
+                    conn.execute(text("ALTER TABLE mensajes_privados ADD COLUMN editado BOOLEAN DEFAULT 0"))
+                    conn.commit()
+            except Exception:
+                pass
+            try:
+                with db.engine.connect() as conn:
+                    from sqlalchemy import text
+                    conn.execute(text("ALTER TABLE mensajes_privados ADD COLUMN imagen_url VARCHAR(500)"))
+                    conn.commit()
+            except Exception:
+                pass
+
+            # Migrar bloqueos_usuarios: agregar creado_en si no existe
+            try:
+                with db.engine.connect() as conn:
+                    from sqlalchemy import text
+                    conn.execute(text("ALTER TABLE bloqueos_usuarios ADD COLUMN creado_en DATETIME"))
+                    conn.commit()
+            except Exception:
+                pass
+
+        except Exception:
+            print("No se pudieron verificar las migraciones o no es necesario.")
+
+        try:
             db.create_all()
 
             from app.utils.banner import DEFAULT_PROFILE_BANNER
@@ -169,6 +207,13 @@ def create_app(config_name='default'):
             print("Tablas verificadas/creadas con éxito.")
         except Exception as e:
             print(f"\n====== ERROR GRAVE AL CREAR TABLAS ======\n{e}\n========================================\n")
+    
+    # Iniciar bot del chat global
+    try:
+        from app.services.chat_bot import chat_bot
+        chat_bot.start(flask_app)
+    except Exception as e:
+        print(f"ChatBot no inició: {e}")
     
     return flask_app
 
@@ -186,9 +231,6 @@ def register_blueprints(app):
     from app.controllers.chat import chat_bp
     app.register_blueprint(chat_bp, url_prefix='/chat')
     
-    from app.controllers.clanes import clanes_bp
-    app.register_blueprint(clanes_bp, url_prefix='/clanes')
-    
     from app.controllers.billetera import billetera_bp
     app.register_blueprint(billetera_bp, url_prefix='/billetera')
 
@@ -200,6 +242,12 @@ def register_blueprints(app):
 
 def register_error_handlers(app):
     """Registrar manejadores de errores personalizados"""
+    @app.errorhandler(CSRFError)
+    def csrf_error(error):
+        if request.is_json or request.content_type == 'application/json':
+            return jsonify({'error': 'CSRF token inválido. Recarga la página e intenta de nuevo.'}), 400
+        return f'<h1>CSRF Error</h1><p>{error.description}</p>', 400
+
     @app.errorhandler(404)
     def not_found_error(error):
         from flask import render_template

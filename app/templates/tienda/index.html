@@ -4,127 +4,102 @@
 {% block meta_description %}<meta name="description" content="Tienda virtual de RiftZone para comprar marcos, fondos y títulos con RiftCoins. Filtra por categoría, ordena por precio y equipa tus cosméticos." />{% endblock %}
 
 {% block content %}
-<div class="store-container" style="padding: 24px;">
-    
-    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; border-bottom: 1px solid var(--border-color); padding-bottom: 24px;">
-        <div>
-            <h2 style="font-size: 32px; color: white; margin: 0 0 8px; display: flex; align-items: center; gap: 12px;">
-                <i class="fas fa-store" style="color: var(--accent-purple);"></i> RiftStore
-            </h2>
-            <p style="color: var(--text-muted); margin: 0; font-size: 15px;">
-                Personaliza tu perfil y destaca en la comunidad.
-            </p>
+<div class="page">
+
+  <div class="page-header">
+    <div>
+      <h2 class="section-title" style="margin-bottom: 4px;"><i class="fas fa-store"></i> RiftStore</h2>
+      <p class="section-subtitle">Personaliza tu perfil y destaca en la comunidad.</p>
+    </div>
+    <div class="flex-center" style="gap: 12px;">
+      <span class="badge badge-yellow flex-center" style="gap: 6px; padding: 6px 14px;">
+        <i class="fas fa-coins"></i> Saldo: <span id="current-balance">{{ current_user.tokens }}</span> RC
+      </span>
+      <a href="{{ url_for('tienda.inventario') }}" class="btn btn-secondary btn-sm">
+        <i class="fas fa-box-open"></i> Mi Inventario
+      </a>
+      {% if puede_gestionar %}
+      <a href="{{ url_for('tienda.admin_tienda') }}" class="btn btn-primary btn-sm">
+        <i class="fas fa-palette"></i> Subir diseños
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="toolbar flex-between flex-wrap">
+    <div class="flex-center" style="gap: 8px;">
+      <button class="btn btn-secondary btn-sm filter-btn" data-filter="all">Todos</button>
+      <button class="btn btn-secondary btn-sm filter-btn" data-filter="frame">Marcos</button>
+      <button class="btn btn-secondary btn-sm filter-btn" data-filter="background">Fondos</button>
+      <button class="btn btn-secondary btn-sm filter-btn" data-filter="title">Títulos</button>
+    </div>
+    <div class="flex-center" style="gap: 8px;">
+      <span class="text-muted text-sm">Ordenar por:</span>
+      <select id="sort-select" class="form-select" style="width: auto;">
+        <option value="price-asc">Menor Precio</option>
+        <option value="price-desc">Mayor Precio</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="products-grid" class="grid-auto">
+    {% for item in items %}
+      {% set original_price = item.price %}
+      {% set discount_amount = (original_price * descuento)|int %}
+      {% set final_price = original_price - discount_amount %}
+      {% set acquired = item.id in comprados_ids %}
+
+      <div class="card card-hover product-card" data-category="{{ item.category }}" data-price="{{ final_price }}">
+
+        <div style="height: 140px; background: var(--bg-dark); position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden;">
+          {% if item.category == 'background' %}
+            <img src="{{ item.image_url }}" style="width: 100%; height: 100%; object-fit: cover;">
+          {% elif item.category == 'frame' %}
+            <img src="{{ item.image_url }}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; {{ item.css_class }}">
+          {% elif item.category == 'title' %}
+            <div style="font-size: 18px; {{ item.css_class }}">{{ item.name }}</div>
+          {% endif %}
+          {% if descuento > 0 %}
+          <span class="badge badge-red" style="position: absolute; top: 8px; right: 8px;">-{{ (descuento * 100)|int }}% VIP</span>
+          {% endif %}
+          {% if item.stock is defined and item.stock <= 0 %}
+          <span class="badge" style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.6); color: #FF5555;">Sin stock</span>
+          {% endif %}
         </div>
-        
-        <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="background: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.3); padding: 8px 16px; border-radius: 20px; color: #FACC15; font-weight: bold;">
-                <i class="fas fa-coins"></i> Saldo: <span id="current-balance">{{ current_user.tokens }}</span> RC
+
+        <div class="card-body">
+          <span class="badge badge-purple text-xs" style="margin-bottom: 4px;">{{ item.category }}</span>
+          <h3 class="text-truncate" style="color: white; font-size: 16px; margin: 4px 0 12px;" title="{{ item.name }}">{{ item.name }}</h3>
+
+          <div class="flex-between">
+            <div>
+              {% if descuento > 0 %}
+              <div class="text-muted text-xs" style="text-decoration: line-through;">{{ original_price }} RC</div>
+              {% endif %}
+              <div style="color: #FACC15; font-weight: bold; font-size: 16px;"><i class="fas fa-coins" style="font-size: 12px;"></i> {{ final_price }}</div>
             </div>
-            <a href="{{ url_for('tienda.inventario') }}" class="btn-secondary" style="padding: 8px 16px; border-radius: 20px; text-decoration: none;">
-                <i class="fas fa-box-open"></i> Mi Inventario
-            </a>
-            {% if puede_gestionar %}
-            <a href="{{ url_for('tienda.admin_tienda') }}" class="btn-primary" style="padding: 8px 16px; border-radius: 20px; text-decoration: none;">
-                <i class="fas fa-palette"></i> Subir diseños
-            </a>
+
+            {% if acquired %}
+            <button class="btn btn-secondary btn-sm" disabled><i class="fas fa-check"></i> Adquirido</button>
+            {% elif item.stock is defined and item.stock <= 0 %}
+            <button class="btn btn-secondary btn-sm" disabled>Agotado</button>
+            {% else %}
+            <button onclick="comprarItem({{ item.id }}, {{ item.name|tojson|safe }}, {{ final_price }})" class="btn btn-primary btn-sm">Comprar</button>
             {% endif %}
+          </div>
         </div>
-    </div>
-
-    <!-- Filters -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
-        <div class="store-filters" style="display: flex; gap: 8px;">
-            <button class="filter-btn" data-filter="all">Todos</button>
-            <button class="filter-btn" data-filter="frame">Marcos</button>
-            <button class="filter-btn" data-filter="background">Fondos</button>
-            <button class="filter-btn" data-filter="title">Títulos</button>
-        </div>
-        
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="color: var(--text-muted); font-size: 14px;">Ordenar por:</span>
-            <select id="sort-select" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: white; padding: 8px 16px; border-radius: 8px; outline: none;">
-                <option value="price-asc">Menor Precio</option>
-                <option value="price-desc">Mayor Precio</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- Products Grid -->
-    <div id="products-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px;">
-        {% for item in items %}
-            {% set original_price = item.price %}
-            {% set discount_amount = (original_price * descuento)|int %}
-            {% set final_price = original_price - discount_amount %}
-            {% set acquired = item.id in comprados_ids %}
-            
-            <div class="product-card" data-category="{{ item.category }}" data-price="{{ final_price }}" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s;">
-                
-                <div style="height: 140px; background: var(--bg-dark); position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden;">
-                    {% if item.category == 'background' %}
-                        <img src="{{ item.image_url }}" style="width: 100%; height: 100%; object-fit: cover;">
-                    {% elif item.category == 'frame' %}
-                        <img src="{{ item.image_url }}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; {{ item.css_class }}">
-                    {% elif item.category == 'title' %}
-                        <div style="font-size: 18px; {{ item.css_class }}">{{ item.name }}</div>
-                    {% endif %}
-                    {% if descuento > 0 %}
-                        <div style="position: absolute; top: 8px; right: 8px; background: #EF4444; color: white; font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 8px;">
-                            -{{ (descuento * 100)|int }}% VIP
-                        </div>
-                    {% endif %}
-                    {% if item.stock is defined and item.stock <= 0 %}
-                        <div style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.6); color: #FF5555; font-size: 11px; font-weight: bold; padding: 3px 6px; border-radius: 6px;">
-                            Sin stock
-                        </div>
-                    {% endif %}
-                </div>
-                
-                <div style="padding: 16px;">
-                    <div style="font-size: 11px; color: var(--accent-purple); font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">{{ item.category }}</div>
-                    <h3 style="color: white; font-size: 16px; margin: 0 0 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ item.name }}">{{ item.name }}</h3>
-                    
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            {% if descuento > 0 %}
-                                <div style="color: var(--text-muted); font-size: 11px; text-decoration: line-through;">{{ original_price }} RC</div>
-                            {% endif %}
-                            <div style="color: #FACC15; font-weight: bold; font-size: 16px;"><i class="fas fa-coins" style="font-size: 12px;"></i> {{ final_price }}</div>
-                        </div>
-                        
-                        {% if acquired %}
-                            <button class="btn-secondary" disabled style="padding: 6px 12px; font-size: 12px; border-radius: 12px; opacity: 0.5; cursor: not-allowed;"> <i class="fas fa-check"></i> Adquirido</button>
-                        {% elif item.stock is defined and item.stock <= 0 %}
-                            <button class="btn-secondary" disabled style="padding: 6px 12px; font-size: 12px; border-radius: 12px; background: #555;">Agotado</button>
-                        {% else %}
-                            <button onclick="comprarItem({{ item.id }}, {{ item.name|tojson|safe }}, {{ final_price }})" class="btn-primary" style="padding: 6px 12px; font-size: 12px; border-radius: 12px; background: linear-gradient(90deg, #8B5CF6, #3B82F6);">Comprar</button>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
+      </div>
+    {% endfor %}
+  </div>
 
 </div>
 
 <style>
-    .filter-btn {
-        background: var(--bg-dark);
-        border: 1px solid var(--border-color);
-        color: var(--text-muted);
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: 0.2s;
-    }
-    .filter-btn:hover { background: rgba(139, 92, 246, 0.1); color: white; }
-    .filter-btn.active { background: var(--accent-purple); border-color: var(--accent-purple); color: white; }
-    .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.4); border-color: var(--accent-purple); }
+  .filter-btn.active { background: var(--accent-purple) !important; border-color: var(--accent-purple) !important; color: white !important; }
+  .product-card:hover { border-color: var(--accent-purple); }
 </style>
 
 <script>
-    // Set active filter button based on URL param
     function setActiveFilter(){
         const params = new URLSearchParams(window.location.search);
         const cat = params.get('cat') || 'all';
@@ -135,7 +110,6 @@
     setActiveFilter();
 
     document.addEventListener("DOMContentLoaded", function(){
-        // Filtrado (click handler already defined in previous version)
         const filterBtns = document.querySelectorAll('.filter-btn');
         const products = document.querySelectorAll('.product-card');
         filterBtns.forEach(btn => {
@@ -156,7 +130,6 @@
             });
         });
 
-        // Ordenamiento
         const sortSelect = document.getElementById('sort-select');
         const grid = document.getElementById('products-grid');
         sortSelect.addEventListener('change', () => {
@@ -175,7 +148,6 @@
             grid.innerHTML = '';
             productsArr.forEach(p => grid.appendChild(p));
         });
-        // Inicializar con parámetros actuales
         sortSelect.value = new URLSearchParams(window.location.search).get('order') || 'price-asc';
         sortSelect.dispatchEvent(new Event('change'));
     });
@@ -200,4 +172,3 @@
     }
 </script>
 {% endblock %}
-

@@ -3,106 +3,114 @@
 {% block title %}Billetera - RiftCoins{% endblock %}
 
 {% block content %}
-<div class="wallet-container">
+<div class="page">
 
-  <div class="wallet-header">
-    <h2 class="wallet-title"><i class="fas fa-wallet"></i> Mi Billetera</h2>
+  <div class="page-header">
+    <h2 class="section-title"><i class="fas fa-wallet"></i> Mi Billetera</h2>
     {% if ya_reclamo_hoy %}
-    <button type="button" class="btn-claimed" disabled>
+    <button type="button" class="btn btn-success" disabled>
       <i class="fas fa-check-circle"></i> Recompensa reclamada hoy
     </button>
     {% else %}
     <form action="{{ url_for('billetera.ganar') }}" method="POST" id="daily-reward-form" novalidate>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-      <button type="submit" class="btn-daily" id="daily-reward-btn">
+      <button type="submit" class="btn btn-warning" id="daily-reward-btn">
         <i class="fas fa-gift"></i> Reclamar +{{ recompensa_diaria }} RC
-        <span class="btn-daily-hint">1 vez al día</span>
+        <span class="text-xs text-muted">1 vez al día</span>
       </button>
     </form>
     {% endif %}
   </div>
 
-  <div class="balance-card">
-    <div class="balance-label">Saldo Disponible</div>
-    <div class="balance-amount">
-      <i class="fas fa-coins"></i>
-      <span id="current-balance">{{ current_user.tokens }}</span>
-    </div>
-    <div class="balance-currency">RiftCoins <span class="balance-currency-sub">(RC)</span></div>
-  </div>
-
-  <div class="store-section">
-    <h3 class="section-title"><i class="fas fa-coins"></i> Tienda de Coins</h3>
-    <div class="store-grid">
-      <button onclick="comprarCoins(50, 0.99)" class="store-card">
-        <div class="store-card-icon"><i class="fas fa-coins"></i></div>
-        <div class="store-card-name">Bolsa Pequeña</div>
-        <div class="store-card-coins">+50 RC</div>
-        <div class="store-card-price">$0.99 USD</div>
-      </button>
-      <button onclick="comprarCoins(150, 2.99)" class="store-card store-card--pase">
-        <div class="store-card-icon"><i class="fas fa-coins"></i></div>
-        <div class="store-card-name">Bolsa Mediana</div>
-        <div class="store-card-coins">+150 RC</div>
-        <div class="store-card-price">$2.99 USD</div>
-      </button>
-      <button onclick="comprarCoins(500, 7.99)" class="store-card store-card--premium">
-        <div class="store-card-icon"><i class="fas fa-gem"></i></div>
-        <div class="store-card-name">Bolsa Grande</div>
-        <div class="store-card-coins">+500 RC</div>
-        <div class="store-card-price">$7.99 USD</div>
-      </button>
-      <button onclick="comprarCoins(1200, 14.99)" class="store-card store-card--best">
-        <div class="store-card-badge">Más vendido</div>
-        <div class="store-card-icon"><i class="fas fa-crown"></i></div>
-        <div class="store-card-name">Bolsa Épica</div>
-        <div class="store-card-coins">+1200 RC</div>
-        <div class="store-card-price store-card-price--best">$14.99 USD</div>
-      </button>
+  <div class="card card-glass flex-center">
+    <div class="card-body">
+      <div class="text-muted text-sm">Saldo Disponible</div>
+      <div class="flex-center" style="font-size: 32px; font-weight: bold; color: #FACC15; gap: 8px;">
+        <i class="fas fa-coins"></i>
+        <span id="current-balance">{{ current_user.tokens }}</span>
+      </div>
+      <div class="text-muted text-xs">RiftCoins <span class="text-muted">(RC)</span></div>
     </div>
   </div>
 
-  <div class="transactions-section">
-    <div class="transactions-header">
-      <h3 class="section-title"><i class="fas fa-history"></i> Historial de Movimientos</h3>
+  <div class="divider-gradient"></div>
+
+  <h3 class="section-title"><i class="fas fa-coins"></i> Tienda de Coins</h3>
+  <div class="grid-3">
+    <div onclick="comprarCoins(50, 0.99)" class="card card-hover flex-center" style="cursor: pointer;">
+      <div class="card-body">
+        <div style="font-size: 28px; margin-bottom: 6px;"><i class="fas fa-coins"></i></div>
+        <div style="font-weight: 600; color: white; margin-bottom: 4px;">Bolsa Pequeña</div>
+        <div class="text-gradient" style="font-weight: bold;">+50 RC</div>
+        <div class="text-muted text-sm">$0.99 USD</div>
+      </div>
     </div>
-    {% if transacciones %}
-    <div class="transactions-scroll">
-      <table class="transactions-table">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Descripción</th>
-            <th class="th-amount">Monto</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for tx in transacciones %}
-          <tr class="tx-row tx-row--{{ tx.tipo }}">
-            <td class="tx-date">{{ tx.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
-            <td class="tx-desc">
-              <span class="tx-arrow">
-                <i class="fas fa-arrow-{% if tx.tipo == 'ingreso' %}down{% else %}up{% endif %}"></i>
-              </span>
-              {{ tx.description }}
-            </td>
-            <td class="tx-amount">
-              <span class="tx-sign">{% if tx.tipo == 'ingreso' %}+{% else %}-{% endif %}</span>
-              {{ tx.amount }}
-              <i class="fas fa-coins tx-coin"></i>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div onclick="comprarCoins(150, 2.99)" class="card card-hover flex-center" style="cursor: pointer;">
+      <div class="card-body">
+        <div style="font-size: 28px; margin-bottom: 6px;"><i class="fas fa-coins"></i></div>
+        <div style="font-weight: 600; color: white; margin-bottom: 4px;">Bolsa Mediana</div>
+        <div class="text-gradient" style="font-weight: bold;">+150 RC</div>
+        <div class="text-muted text-sm">$2.99 USD</div>
+      </div>
     </div>
-    {% else %}
-    <div class="transactions-empty">
-      <i class="fas fa-receipt"></i>
-      <p>No tienes movimientos en tu billetera aún.</p>
+    <div onclick="comprarCoins(500, 7.99)" class="card card-hover flex-center" style="cursor: pointer;">
+      <div class="card-body">
+        <div style="font-size: 28px; margin-bottom: 6px;"><i class="fas fa-gem" style="color: var(--accent-purple);"></i></div>
+        <div style="font-weight: 600; color: white; margin-bottom: 4px;">Bolsa Grande</div>
+        <div class="text-gradient" style="font-weight: bold;">+500 RC</div>
+        <div class="text-muted text-sm">$7.99 USD</div>
+      </div>
     </div>
-    {% endif %}
+    <div onclick="comprarCoins(1200, 14.99)" class="card card-hover flex-center" style="cursor: pointer; position: relative;">
+      <span class="badge badge-yellow" style="position: absolute; top: 8px; right: 8px;">Más vendido</span>
+      <div class="card-body">
+        <div style="font-size: 28px; margin-bottom: 6px;"><i class="fas fa-crown" style="color: #FACC15;"></i></div>
+        <div style="font-weight: 600; color: white; margin-bottom: 4px;">Bolsa Épica</div>
+        <div class="text-gradient" style="font-weight: bold;">+1200 RC</div>
+        <div class="text-gradient text-sm" style="font-weight: bold;">$14.99 USD</div>
+      </div>
+    </div>
   </div>
+
+  <div class="divider-gradient"></div>
+
+  <h3 class="section-title"><i class="fas fa-history"></i> Historial de Movimientos</h3>
+  {% if transacciones %}
+  <div class="card" style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th class="text-muted text-sm" style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); text-align: left;">Fecha</th>
+          <th class="text-muted text-sm" style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); text-align: left;">Descripción</th>
+          <th class="text-muted text-sm" style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); text-align: right;">Monto</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in transacciones %}
+        <tr>
+          <td class="text-sm text-muted" style="padding: 10px 12px;">{{ tx.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td style="padding: 10px 12px; color: white;">
+            <span style="margin-right: 6px;">
+              <i class="fas fa-arrow-{% if tx.tipo == 'ingreso' %}down{% else %}up{% endif %}"></i>
+            </span>
+            {{ tx.description }}
+          </td>
+          <td class="{% if tx.tipo == 'ingreso' %}badge-green{% else %}badge-red{% endif %}" style="padding: 10px 12px; text-align: right; font-weight: bold;">
+            <span>{% if tx.tipo == 'ingreso' %}+{% else %}-{% endif %}</span>
+            {{ tx.amount }}
+            <i class="fas fa-coins" style="font-size: 11px;"></i>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="fas fa-receipt" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></i>
+    <p>No tienes movimientos en tu billetera aún.</p>
+  </div>
+  {% endif %}
 </div>
 
 <script>

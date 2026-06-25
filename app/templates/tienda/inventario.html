@@ -3,417 +3,296 @@
 {% block title %}Mi Inventario - RiftZone{% endblock %}
 
 {% block content %}
-<div class="inventory-container" style="padding: 24px;">
-    
-    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; border-bottom: 1px solid var(--border-color); padding-bottom: 24px;">
-        <div>
-            <h2 style="font-size: 32px; color: white; margin: 0 0 8px; display: flex; align-items: center; gap: 12px;">
-                <i class="fas fa-box-open" style="color: var(--accent-blue);"></i> Mi Inventario
-            </h2>
-            <p style="color: var(--text-muted); margin: 0; font-size: 15px;">Equipa o desequipa los cosméticos que has adquirido en la RiftStore.</p>
+<div class="page">
+
+  <div class="page-header">
+    <div>
+      <h2 class="section-title" style="margin-bottom: 4px;"><i class="fas fa-box-open"></i> Mi Inventario</h2>
+      <p class="section-subtitle">Equipa o desequipa los cosméticos que has adquirido en la RiftStore.</p>
+    </div>
+    <a href="{{ url_for('tienda.index') }}" class="btn btn-primary btn-sm">
+      <i class="fas fa-shopping-cart"></i> Ir a la Tienda
+    </a>
+  </div>
+
+  {% if not inventario %}
+  <div class="empty-state">
+    <i class="fas fa-ghost" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></i>
+    <h3 style="color: white; font-size: 18px; margin-bottom: 8px;">Tu inventario está vacío</h3>
+    <p class="text-muted text-sm">Ve a la tienda y adquiere marcos, títulos y fondos para personalizar tu perfil.</p>
+  </div>
+  {% else %}
+  <div class="grid-auto">
+    {% for inv in inventario %}
+      {% set item = inv.item %}
+
+      <div class="card card-hover inventory-card" style="position: relative; {% if inv.is_equipped %}border-color: var(--accent-green);{% endif %}">
+
+        {% if inv.is_equipped %}
+        <span class="badge badge-green" style="position: absolute; top: 8px; left: 8px; z-index: 10;">
+          <i class="fas fa-check"></i> EQUIPADO
+        </span>
+        {% endif %}
+
+        <button type="button" class="help-btn" data-category="{{ item.category }}" data-name="{{ item.name }}" data-equipped="{{ 'true' if inv.is_equipped else 'false' }}" onclick="mostrarAyuda(this.dataset.category, this.dataset.name, this.dataset.equipped)" aria-label="Ayuda">?</button>
+
+        <div style="height: 140px; background: var(--bg-dark); position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden;">
+          {% if item.category == 'background' %}
+            <img src="{{ item.image_url }}" style="width: 100%; height: 100%; object-fit: cover;">
+          {% elif item.category == 'frame' %}
+            <span style="display:inline-block;width:80px;height:80px;border-radius:50%;overflow:hidden;{{ item.css_class }}">
+              <img src="{{ item.image_url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
+            </span>
+          {% elif item.category == 'title' %}
+            <div style="font-size: 18px; {{ item.css_class }}">{{ item.name }}</div>
+          {% endif %}
         </div>
-        
-        <a href="{{ url_for('tienda.index') }}" class="btn-primary" style="padding: 8px 16px; border-radius: 20px; text-decoration: none;">
-            <i class="fas fa-shopping-cart"></i> Ir a la Tienda
-        </a>
-    </div>
 
-    {% if not inventario %}
-    <div style="text-align: center; padding: 60px 20px; background: rgba(0,0,0,0.2); border-radius: 16px; border: 1px dashed var(--border-color);">
-        <i class="fas fa-ghost" style="font-size: 48px; color: var(--text-muted); opacity: 0.5; margin-bottom: 16px;"></i>
-        <h3 style="color: white; font-size: 18px; margin-bottom: 8px;">Tu inventario está vacío</h3>
-        <p style="color: var(--text-muted); font-size: 14px;">Ve a la tienda y adquiere marcos, títulos y fondos para personalizar tu perfil.</p>
-    </div>
-    {% else %}
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px;">
-        {% for inv in inventario %}
-            {% set item = inv.item %}
-            
-            <div class="inventory-card {% if inv.is_equipped %}equipped{% endif %}" 
-                 style="background: var(--bg-card); border: 2px solid {% if inv.is_equipped %}var(--accent-green){% else %}var(--border-color){% endif %}; border-radius: 16px; overflow: hidden; position: relative;">
-                
-                {% if inv.is_equipped %}
-                <div style="position: absolute; top: 8px; left: 8px; background: var(--accent-green); color: black; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 12px; z-index: 10;">
-                    <i class="fas fa-check"></i> EQUIPADO
-                </div>
-                {% endif %}
+        <div class="card-body" style="text-align: center;">
+          <div class="text-sm" style="color: var(--accent-blue); font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">{{ item.category }}</div>
+          <h3 class="text-truncate" style="color: white; font-size: 16px; margin: 0 0 16px;" title="{{ item.name }}">{{ item.name }}</h3>
 
-                <!-- Botón ? de ayuda -->
-                <button type="button" class="help-btn" data-category="{{ item.category }}" data-name="{{ item.name }}" data-equipped="{{ 'true' if inv.is_equipped else 'false' }}" onclick="mostrarAyuda(this.dataset.category, this.dataset.name, this.dataset.equipped)" aria-label="Ayuda">?</button>
-                
-                <div style="height: 140px; background: var(--bg-dark); position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden;">
-                    {% if item.category == 'background' %}
-                        <img src="{{ item.image_url }}" style="width: 100%; height: 100%; object-fit: cover;">
-                    {% elif item.category == 'frame' %}
-                        <span style="display:inline-block;width:80px;height:80px;border-radius:50%;overflow:hidden;{{ item.css_class }}">
-                            <img src="{{ item.image_url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
-                        </span>
-                    {% elif item.category == 'title' %}
-                        <div style="font-size: 18px; {{ item.css_class }}">{{ item.name }}</div>
-                    {% endif %}
-                </div>
-                
-                <div style="padding: 16px; text-align: center;">
-                    <div style="font-size: 11px; color: var(--accent-blue); font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">{{ item.category }}</div>
-                    <h3 style="color: white; font-size: 16px; margin: 0 0 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ item.name }}">{{ item.name }}</h3>
-                    
-                    {% if not inv.is_equipped %}
-                        <button type="button" onclick="equiparItem({{ inv.id }}, this)" class="btn-primary" style="width: 100%; padding: 8px; font-size: 13px; border-radius: 20px;">
-                            <i class="fas fa-check"></i> Equipar
-                        </button>
-                    {% else %}
-                        <button type="button" onclick="desequiparItem({{ inv.id }}, this)" class="btn-desequipar">
-                            <i class="fas fa-times"></i> Desequipar
-                        </button>
-                    {% endif %}
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+          {% if not inv.is_equipped %}
+          <button type="button" onclick="equiparItem({{ inv.id }}, this)" class="btn btn-primary" style="width: 100%;">
+            <i class="fas fa-check"></i> Equipar
+          </button>
+          {% else %}
+          <button type="button" onclick="desequiparItem({{ inv.id }}, this)" class="btn btn-danger" style="width: 100%;">
+            <i class="fas fa-times"></i> Desequipar
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 
 </div>
 
 <!-- Modal de ayuda -->
 <div id="help-modal-overlay" class="help-overlay" onclick="cerrarAyuda(event)">
-    <div class="help-modal" onclick="event.stopPropagation()">
-        <button class="help-modal-close" onclick="cerrarAyuda()">&times;</button>
-        <div class="help-modal-icon">
-            <i id="help-icon" class="fas fa-question-circle"></i>
-        </div>
-        <h3 id="help-title" class="help-modal-title"></h3>
-        <p id="help-item-name" class="help-modal-item"></p>
-        <div id="help-steps" class="help-modal-steps"></div>
-        <div id="help-status" class="help-modal-status"></div>
+  <div class="help-modal" onclick="event.stopPropagation()">
+    <button class="help-modal-close" onclick="cerrarAyuda()">&times;</button>
+    <div class="help-modal-icon">
+      <i id="help-icon" class="fas fa-question-circle"></i>
     </div>
+    <h3 id="help-title" class="help-modal-title"></h3>
+    <p id="help-item-name" class="help-modal-item"></p>
+    <div id="help-steps" class="help-modal-steps"></div>
+    <div id="help-status" class="help-modal-status"></div>
+  </div>
 </div>
 
 <style>
-    /* ===== Botón ? ===== */
-    .help-btn {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        z-index: 10;
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        border: 2px solid rgba(139, 92, 246, 0.5);
-        background: rgba(139, 92, 246, 0.15);
-        color: #a78bfa;
-        font-size: 13px;
-        font-weight: 800;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.25s ease;
-        backdrop-filter: blur(4px);
-    }
-    .help-btn:hover {
-        background: rgba(139, 92, 246, 0.4);
-        color: white;
-        border-color: #a78bfa;
-        transform: scale(1.15);
-        box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
-    }
-
-    /* ===== Overlay ===== */
-    .help-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(4px);
-        z-index: 9999;
-        display: none;
-        justify-content: center;
-        align-items: center;
-        animation: fadeIn 0.2s ease;
-    }
-    .help-overlay.active {
-        display: flex;
-    }
-
-    /* ===== Modal ===== */
-    .help-modal {
-        background: linear-gradient(145deg, #1a1730, #221f3d);
-        border: 1px solid rgba(139, 92, 246, 0.35);
-        border-radius: 20px;
-        padding: 32px 28px 28px;
-        max-width: 380px;
-        width: 90%;
-        position: relative;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(139, 92, 246, 0.1);
-        animation: modalSlideIn 0.3s ease;
-        text-align: center;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; } to { opacity: 1; }
-    }
-    @keyframes modalSlideIn {
-        from { opacity: 0; transform: translateY(20px) scale(0.95); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    .help-modal-close {
-        position: absolute;
-        top: 12px;
-        right: 14px;
-        background: none;
-        border: none;
-        color: var(--text-muted);
-        font-size: 22px;
-        cursor: pointer;
-        transition: color 0.2s;
-        line-height: 1;
-    }
-    .help-modal-close:hover {
-        color: white;
-    }
-
-    .help-modal-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: rgba(139, 92, 246, 0.15);
-        border: 2px solid rgba(139, 92, 246, 0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 16px;
-    }
-    .help-modal-icon i {
-        font-size: 24px;
-        color: #a78bfa;
-    }
-
-    .help-modal-title {
-        color: white;
-        font-size: 18px;
-        margin: 0 0 4px;
-        font-weight: 700;
-    }
-
-    .help-modal-item {
-        color: var(--accent-purple);
-        font-size: 13px;
-        font-weight: 600;
-        margin: 0 0 20px;
-    }
-
-    .help-modal-steps {
-        text-align: left;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-bottom: 18px;
-    }
-
-    .help-step {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 12px;
-        padding: 12px 14px;
-    }
-
-    .help-step-num {
-        min-width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background: var(--accent-purple);
-        color: white;
-        font-size: 12px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-
-    .help-step-text {
-        color: #d1d5db;
-        font-size: 13px;
-        line-height: 1.5;
-    }
-
-    .help-modal-status {
-        font-size: 12px;
-        font-weight: 600;
-        padding: 10px 14px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-    }
-    .help-modal-status.equipped {
-        background: rgba(34, 197, 94, 0.1);
-        color: #4ade80;
-        border: 1px solid rgba(34, 197, 94, 0.25);
-    }
-    .help-modal-status.not-equipped {
-        background: rgba(59, 130, 246, 0.1);
-        color: #60a5fa;
-        border: 1px solid rgba(59, 130, 246, 0.25);
-    }
-
-    /* ===== Card hover ===== */
-    .inventory-card {
-        transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-    }
-    .inventory-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-    }
-    .inventory-card.equipped:hover {
-        border-color: var(--accent-green);
-        box-shadow: 0 10px 20px rgba(34, 197, 94, 0.15);
-    }
-
-    .btn-desequipar {
-        width: 100%;
-        padding: 8px;
-        font-size: 13px;
-        border-radius: 20px;
-        cursor: pointer;
-        font-weight: 600;
-        border: 1px solid rgba(239, 68, 68, 0.5);
-        background: rgba(239, 68, 68, 0.12);
-        color: #f87171;
-        transition: all 0.2s ease;
-    }
-    .btn-desequipar:hover {
-        background: rgba(239, 68, 68, 0.25);
-        border-color: #ef4444;
-        color: white;
-    }
+  .help-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid rgba(139, 92, 246, 0.5);
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(4px);
+  }
+  .help-btn:hover {
+    background: rgba(139, 92, 246, 0.4);
+    color: white;
+    border-color: #a78bfa;
+    transform: scale(1.15);
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+  }
+  .help-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.2s ease;
+  }
+  .help-overlay.active { display: flex; }
+  .help-modal {
+    background: linear-gradient(145deg, #1a1730, #221f3d);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+    border-radius: 20px;
+    padding: 32px 28px 28px;
+    max-width: 380px;
+    width: 90%;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(139,92,246,0.1);
+    animation: modalSlideIn 0.3s ease;
+    text-align: center;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modalSlideIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .help-modal-close {
+    position: absolute; top: 12px; right: 14px;
+    background: none; border: none;
+    color: var(--text-muted); font-size: 22px;
+    cursor: pointer; transition: color 0.2s; line-height: 1;
+  }
+  .help-modal-close:hover { color: white; }
+  .help-modal-icon {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: rgba(139,92,246,0.15);
+    border: 2px solid rgba(139,92,246,0.3);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .help-modal-icon i { font-size: 24px; color: #a78bfa; }
+  .help-modal-title { color: white; font-size: 18px; margin: 0 0 4px; font-weight: 700; }
+  .help-modal-item { color: var(--accent-purple); font-size: 13px; font-weight: 600; margin: 0 0 20px; }
+  .help-modal-steps { text-align: left; display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+  .help-step {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; padding: 12px 14px;
+  }
+  .help-step-num {
+    min-width: 24px; height: 24px;
+    border-radius: 50%; background: var(--accent-purple);
+    color: white; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .help-step-text { color: #d1d5db; font-size: 13px; line-height: 1.5; }
+  .help-modal-status {
+    font-size: 12px; font-weight: 600;
+    padding: 10px 14px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .help-modal-status.equipped { background: rgba(34,197,94,0.1); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+  .help-modal-status.not-equipped { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+  .inventory-card { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+  .inventory-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
 </style>
 
 <script>
-// ===== Modal de Ayuda =====
 const helpData = {
-    frame: {
-        icon: 'fas fa-circle-notch',
-        title: '¿Cómo usar un Marco?',
-        steps: [
-            'Pulsa <strong>Equipar</strong> para activarlo alrededor de tu foto de perfil.',
-            'Se verá en tu perfil, el feed y la barra superior.',
-            'Pulsa <strong>Desequipar</strong> para quitarlo (o vuelve el marco VIP si tienes membresía).',
-            'También puedes equipar otro marco para reemplazarlo.'
-        ]
-    },
-    background: {
-        icon: 'fas fa-image',
-        title: '¿Cómo usar un Fondo?',
-        steps: [
-            'Pulsa <strong>Equipar</strong> para usarlo como banner de portada.',
-            'Se muestra en la parte superior de tu perfil.',
-            'Pulsa <strong>Desequipar</strong> para volver al banner predeterminado.',
-            'También puedes equipar otro fondo desde tu inventario.'
-        ]
-    },
-    title: {
-        icon: 'fas fa-tag',
-        title: '¿Cómo usar un Título?',
-        steps: [
-            'Pulsa <strong>Equipar</strong> para mostrarlo junto a tu @usuario.',
-            'Se verá en tu perfil y publicaciones.',
-            'Pulsa <strong>Desequipar</strong> para volver al título <strong>Gamer</strong>.',
-            'También puedes equipar otro título diferente.'
-        ]
-    }
+  frame: {
+    icon: 'fas fa-circle-notch',
+    title: '¿Cómo usar un Marco?',
+    steps: [
+      'Pulsa <strong>Equipar</strong> para activarlo alrededor de tu foto de perfil.',
+      'Se verá en tu perfil, el feed y la barra superior.',
+      'Pulsa <strong>Desequipar</strong> para quitarlo (o vuelve el marco VIP si tienes membresía).',
+      'También puedes equipar otro marco para reemplazarlo.'
+    ]
+  },
+  background: {
+    icon: 'fas fa-image',
+    title: '¿Cómo usar un Fondo?',
+    steps: [
+      'Pulsa <strong>Equipar</strong> para usarlo como banner de portada.',
+      'Se muestra en la parte superior de tu perfil.',
+      'Pulsa <strong>Desequipar</strong> para volver al banner predeterminado.',
+      'También puedes equipar otro fondo desde tu inventario.'
+    ]
+  },
+  title: {
+    icon: 'fas fa-tag',
+    title: '¿Cómo usar un Título?',
+    steps: [
+      'Pulsa <strong>Equipar</strong> para mostrarlo junto a tu @usuario.',
+      'Se verá en tu perfil y publicaciones.',
+      'Pulsa <strong>Desequipar</strong> para volver al título <strong>Gamer</strong>.',
+      'También puedes equipar otro título diferente.'
+    ]
+  }
 };
 
 function mostrarAyuda(category, itemName, isEquipped) {
-    const data = helpData[category] || { icon: 'fas fa-question-circle', title: '¿Cómo usar este ítem?', steps: ['Haz clic en "Equipar" para activar este cosmético.'] };
-    
-    document.getElementById('help-icon').className = data.icon;
-    document.getElementById('help-title').textContent = data.title;
-    document.getElementById('help-item-name').textContent = itemName;
-    
-    const stepsHTML = data.steps.map((step, i) => `
-        <div class="help-step">
-            <span class="help-step-num">${i + 1}</span>
-            <span class="help-step-text">${step}</span>
-        </div>
-    `).join('');
-    document.getElementById('help-steps').innerHTML = stepsHTML;
-    
-    const statusEl = document.getElementById('help-status');
-    if (isEquipped) {
-        statusEl.className = 'help-modal-status equipped';
-        statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Equipado. Usa <strong>Desequipar</strong> en la tarjeta para desactivarlo.';
-    } else {
-        statusEl.className = 'help-modal-status not-equipped';
-        statusEl.innerHTML = '<i class="fas fa-arrow-up"></i> Aún no lo has equipado. Pulsa <strong>Equipar</strong>.';
-    }
-    
-    document.getElementById('help-modal-overlay').classList.add('active');
+  const data = helpData[category] || { icon: 'fas fa-question-circle', title: '¿Cómo usar este ítem?', steps: ['Haz clic en "Equipar" para activar este cosmético.'] };
+  document.getElementById('help-icon').className = data.icon;
+  document.getElementById('help-title').textContent = data.title;
+  document.getElementById('help-item-name').textContent = itemName;
+  const stepsHTML = data.steps.map((step, i) => `
+    <div class="help-step">
+      <span class="help-step-num">${i + 1}</span>
+      <span class="help-step-text">${step}</span>
+    </div>
+  `).join('');
+  document.getElementById('help-steps').innerHTML = stepsHTML;
+  const statusEl = document.getElementById('help-status');
+  if (isEquipped) {
+    statusEl.className = 'help-modal-status equipped';
+    statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Equipado. Usa <strong>Desequipar</strong> en la tarjeta para desactivarlo.';
+  } else {
+    statusEl.className = 'help-modal-status not-equipped';
+    statusEl.innerHTML = '<i class="fas fa-arrow-up"></i> Aún no lo has equipado. Pulsa <strong>Equipar</strong>.';
+  }
+  document.getElementById('help-modal-overlay').classList.add('active');
 }
 
 function cerrarAyuda(e) {
-    if (e && e.target !== e.currentTarget) return;
-    document.getElementById('help-modal-overlay').classList.remove('active');
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('help-modal-overlay').classList.remove('active');
 }
 
-// Cerrar con Escape
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') cerrarAyuda();
+  if (e.key === 'Escape') cerrarAyuda();
 });
 
-// ===== Equipar / Desequipar =====
 function inventarioAccion(url, errorMsg, btn) {
-    const meta = document.querySelector('meta[name="csrf-token"]');
-    if (!meta) {
-        showToast('Error de seguridad (CSRF). Recarga la página.', 'error');
-        return Promise.resolve();
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  if (!meta) {
+    showToast('Error de seguridad (CSRF). Recarga la página.', 'error');
+    return Promise.resolve();
+  }
+  if (btn) {
+    btn.disabled = true;
+    btn.dataset.prevHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
+  }
+  return fetch(url, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': meta.getAttribute('content'),
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  })
+  .then(async (res) => {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || errorMsg);
     }
+    return data;
+  })
+  .then((data) => {
+    showToast(data.message || 'Listo', 'success');
+    location.reload();
+  })
+  .catch((err) => {
+    showToast(err.message || errorMsg, 'error');
     if (btn) {
-        btn.disabled = true;
-        btn.dataset.prevHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
+      btn.disabled = false;
+      btn.innerHTML = btn.dataset.prevHtml || btn.innerHTML;
     }
-
-    return fetch(url, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': meta.getAttribute('content'),
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-    })
-    .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.success) {
-            throw new Error(data.message || errorMsg);
-        }
-        return data;
-    })
-    .then((data) => {
-        showToast(data.message || 'Listo', 'success');
-        location.reload();
-    })
-    .catch((err) => {
-        showToast(err.message || errorMsg, 'error');
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = btn.dataset.prevHtml || btn.innerHTML;
-        }
-    });
+  });
 }
 
 function equiparItem(inventoryId, btn) {
-    inventarioAccion(`/tienda/equipar/${inventoryId}`, 'Error de conexión al equipar el artículo.', btn);
+  inventarioAccion(`/tienda/equipar/${inventoryId}`, 'Error de conexión al equipar el artículo.', btn);
 }
 
 function desequiparItem(inventoryId, btn) {
-    if (!confirm('¿Desequipar este artículo? Volverá al título Gamer en tu perfil.')) return;
-    inventarioAccion(`/tienda/desequipar/${inventoryId}`, 'Error de conexión al desequipar el artículo.', btn);
+  if (!confirm('¿Desequipar este artículo? Volverá al título Gamer en tu perfil.')) return;
+  inventarioAccion(`/tienda/desequipar/${inventoryId}`, 'Error de conexión al desequipar el artículo.', btn);
 }
 </script>
 {% endblock %}

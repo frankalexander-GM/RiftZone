@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px 20px;">
+    <div style="width:80px;height:80px;border-radius:50%;background:rgba(239,68,68,0.1);display:flex;align-items:center;justify-content:center;margin-bottom:20px;border:2px solid rgba(239,68,68,0.2);">
+        <i class="fas fa-ban" style="font-size:32px;color:#ef4444;"></i>
+    </div>
+    <h2 style="color:white;font-size:20px;font-weight:700;margin:0 0 8px;">Perfil no disponible</h2>
+    <p style="color:var(--text-muted);font-size:14px;margin:0;max-width:360px;">
+        No puedes ver el perfil de <strong>{{ usuario.nombre or usuario.username }}</strong>.
+    </p>
+</div>
+{% endblock %}

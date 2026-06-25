@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+
+{% block title %}Ranking de Jugadores - RiftZone{% endblock %}
+
+{% block content %}
+<div class="explore-wrap">
+
+  <div class="explore-hero">
+    <div class="explore-hero-bg"></div>
+    <div class="explore-hero-content">
+      <div class="explore-hero-icon"><i class="fas fa-trophy"></i></div>
+      <h1>Ranking de Jugadores</h1>
+      <p>Los mas activos de RIFTZONE</p>
+    </div>
+  </div>
+
+  <!-- ===== PODIO TOP 3 ===== -->
+  {% if jugadores|length >= 3 %}
+  {% set slot_medals = ['fas fa-medal', 'fas fa-crown', 'fas fa-medal'] %}
+  {% set slot_colors = ['#94a3b8', '#facc15', '#b45309'] %}
+  {% set slot_heights = ['140px', '170px', '120px'] %}
+  {% set top3 = [jugadores[1], jugadores[0], jugadores[2]] %}
+  <div class="podium">
+    {% for u in top3 %}
+    <div class="podium-item" style="order: {{ loop.index0 + 1 }};">
+      <a href="{{ url_for('jugador.perfil_publico', username=u.username) }}" class="podium-link">
+        <div class="podium-avatar-wrap">
+          <span class="podium-badge" style="background:{{ slot_colors[loop.index0] }};">
+            <i class="{{ slot_medals[loop.index0] }}"></i>
+          </span>
+          <img src="{{ u | user_avatar }}" alt="" class="podium-avatar">
+        </div>
+        <div class="podium-name">{{ u.nombre or u.username }}</div>
+        <div class="podium-username">@{{ u.username }}</div>
+        {% if u.google_play_id %}
+        <div class="podium-level">Nv. {{ u.nivel }}</div>
+        {% endif %}
+      </a>
+      <div class="podium-bar" style="height: {{ slot_heights[loop.index0] }}; background: {{ slot_colors[loop.index0] }};"></div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ===== LISTA 4 - 10 ===== -->
+  <div class="ranking-list">
+    {% for u in jugadores[3:10] %}
+    <a href="{{ url_for('jugador.perfil_publico', username=u.username) }}" class="ranking-row">
+      <span class="ranking-pos">{{ loop.index + 3 }}</span>
+      <img src="{{ u | user_avatar }}" alt="" class="ranking-avatar">
+      <div class="ranking-info">
+        <strong>{{ u.nombre or u.username }}</strong>
+        <span>@{{ u.username }}</span>
+      </div>
+      {% if u.google_play_id %}
+      <span class="ranking-level">Nv. {{ u.nivel }}</span>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- ===== TU POSICION ===== -->
+  {% if mi_rank %}
+  <div class="mi-rango">
+    <div class="mi-rango-icon"><i class="fas fa-arrow-up"></i></div>
+    <div class="mi-rango-info">
+      <strong>Tu posicion: #{{ mi_rank }}</strong>
+      <span>Necesitas subir para entrar al top 10</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ===== CTA GOOGLE PLAY ===== -->
+  <div class="ranking-cta">
+    <i class="fab fa-google-play"></i>
+    <p>Quieres aparecer en el ranking? Inicia sesion con Google Play.</p>
+  </div>
+
+</div>
+
+<style>
+/* ===== PODIO ===== */
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px 0 0;
+}
+.podium-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  max-width: 180px;
+}
+.podium-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  z-index: 2;
+  position: relative;
+}
+.podium-avatar-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+.podium-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: white;
+  box-shadow: 0 0 10px rgba(0,0,0,0.4);
+  z-index: 3;
+}
+.podium-badge i { font-size: 14px; }
+.podium-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(255,255,255,0.15);
+  transition: transform 0.25s ease;
+}
+.podium-item:hover .podium-avatar {
+  transform: scale(1.08);
+}
+.podium-name {
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.podium-username {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+.podium-level {
+  font-size: 12px;
+  font-weight: 700;
+  color: #facc15;
+  background: rgba(250,204,21,0.12);
+  padding: 2px 10px;
+  border-radius: 100px;
+}
+.podium-bar {
+  width: 100%;
+  max-width: 100px;
+  border-radius: 8px 8px 0 0;
+  margin-top: 4px;
+  opacity: 0.5;
+  transition: opacity 0.25s;
+}
+.podium-item:hover .podium-bar {
+  opacity: 0.8;
+}
+
+/* ===== LISTA ===== */
+.ranking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 20px;
+}
+.ranking-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.ranking-row:hover {
+  border-color: var(--accent-purple);
+  background: rgba(139,92,246,0.05);
+  transform: translateX(4px);
+}
+.ranking-pos {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ranking-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.ranking-info {
+  flex: 1;
+  min-width: 0;
+}
+.ranking-info strong {
+  display: block;
+  color: var(--text-main);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ranking-info span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.ranking-level {
+  font-size: 13px;
+  font-weight: 700;
+  color: #facc15;
+  background: rgba(250,204,21,0.1);
+  padding: 4px 12px;
+  border-radius: 100px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ===== MI RANGO ===== */
+.mi-rango {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: rgba(139,92,246,0.06);
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: var(--radius-md);
+}
+.mi-rango-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(139,92,246,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-purple);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.mi-rango-info strong {
+  display: block;
+  color: var(--text-main);
+  font-size: 15px;
+}
+.mi-rango-info span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+/* ===== CTA ===== */
+.ranking-cta {
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  background: rgba(139,92,246,0.03);
+}
+.ranking-cta i {
+  font-size: 32px;
+  color: #a78bfa;
+  margin-bottom: 8px;
+  display: block;
+}
+.ranking-cta p {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 767px) {
+  .podium-item { max-width: 120px; }
+  .podium-avatar-wrap { width: 56px; height: 56px; }
+  .podium-badge { width: 22px; height: 22px; font-size: 11px; }
+  .podium-badge i { font-size: 11px; }
+  .podium-name { font-size: 12px; max-width: 100px; }
+  .podium-level { font-size: 11px; }
+}
+@media (max-width: 480px) {
+  .podium { gap: 6px; }
+  .podium-item { max-width: 90px; }
+  .podium-avatar-wrap { width: 44px; height: 44px; }
+  .podium-badge { width: 18px; height: 18px; font-size: 9px; top: -4px; right: -4px; }
+  .podium-badge i { font-size: 9px; }
+  .podium-name { font-size: 11px; max-width: 80px; }
+  .podium-level { font-size: 10px; padding: 1px 6px; }
+}
+</style>
+{% endblock %}

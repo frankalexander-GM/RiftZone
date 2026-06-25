@@ -4,17 +4,18 @@ class PublicacionService:
     def __init__(self, pub_repo):
         self.pub_repo = pub_repo
         
-    def crear_publicacion(self, id_usuario, contenido, juego, imagen_url=None):
+    def crear_publicacion(self, id_usuario, contenido, juego, imagen_url=None, video_archivo=None):
         if not contenido or not contenido.strip():
             raise ValueError("El contenido de la publicación no puede estar vacío.")
         if not juego:
-            raise ValueError("Debes asociar la publicación a un juego.")
+            juego = ""
             
         return self.pub_repo.create(
             id_usuario=id_usuario,
             contenido=contenido,
             juego=juego,
-            imagen_url=imagen_url
+            imagen_url=imagen_url,
+            video_archivo=video_archivo
         )
         
     def obtener_feed(self, tab='para-ti', user_id=None):
@@ -25,14 +26,19 @@ class PublicacionService:
             return self.pub_repo.get_following(user_id)
         elif tab == 'populares':
             return self.pub_repo.get_popular(user_id)
-        elif tab == 'recientes':
-            return self.pub_repo.get_recent(user_id)
+        elif tab == 'videos':
+            return self.pub_repo.get_videos(user_id)
         elif tab == 'encuestas':
             return self.pub_repo.get_encuestas(user_id)
-        elif tab == 'torneos':
-            return self.pub_repo.get_torneos(user_id)
+        elif tab == 'recientes':
+            return self.pub_repo.get_recent(user_id)
+        elif tab == 'para-ti':
+            return self.pub_repo.get_for_you(user_id)
         else:
             return self.pub_repo.get_all_descending(user_id)
+
+    def obtener_videos(self, user_id=None):
+        return self.pub_repo.get_videos(user_id)
 
     def toggle_like(self, id_publicacion, usuario):
         post = self.pub_repo.get_by_id(id_publicacion)

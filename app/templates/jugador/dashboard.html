@@ -4,968 +4,777 @@
 {% block title %}Inicio - RiftZone{% endblock %}
 
 {% block content %}
-<!-- HORIZONTAL GAMES LIST -->
-<div class="games-horizontal-list no-scrollbar">
-    <div class="game-card-mini add-new">
-        <i class="fas fa-plus" style="font-size:24px;"></i>
-        <span style="color:var(--text-muted); text-shadow:none;">Crear<br>publicación</span>
-    </div>
-    <div class="game-card-mini">
-        <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=150&h=200&fit=crop" class="game-bg" alt="Minecraft">
-        <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=50&h=50&fit=crop" class="game-icon-circle" alt="Icon">
-        <span>Minecraft</span>
-    </div>
-    <div class="game-card-mini">
-        <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=150&h=200&fit=crop" class="game-bg" alt="Valorant">
-        <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=50&h=50&fit=crop" class="game-icon-circle" alt="Icon">
-        <span>Valorant</span>
-    </div>
-    <div class="game-card-mini">
-        <img src="https://images.unsplash.com/photo-1589241062272-c0a000072dfa?w=150&h=200&fit=crop" class="game-bg" alt="Fortnite">
-        <img src="https://images.unsplash.com/photo-1589241062272-c0a000072dfa?w=50&h=50&fit=crop" class="game-icon-circle" alt="Icon">
-        <span>Fortnite</span>
-    </div>
-    <div class="game-card-mini">
-        <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=150&h=200&fit=crop" class="game-bg" alt="LoL">
-        <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=50&h=50&fit=crop" class="game-icon-circle" alt="Icon">
-        <span>LoL</span>
-    </div>
-    <div class="game-card-mini">
-        <img src="https://images.unsplash.com/photo-1605901302636-6db8a2b5e282?w=150&h=200&fit=crop" class="game-bg" alt="GTA V">
-        <img src="https://images.unsplash.com/photo-1605901302636-6db8a2b5e282?w=50&h=50&fit=crop" class="game-icon-circle" alt="Icon" style="border-radius:10px;">
-        <span>GTA V</span>
-    </div>
-    <div class="game-card-mini">
-        <img src="https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=150&h=200&fit=crop" class="game-bg" alt="Free Fire">
-        <img src="https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=50&h=50&fit=crop" class="game-icon-circle" alt="Icon" style="border-radius:10px;">
-        <span>Free Fire</span>
-    </div>
-</div>
+<style>
+/* ── Animations ── */
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes glow { 0%,100%{box-shadow:0 0 20px rgba(139,92,246,0.2)} 50%{box-shadow:0 0 40px rgba(139,92,246,0.4)} }
+@keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
 
-<!-- CREATE POST (Facebook style) -->
-{% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+/* ── Hero Zone ── */
+.hero-zone {
+  position: relative;
+  background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(255,45,149,0.05), rgba(15,12,35,0.9));
+  border: 1px solid rgba(139,92,246,0.15);
+  border-radius: 20px;
+  padding: 36px 32px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  text-align: center;
+}
+.hero-zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 100%, rgba(255,45,149,0.04) 0%, transparent 40%);
+  pointer-events: none;
+}
+.hero-zone .hero-icon {
+  font-size: 42px;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-magenta));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+  display: inline-block;
+  animation: float 3s ease-in-out infinite;
+}
+.hero-zone h1 {
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
+}
+.hero-zone h1 span {
+  background: linear-gradient(135deg, #C4B5FD, #A78BFA, #FF2D95);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-zone p {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin: 0 0 20px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.hero-stats .hs-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.hero-stats .hs-item .hs-num {
+  font-size: 20px;
+  font-weight: 800;
+  color: white;
+}
+.hero-stats .hs-item i { font-size: 18px; }
 
-<!-- Facebook-style compact bar -->
-<div class="fb-create-post">
-    <div class="fb-create-post-top" onclick="openPostModal('texto')">
-        <img src="{{ current_user | user_avatar }}" alt="Avatar" class="fb-avatar">
-        <span class="fb-placeholder">¿Qué estás pensando, {{ current_user.username }}?</span>
-    </div>
-    <div class="fb-create-post-divider"></div>
-    <div class="fb-create-post-actions">
-        <button type="button" class="fb-action-btn" data-action="image" onclick="openPostModal('image')">
-            <i class="far fa-image" style="color:#10B981;"></i> Imagen
-        </button>
-        <button type="button" class="fb-action-btn" data-action="clip" onclick="openPostModal('clip')">
-            <i class="fas fa-video" style="color:#8B5CF6;"></i> Clip
-        </button>
-        <button type="button" class="fb-action-btn" data-action="poll" onclick="openPostModal('poll')">
-            <i class="fas fa-poll" style="color:#3B82F6;"></i> Encuesta
-        </button>
-        <button type="button" class="fb-action-btn" data-action="tournament" onclick="openPostModal('tournament')">
-            <i class="fas fa-trophy" style="color:#FF2D95;"></i> Torneo
-        </button>
-    </div>
-</div>
+/* ── User Bar ── */
+.user-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.user-bar .ub-avatar {
+  width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--accent-purple); flex-shrink: 0;
+}
+.user-bar .ub-info { flex: 1; min-width: 0; }
+.user-bar .ub-info h3 { font-size: 16px; font-weight: 700; color: white; margin: 0; }
+.user-bar .ub-info p { font-size: 13px; color: var(--text-muted); margin: 2px 0 0; }
+.user-bar .ub-coins {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 16px; border-radius: 20px;
+  background: rgba(250,204,21,0.1); border: 1px solid rgba(250,204,21,0.2);
+  color: #FACC15; font-weight: 700; font-size: 14px; white-space: nowrap;
+}
 
-<!-- Modal overlay -->
-<div id="post-modal" class="post-modal-overlay" style="display:none;" onclick="closePostModal(event)">
-    <div class="post-modal-container" onclick="event.stopPropagation()">
-        
-        <!-- Modal header -->
-        <div class="post-modal-header">
-            <span class="post-modal-title">Crear publicación</span>
-            <button type="button" class="post-modal-x" onclick="closePostModal()"><i class="fas fa-times"></i></button>
+/* ── Nav Pills ── */
+.nav-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.nav-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all .25s cubic-bezier(.22,1,.36,1);
+  cursor: pointer;
+}
+.nav-pill:hover {
+  border-color: var(--accent-purple);
+  background: rgba(139,92,246,0.08);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+}
+.nav-pill.active {
+  border-color: var(--accent-purple);
+  background: rgba(139,92,246,0.12);
+  color: white;
+  position: relative;
+}
+.nav-pill.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 50%;
+  transform: translateX(-50%);
+  width: 60%; height: 2.5px;
+  background: var(--accent-purple);
+  border-radius: 2px 2px 0 0;
+  animation: pillBar .3s ease;
+}
+@keyframes pillBar { from{width:0;opacity:0} to{width:60%;opacity:1} }
+.nav-pill i { font-size: 16px; }
+
+/* ── Feed Tabs ── */
+.feed-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-dark);
+  border-radius: 12px;
+  padding: 4px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+.feed-tab {
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all .2s;
+  border: none;
+  background: none;
+  white-space: nowrap;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.feed-tab:hover { color: white; background: rgba(139,92,246,0.08); }
+.feed-tab.active { color: white; background: var(--accent-purple); box-shadow: 0 4px 12px rgba(139,92,246,0.3); }
+.feed-tab i { margin-right: 6px; }
+
+
+
+/* ── Create Post ── */
+.create-post-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--bg-card), rgba(139,92,246,0.03));
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: all .25s cubic-bezier(.22,1,.36,1);
+}
+.create-post-card:hover {
+  border-color: rgba(139,92,246,0.3);
+  background: rgba(139,92,246,0.06);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
+}
+.create-post-card img {
+  width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+}
+.create-post-card .cp-input {
+  flex: 1;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 10px 16px;
+  background: var(--bg-dark);
+  border-radius: 50px;
+  transition: all .2s;
+}
+.create-post-card:hover .cp-input { background: rgba(0,0,0,0.3); }
+.create-post-card .cp-actions { display: flex; gap: 2px; }
+.create-post-card .cp-actions button {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all .2s;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.create-post-card .cp-actions button:hover { background: rgba(139,92,246,0.12); color: white; transform: scale(1.1); }
+
+/* ── Posts ── */
+.post-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  transition: all .2s;
+  animation: slideUp .4s cubic-bezier(.22,1,.36,1);
+}
+.post-item:hover { border-color: rgba(139,92,246,0.12); }
+.post-head {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 14px 18px 0;
+}
+.post-head .ph-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.post-head .ph-info { flex: 1; min-width: 0; text-decoration: none; }
+.post-head .ph-info .ph-name { color: white; font-size: 14px; font-weight: 600; }
+.post-head .ph-info .ph-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+.post-head .ph-badges { display: flex; gap: 4px; flex-shrink: 0; align-items: center; }
+.post-body { padding: 10px 18px 6px; }
+.post-body p { color: rgba(255,255,255,0.92); font-size: 14px; line-height: 1.55; margin: 0; white-space: pre-wrap; }
+.post-body img { width: 100%; border-radius: 12px; margin-top: 10px; max-height: 400px; object-fit: cover; }
+.post-poll { background: var(--bg-dark); border-radius: 12px; padding: 14px; margin-top: 10px; }
+.post-poll .pp-q { color: white; font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+.post-poll .pp-opt { display: block; width: 100%; padding: 9px 12px; margin-bottom: 6px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); cursor: pointer; transition: all .15s; text-align: left; font-size: 13px; }
+.post-poll .pp-opt:hover { border-color: var(--accent-purple); }
+.post-poll .pp-opt .pp-votes { float: right; color: var(--text-muted); font-size: 12px; }
+.post-foot {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 18px 12px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 8px;
+}
+.post-foot .pf-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 8px;
+  font-size: 13px; color: var(--text-muted);
+  border: none; background: none; cursor: pointer;
+  transition: all .15s; text-decoration: none;
+}
+.post-foot .pf-btn:hover { background: rgba(139,92,246,0.06); color: white; }
+.post-foot .pf-btn i { font-size: 15px; }
+.post-foot .pf-btn.liked { color: #f43f5e; }
+.post-foot .pf-btn.liked i { font-weight: 900; }
+.post-foot .pf-btn.liked:hover { background: rgba(244,63,94,0.1); color: #f43f5e; }
+.post-foot .pf-right { margin-left: auto; display: flex; gap: 4px; }
+
+/* ── Guest ── */
+.guest-banner {
+  text-align: center;
+  padding: 40px 24px;
+  background: linear-gradient(135deg, var(--bg-card), rgba(139,92,246,0.04));
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+.guest-banner i { font-size: 40px; color: var(--text-muted); opacity: .3; display: block; margin-bottom: 12px; }
+.guest-banner h3 { color: white; font-size: 18px; margin-bottom: 4px; }
+.guest-banner p { color: var(--text-muted); font-size: 14px; margin-bottom: 16px; }
+
+/* ── Empty State ── */
+.empty-feed {
+  text-align: center;
+  padding: 48px 24px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-color);
+  border-radius: 16px;
+}
+.empty-feed i { font-size: 44px; color: var(--text-muted); opacity: .25; display: block; margin-bottom: 12px; }
+.empty-feed h3 { color: white; font-size: 16px; margin-bottom: 4px; }
+.empty-feed p { color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ── */
+/* ── Video Trends ── */
+.video-trends { margin-bottom: 24px; }
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.section-header h3 {
+  font-size: 16px; font-weight: 700; color: white; margin: 0;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-header .see-all {
+  font-size: 13px; color: var(--accent-purple); text-decoration: none;
+  display: flex; align-items: center; gap: 4px; font-weight: 600;
+  transition: gap .2s;
+}
+.section-header .see-all:hover { gap: 8px; }
+.vt-scroll {
+  display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 8px;
+}
+.vt-card {
+  flex-shrink: 0; width: 200px; border-radius: 14px;
+  border: 1px solid var(--border-color); overflow: hidden;
+  transition: all .25s; cursor: pointer;
+  animation: slideUp .4s ease;
+}
+.vt-card:hover { transform: translateY(-3px); border-color: rgba(139,92,246,0.3); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+.vt-thumb {
+  position: relative; width: 100%; aspect-ratio: 16/9;
+  overflow: hidden;
+}
+.vt-play {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 14px; transition: all .2s;
+}
+.vt-card:hover .vt-play { background: var(--accent-purple); transform: scale(1.1); }
+.vt-dur {
+  position: absolute; bottom: 6px; left: 6px;
+  background: rgba(0,0,0,0.7); color: white; font-size: 10px;
+  padding: 2px 6px; border-radius: 4px; font-weight: 600;
+}
+.vt-game {
+  position: absolute; bottom: 6px; right: 6px;
+  background: rgba(139,92,246,0.8); color: white; font-size: 9px;
+  padding: 2px 8px; border-radius: 4px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.vt-info { padding: 8px 12px 10px; background: var(--bg-card); }
+.vt-title { display: block; font-size: 13px; font-weight: 600; color: white; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vt-meta { display: block; font-size: 11px; color: var(--text-muted); }
+.vt-meta i { margin-right: 3px; }
+
+/* ── Retos Activos ── */
+.retos-section { margin-bottom: 24px; }
+.reto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.reto-card {
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 16px; padding: 18px; transition: all .25s;
+  animation: slideUp .5s ease;
+}
+.reto-card:hover { border-color: rgba(139,92,246,0.2); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+.reto-card .reto-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.reto-card .reto-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.reto-card .reto-name { font-size: 14px; font-weight: 700; color: white; margin: 0 0 2px; }
+.reto-card .reto-desc { font-size: 12px; color: var(--text-muted); margin: 0; }
+.reto-card .reto-bar { margin: 10px 0 8px; }
+.reto-card .reto-bar .rb-track {
+  width: 100%; height: 6px; background: var(--bg-dark);
+  border-radius: 3px; overflow: hidden; margin-bottom: 4px;
+}
+.reto-card .reto-bar .rb-fill {
+  height: 100%; border-radius: 3px; transition: width 1s ease;
+}
+.reto-card .reto-bar .rb-label {
+  font-size: 11px; color: var(--text-muted);
+  display: flex; justify-content: space-between;
+}
+.reto-card .reto-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+.reto-card .reto-footer .rf-meta { font-size: 11px; color: var(--text-muted); }
+.reto-card .reto-footer .rf-btn {
+  padding: 6px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  border: none; cursor: pointer; transition: all .2s; text-decoration: none;
+}
+
+@media (max-width: 600px) {
+  .hero-zone h1 { font-size: 24px; }
+  .hero-stats { gap: 16px; }
+  .vt-card { width: 160px; }
+  .reto-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<div style="max-width: 800px; margin: 0 auto; padding: clamp(12px, 2vw, 24px);">
+
+  {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+  <div class="user-bar slide-up" style="animation: slideUp .4s ease;">
+    <img src="{{ current_user | user_avatar }}" alt="" class="ub-avatar">
+    <div class="ub-info">
+      <h3>Bienvenido, {{ current_user.nombre or current_user.username }}</h3>
+      <p>Nivel {{ current_user.nivel or 1 }} · @{{ current_user.username }}</p>
+    </div>
+    <div class="ub-coins"><i class="fas fa-coins"></i> {{ current_user.tokens or 0 }}</div>
+  </div>
+  {% endif %}
+
+  <div class="hero-zone" style="animation: slideUp .5s ease;">
+    <div class="hero-icon"><i class="fas fa-gamepad"></i></div>
+    <h1>Tu <span>hub</span> gamer</h1>
+    <p>Conéctate con jugadores, comparte tus mejores momentos y descubre comunidades de tus juegos favoritos.</p>
+    <div class="hero-stats">
+      <div class="hs-item"><i class="fas fa-users" style="color:var(--accent-purple);"></i> <span class="hs-num">+2K</span> <span>Jugadores</span></div>
+      <div class="hs-item"><i class="fas fa-gamepad" style="color:#60A5FA;"></i> <span class="hs-num">12</span> <span>Comunidades</span></div>
+      <div class="hs-item"><i class="fas fa-comment" style="color:#34D399;"></i> <span class="hs-num">+450</span> <span>Posts hoy</span></div>
+    </div>
+  </div>
+
+  <div class="nav-pills">
+    <a href="{{ url_for('chat.chat_global') }}" class="nav-pill"><i class="fas fa-comment-dots" style="color:var(--accent-purple);"></i> Chat Global</a>
+    <a href="{{ url_for('jugador.comunidades') }}" class="nav-pill"><i class="fas fa-users" style="color:#60A5FA;"></i> Comunidades</a>
+    <a href="{{ url_for('jugador.notificaciones') }}" class="nav-pill"><i class="fas fa-bell" style="color:#FACC15;"></i> Notificaciones</a>
+    <a href="{{ url_for('tienda.index') }}" class="nav-pill"><i class="fas fa-store" style="color:#34D399;"></i> Tienda</a>
+    <a href="{{ url_for('billetera.index') }}" class="nav-pill"><i class="fas fa-wallet" style="color:#A78BFA;"></i> Billetera</a>
+    <a href="{{ url_for('jugador.boosts') }}" class="nav-pill"><i class="fas fa-rocket" style="color:#FF2D95;"></i> Boosts</a>
+  </div>
+
+  <div class="feed-tabs" role="tablist">
+    {% set tabs = [('para-ti','fire','Para ti'),('siguiendo','user-friends','Siguiendo'),('populares','star','Tendencias'),('recientes','clock','Recientes'),('encuestas','poll','Encuestas')] %}
+    {% for key, icon, label in tabs %}
+    <button class="feed-tab{% if active_tab == key %} active{% endif %}" data-tab="{{ key }}" role="tab" aria-selected="{% if active_tab == key %}true{% else %}false{% endif %}">
+      <i class="fas fa-{{ icon }}"></i> {{ label }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <!-- ── Tendencias en Video ── -->
+  <div class="video-trends">
+    <div class="section-header">
+      <h3><i class="fas fa-video" style="color:var(--accent-purple);"></i> Tendencias en video</h3>
+      <a href="{{ url_for('jugador.subir_clip') }}" class="see-all">Subir clip <i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="vt-scroll">
+      <div class="vt-card" style="background:linear-gradient(135deg,#1a1a3e,#2d1b4e);">
+        <div class="vt-thumb">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(139,92,246,0.3),rgba(255,45,149,0.15));display:flex;align-items:center;justify-content:center;">
+            <div class="vt-play"><i class="fas fa-play"></i></div>
+          </div>
+          <span class="vt-dur">3:42</span>
+          <span class="vt-game">Valorant</span>
         </div>
-
-        <form method="POST" action="{{ url_for('jugador.crear_publicacion') }}" enctype="multipart/form-data" novalidate>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="hidden" name="tipo_post" id="modal-tipo-post" value="texto">
-
-            <!-- Avatar + textarea row -->
-            <div class="post-modal-body">
-                <img src="{{ current_user | user_avatar }}" alt="Avatar" class="fb-avatar">
-                <textarea name="contenido" id="modal-contenido" class="modal-textarea" placeholder="¿Qué estás pensando, {{ current_user.username }}?" rows="3"></textarea>
-            </div>
-
-            <!-- Section: Image (upload gallery + URL) -->
-            <div id="modal-section-image" class="modal-section" style="display:none;">
-                <div class="modal-section-inner">
-                    <div class="modal-upload-row">
-                        <label class="modal-file-label" for="modal-image-file">
-                            <i class="fas fa-folder-open"></i> Subir imagen
-                            <input type="file" name="imagen_archivo" id="modal-image-file" accept="image/*" style="display:none;">
-                        </label>
-                        <span class="modal-or">o</span>
-                        <input type="url" name="imagen_url" id="modal-image-url" class="modal-url-input" placeholder="Pega URL de la imagen...">
-                    </div>
-                    <div id="modal-image-preview" class="modal-preview" style="display:none;">
-                        <img src="#" alt="Vista previa">
-                        <button type="button" class="modal-preview-clear" onclick="clearImagePreview()"><i class="fas fa-times"></i></button>
-                    </div>
-                    <div class="modal-section-label"><i class="far fa-image"></i> La imagen aparecerá al final de tu publicación</div>
-                </div>
-            </div>
-
-            <!-- Section: Clip (upload video + URL embed) -->
-            <div id="modal-section-clip" class="modal-section" style="display:none;">
-                <div class="modal-section-inner">
-                    <div class="modal-upload-row">
-                        <label class="modal-file-label" for="modal-video-file">
-                            <i class="fas fa-video"></i> Subir video
-                            <input type="file" name="video_archivo" id="modal-video-file" accept="video/*" style="display:none;">
-                        </label>
-                        <span class="modal-or">o</span>
-                        <input type="url" name="clip_url" id="modal-clip-url" class="modal-url-input" placeholder="Pega URL (YouTube, Twitch...)...">
-                    </div>
-                    <div id="modal-clip-preview" class="modal-preview" style="display:none;">
-                        <video src="#" controls style="max-height:200px; width:100%; border-radius:8px;"></video>
-                        <button type="button" class="modal-preview-clear" onclick="clearClipPreview()"><i class="fas fa-times"></i></button>
-                    </div>
-                    <div class="modal-section-label"><i class="fas fa-video"></i> Tu clip aparecerá incrustado en la publicación</div>
-                </div>
-            </div>
-
-            <!-- Section: Poll -->
-            <div id="modal-section-poll" class="modal-section" style="display:none;">
-                <div class="modal-section-inner">
-                    <div class="modal-poll-question">
-                        <i class="fas fa-question-circle" style="color:var(--accent-purple);"></i>
-                        <input type="text" name="poll_pregunta" id="poll-pregunta" class="modal-poll-input" placeholder="Ej: ¿Cuál es tu juego favorito de 2026?" style="flex:1;">
-                    </div>
-
-                    <div class="modal-poll-opts" id="poll-opts-container">
-                        <!-- JS renders options here -->
-                    </div>
-
-                    <button type="button" class="modal-poll-add" id="poll-add-btn" onclick="addPollOption()">
-                        <i class="fas fa-plus"></i> Añadir opción
-                    </button>
-
-                    <div class="poll-config">
-                        <div class="poll-config-row">
-                            <label class="poll-config-label">
-                                <i class="fas fa-clock"></i> Duración de la encuesta
-                            </label>
-                            <select name="poll_duration" class="poll-duration-select">
-                                <option value="24h">24 horas</option>
-                                <option value="3d">3 días</option>
-                                <option value="1w">1 semana</option>
-                                <option value="custom">Personalizada</option>
-                            </select>
-                        </div>
-                        <label class="poll-config-label">
-                            <input type="checkbox" name="poll_multiple" value="1">
-                            <span class="poll-config-toggle"></span>
-                            <span class="poll-config-text">Permitir elegir varias opciones</span>
-                        </label>
-                        <label class="poll-config-label">
-                            <input type="checkbox" name="poll_change" value="1">
-                            <span class="poll-config-toggle"></span>
-                            <span class="poll-config-text">Permitir cambiar voto después</span>
-                        </label>
-                        <label class="poll-config-label">
-                            <input type="checkbox" name="poll_hide_results" value="1">
-                            <span class="poll-config-toggle"></span>
-                            <span class="poll-config-text">Mostrar resultados solo al votar</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Section: Tournament -->
-            <div id="modal-section-tournament" class="modal-section" style="display:none;">
-                <div class="modal-section-inner">
-                    <div class="tourn-row">
-                        <div class="tourn-field tourn-name">
-                            <label><i class="fas fa-trophy"></i> Nombre del torneo</label>
-                            <input type="text" name="tour_nombre" placeholder="Ej: Valorant Cup #4">
-                        </div>
-                        <div class="tourn-field tourn-game">
-                            <label><i class="fas fa-gamepad"></i> Juego / Categoría</label>
-                            <select name="tour_juego">
-                                <option value="">Seleccionar juego...</option>
-                                <optgroup label="🔥 Los Titanes Mundiales">
-                                    <option value="Roblox">Roblox</option>
-                                    <option value="Counter-Strike 2">Counter-Strike 2</option>
-                                    <option value="Minecraft">Minecraft</option>
-                                    <option value="EA SPORTS FC 26">EA SPORTS FC 26</option>
-                                </optgroup>
-                                <optgroup label="🎯 Shooters y Battle Royales">
-                                    <option value="Call of Duty: Warzone">Call of Duty: Warzone</option>
-                                    <option value="Apex Legends">Apex Legends</option>
-                                    <option value="Valorant">Valorant</option>
-                                    <option value="Fortnite">Fortnite</option>
-                                </optgroup>
-                                <optgroup label="🎮 Más populares">
-                                    <option value="Grand Theft Auto V">Grand Theft Auto V</option>
-                                    <option value="Honor of Kings">Honor of Kings</option>
-                                    <option value="League of Legends">League of Legends</option>
-                                    <option value="Dota 2">Dota 2</option>
-                                    <option value="Free Fire">Free Fire</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="tourn-row">
-                        <div class="tourn-field tourn-small">
-                            <label><i class="fas fa-calendar-alt"></i> Fecha</label>
-                            <input type="date" name="tour_fecha">
-                        </div>
-                        <div class="tourn-field tourn-small">
-                            <label><i class="fas fa-clock"></i> Hora</label>
-                            <input type="time" name="tour_hora">
-                        </div>
-                        <div class="tourn-field tourn-small">
-                            <label><i class="fas fa-users"></i> Cupos máx.</label>
-                            <input type="number" name="tour_cupos" placeholder="Ej: 16" min="2" max="256">
-                        </div>
-                    </div>
-
-                    <div class="tourn-row">
-                        <div class="tourn-field tourn-prize">
-                            <label><i class="fas fa-coins"></i> Premio / Recompensa</label>
-                            <input type="text" name="tour_premio" placeholder="Ej: 1000 Pavos o $50 USD">
-                        </div>
-                        <div class="tourn-field tourn-format">
-                            <label><i class="fas fa-sitemap"></i> Formato del torneo</label>
-                            <select name="tour_formato">
-                                <option value="">Seleccionar formato...</option>
-                                <option value="1v1">1v1</option>
-                                <option value="5v5">5v5</option>
-                                <option value="Battle Royale">Battle Royale</option>
-                                <option value="Todos contra todos">Todos contra todos</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="tourn-row">
-                        <div class="tourn-field tourn-full">
-                            <label><i class="fas fa-align-left"></i> Reglas y descripción</label>
-                            <textarea name="tour_desc" placeholder="Escribe un mensaje de bienvenida, reglas o requisitos del torneo aquí..." rows="4"></textarea>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer: game selector + submit -->
-            <div class="post-modal-footer">
-                <select name="juego" class="modal-game-select">
-                    <option value="General" selected>General</option>
-                    <optgroup label="🔥 Los Titanes Mundiales">
-                        <option value="Roblox">Roblox</option>
-                        <option value="Counter-Strike 2">Counter-Strike 2</option>
-                        <option value="Minecraft">Minecraft</option>
-                        <option value="EA SPORTS FC 26">EA SPORTS FC 26</option>
-                    </optgroup>
-                    <optgroup label="🎯 Shooters y Battle Royales">
-                        <option value="Call of Duty: Warzone">Call of Duty: Warzone</option>
-                        <option value="Apex Legends">Apex Legends</option>
-                        <option value="Valorant">Valorant</option>
-                        <option value="Fortnite">Fortnite</option>
-                        <option value="Free Fire">Free Fire</option>
-                        <option value="Overwatch 2">Overwatch 2</option>
-                    </optgroup>
-                    <optgroup label="⚔️ Tácticos y MOBA">
-                        <option value="Honor of Kings">Honor of Kings</option>
-                        <option value="Mobile Legends: Bang Bang">Mobile Legends: Bang Bang</option>
-                        <option value="Dota 2">Dota 2</option>
-                    </optgroup>
-                    <optgroup label="🌲 Supervivencia y Mundo Abierto">
-                        <option value="ARK: Survival Evolved">ARK: Survival Evolved</option>
-                        <option value="GTA V">GTA V</option>
-                    </optgroup>
-                </select>
-                <button type="submit" class="modal-submit-btn">
-                    <i class="fas fa-paper-plane"></i> Publicar
-                </button>
-            </div>
-        </form>
+        <div class="vt-info">
+          <span class="vt-title">Clutch 1v4 en Ascent</span>
+          <span class="vt-meta"><i class="fas fa-eye"></i> 2.3K · <i class="fas fa-user"></i> ProGamer_X</span>
+        </div>
+      </div>
+      <div class="vt-card" style="background:linear-gradient(135deg,#1a2e1a,#0d3b1e);">
+        <div class="vt-thumb">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(52,211,153,0.3),rgba(34,197,94,0.15));display:flex;align-items:center;justify-content:center;">
+            <div class="vt-play"><i class="fas fa-play"></i></div>
+          </div>
+          <span class="vt-dur">1:28</span>
+          <span class="vt-game">Minecraft</span>
+        </div>
+        <div class="vt-info">
+          <span class="vt-title">Speedrun Any% Glitchless</span>
+          <span class="vt-meta"><i class="fas fa-eye"></i> 5.1K · <i class="fas fa-user"></i> CraftMaster</span>
+        </div>
+      </div>
+      <div class="vt-card" style="background:linear-gradient(135deg,#2e1a2e,#4a1a3e);">
+        <div class="vt-thumb">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,45,149,0.3),rgba(217,70,239,0.15));display:flex;align-items:center;justify-content:center;">
+            <div class="vt-play"><i class="fas fa-play"></i></div>
+          </div>
+          <span class="vt-dur">2:15</span>
+          <span class="vt-game">Fortnite</span>
+        </div>
+        <div class="vt-info">
+          <span class="vt-title">Victory Royale #99</span>
+          <span class="vt-meta"><i class="fas fa-eye"></i> 3.8K · <i class="fas fa-user"></i> BuildKing</span>
+        </div>
+      </div>
+      <div class="vt-card" style="background:linear-gradient(135deg,#1a1a2e,#1e3a5f);">
+        <div class="vt-thumb">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(96,165,250,0.3),rgba(59,130,246,0.15));display:flex;align-items:center;justify-content:center;">
+            <div class="vt-play"><i class="fas fa-play"></i></div>
+          </div>
+          <span class="vt-dur">0:45</span>
+          <span class="vt-game">LoL</span>
+        </div>
+        <div class="vt-info">
+          <span class="vt-title">Pentakill con Yasuo</span>
+          <span class="vt-meta"><i class="fas fa-eye"></i> 6.7K · <i class="fas fa-user"></i> MidLaneGod</span>
+        </div>
+      </div>
+      <div class="vt-card" style="background:linear-gradient(135deg,#1a1a2e,#3a1a4e);">
+        <div class="vt-thumb">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(217,70,239,0.3),rgba(168,85,247,0.15));display:flex;align-items:center;justify-content:center;">
+            <div class="vt-play"><i class="fas fa-play"></i></div>
+          </div>
+          <span class="vt-dur">1:55</span>
+          <span class="vt-game">Rocket League</span>
+        </div>
+        <div class="vt-info">
+          <span class="vt-title">Aéreo espectacular en OT</span>
+          <span class="vt-meta"><i class="fas fa-eye"></i> 2.4K · <i class="fas fa-user"></i> AerialKing</span>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 
-<script>
-var currentModalType = 'texto';
-var modal = document.getElementById('post-modal');
-var tipoInput = document.getElementById('modal-tipo-post');
+  {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+  <div class="create-post-card" onclick="openPostModal('texto')">
+    <img src="{{ current_user | user_avatar }}" alt="">
+    <div class="cp-input">¿Qué estás jugando, {{ current_user.username }}?</div>
+    <div class="cp-actions">
+      <button onclick="event.stopPropagation();openPostModal('imagen')" title="Imagen"><i class="far fa-image"></i></button>
+      <button onclick="event.stopPropagation();openPostModal('video')" title="Video"><i class="fas fa-video"></i></button>
+      <button onclick="event.stopPropagation();openPostModal('clip')" title="Clip"><i class="fas fa-film"></i></button>
+      <button onclick="event.stopPropagation();openPostModal('encuesta')" title="Encuesta"><i class="fas fa-poll"></i></button>
+    </div>
+  </div>
+  {% endif %}
 
-function openPostModal(type) {
-    currentModalType = type;
-    tipoInput.value = type;
-    
-    // Hide all sections
-    document.querySelectorAll('.modal-section').forEach(function(s) { s.style.display = 'none'; });
-    
-    // Show the relevant section
-    var section = document.getElementById('modal-section-' + type);
-    if (section) section.style.display = 'block';
-    
-    // Set title
-    var titles = { 'texto': 'Crear publicación', 'image': 'Agregar imagen', 'clip': 'Compartir clip', 'poll': 'Crear encuesta', 'tournament': 'Crear torneo' };
-    document.querySelector('.post-modal-title').textContent = titles[type] || 'Crear publicación';
-    
-    // Update textarea placeholder
-    var ta = document.getElementById('modal-contenido');
-    if (type === 'texto') {
-        ta.placeholder = '¿Qué estás pensando, {{ current_user.username }}?';
-    } else {
-        ta.placeholder = 'Describe tu publicación (opcional)';
-    }
-    
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
+  {% if current_user.rol == 'invitado' %}
+  <div class="guest-banner">
+    <i class="fas fa-user-secret"></i>
+    <h3>Explora como invitado</h3>
+    <p>Regístrate para publicar, comentar y unirte a la comunidad.</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Crear cuenta gratis</a>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">Ya tengo cuenta</a>
+    </div>
+  </div>
+  {% endif %}
 
-function closePostModal(e) {
-    if (e && e.target !== modal) return;
-    modal.style.display = 'none';
-    document.body.style.overflow = '';
-    // Reset type to texto
-    tipoInput.value = 'texto';
-    currentModalType = 'texto';
-    // Clear fields
-    document.getElementById('modal-contenido').value = '';
-    clearImagePreview();
-    clearClipPreview();
-    var urlInputs = document.querySelectorAll('.modal-url-input');
-    urlInputs.forEach(function(i) { i.value = ''; });
-    var pollInputs = document.querySelectorAll('.modal-poll-input');
-    pollInputs.forEach(function(i) { i.value = ''; });
-}
-
-// Close on Escape
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && modal.style.display === 'flex') closePostModal();
-});
-
-// Image preview (URL)
-document.getElementById('modal-image-url').addEventListener('input', function() {
-    var preview = document.getElementById('modal-image-preview');
-    var img = preview.querySelector('img');
-    if (this.value) {
-        img.src = this.value;
-        preview.style.display = 'block';
-    } else {
-        preview.style.display = 'none';
-    }
-});
-
-// Image file preview
-document.getElementById('modal-image-file').addEventListener('change', function() {
-    if (this.files && this.files[0]) {
-        var file = this.files[0];
-        if (!file.type.startsWith('image/')) {
-            showToast('Solo se permiten imágenes en la sección Imagen.', 'error');
-            this.value = '';
-            clearImagePreview();
-            return;
-        }
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var preview = document.getElementById('modal-image-preview');
-            var img = preview.querySelector('img');
-            img.src = e.target.result;
-            preview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    }
-});
-
-function clearImagePreview() {
-    document.getElementById('modal-image-preview').style.display = 'none';
-    document.getElementById('modal-image-url').value = '';
-    document.getElementById('modal-image-file').value = '';
-}
-
-// Clip video file preview
-document.getElementById('modal-video-file').addEventListener('change', function() {
-    if (this.files && this.files[0]) {
-        var file = this.files[0];
-        if (!file.type.startsWith('video/')) {
-            showToast('Solo se permiten archivos de video en la sección Clip.', 'error');
-            this.value = '';
-            clearClipPreview();
-            return;
-        }
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var preview = document.getElementById('modal-clip-preview');
-            var video = preview.querySelector('video');
-            video.src = e.target.result;
-            preview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    }
-});
-
-document.getElementById('modal-clip-url').addEventListener('input', function() {
-    var preview = document.getElementById('modal-clip-preview');
-    var video = preview.querySelector('video');
-    if (this.value) {
-        video.src = this.value;
-        preview.style.display = 'block';
-    } else {
-        preview.style.display = 'none';
-    }
-});
-
-function clearClipPreview() {
-    document.getElementById('modal-clip-preview').style.display = 'none';
-    document.getElementById('modal-clip-url').value = '';
-    document.getElementById('modal-video-file').value = '';
-}
-
-// === Dynamic Poll Options ===
-var pollOpts = ['', ''];
-var MAX_POLL_OPTS = 5;
-
-function renderPollOptions() {
-    var container = document.getElementById('poll-opts-container');
-    var letters = 'ABCDEFGHIJ';
-    var html = '';
-    for (var i = 0; i < pollOpts.length; i++) {
-        html += '<div class="modal-poll-opt">';
-        html += '  <span class="modal-poll-letter">' + letters[i] + '</span>';
-        html += '  <input type="text" name="poll_op[]" class="modal-poll-input" placeholder="Opción ' + letters[i] + '" value="' + pollOpts[i].replace(/"/g, '&quot;') + '" oninput="pollOpts[' + i + ']=this.value">';
-        html += '  <button type="button" class="modal-poll-opt-del" onclick="removePollOption(' + i + ')" title="Eliminar opción"><i class="fas fa-times"></i></button>';
-        html += '</div>';
-    }
-    container.innerHTML = html;
-    var addBtn = document.getElementById('poll-add-btn');
-    addBtn.style.display = pollOpts.length >= MAX_POLL_OPTS ? 'none' : '';
-}
-
-function addPollOption() {
-    if (pollOpts.length >= MAX_POLL_OPTS) return;
-    pollOpts.push('');
-    renderPollOptions();
-    // Focus the new input
-    var inputs = document.querySelectorAll('#poll-opts-container .modal-poll-input');
-    if (inputs.length) inputs[inputs.length - 1].focus();
-}
-
-function removePollOption(index) {
-    if (pollOpts.length <= 2) return;
-    pollOpts.splice(index, 1);
-    renderPollOptions();
-}
-
-// Init with 2 empty options
-renderPollOptions();
-
-// === Post dropdown toggle ===
-document.addEventListener('click', function(e) {
-    var btn = e.target.closest('[data-dropdown-btn]');
-    if (btn) {
-        e.preventDefault();
-        e.stopPropagation();
-        var menu = btn.parentNode.querySelector('[data-dropdown-menu]');
-        if (!menu) return;
-        var isOpen = menu.classList.contains('open');
-        // Close all other dropdowns
-        document.querySelectorAll('.dropdown-menu.open').forEach(function(m) {
-            if (m !== menu) m.classList.remove('open');
-        });
-        menu.classList.toggle('open');
-        return;
-    }
-    // Close dropdown if click outside
-    var openMenu = e.target.closest('.dropdown-menu');
-    if (!openMenu) {
-        document.querySelectorAll('.dropdown-menu.open').forEach(function(m) {
-            m.classList.remove('open');
-        });
-    }
-});
-</script>
-{% endif %}
-
-<!-- TABS -->
-<div class="feed-tabs">
-    <a href="{{ url_for('jugador.dashboard', tab='para-ti') }}" class="feed-tab{% if active_tab == 'para-ti' %} active{% endif %}">Para ti</a>
-    <a href="{{ url_for('jugador.dashboard', tab='siguiendo') }}" class="feed-tab{% if active_tab == 'siguiendo' %} active{% endif %}">Siguiendo</a>
-    <a href="{{ url_for('jugador.dashboard', tab='populares') }}" class="feed-tab{% if active_tab == 'populares' %} active{% endif %}">Populares</a>
-    <a href="{{ url_for('jugador.dashboard', tab='recientes') }}" class="feed-tab{% if active_tab == 'recientes' %} active{% endif %}">Recientes</a>
-    <a href="{{ url_for('jugador.dashboard', tab='encuestas') }}" class="feed-tab{% if active_tab == 'encuestas' %} active{% endif %}"><i class="fas fa-chart-bar"></i> Encuestas</a>
-    <a href="{{ url_for('jugador.dashboard', tab='torneos') }}" class="feed-tab{% if active_tab == 'torneos' %} active{% endif %}"><i class="fas fa-trophy"></i> Torneos</a>
-</div>
-
-<!-- POSTS FEED -->
-{% if publicaciones %}
-    {% for post in publicaciones %}
-    <div class="post-card{% if post.promocionada and post.boost_tipo %} post-card--boosted{% elif post.autor.es_premium %} post-card--vip-author{% endif %}" data-post-id="{{ post.id_publicacion }}" data-href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" onclick="navegarPost(event, this)">
-        <div class="post-header">
-            <div class="post-author">
-                <a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" class="post-avatar-link">
-                    <span class="post-avatar-wrap"{% if post.autor.marco_perfil %} style="{{ post.autor.marco_perfil }}"{% elif post.autor.es_premium %} style="border: 2px solid #FACC15; box-shadow: 0 0 8px rgba(250, 204, 21, 0.4);"{% endif %}>
-                        <img src="{{ post.autor | user_avatar }}" alt="{{ post.autor.username }}">
-                    </span>
-                </a>
-                <div class="author-info">
-                    <h4><a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" class="author-name-link">{{ nombre_usuario(post.autor, true) }}</a>{% if post.autor.es_premium %} <i class="fas fa-crown" style="color: #FACC15; font-size:14px; margin-left:4px; text-shadow: 0 0 5px rgba(250, 204, 21, 0.5);" title="Usuario Premium"></i>{% endif %}</h4>
-                    <div class="post-meta">
-                        <a href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" class="post-meta-link">{{ post.fecha_creacion | timeago }}</a> <span class="game-tag" style="background:rgba(139, 92, 246, 0.2);">{{ post.juego }}</span>
-                        {% if post.fijada %}
-                        <span class="pin-badge"><i class="fas fa-thumbtack"></i> Fijado</span>
-                        {% endif %}
-                        {% if post.promocionada and post.boost_tipo %}
-                        <span class="boost-badge boost-{{ post.boost_tipo }}"><i class="fas fa-rocket"></i> {{ {'rapido': 'RÁPIDO', 'mega': 'MEGA', 'titan': 'TITÁN'}.get(post.boost_tipo, post.boost_tipo) }}</span>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            
-            <div style="display: flex; gap: 8px; position:relative;">
-                {% if current_user.is_authenticated and current_user.id_usuario == post.id_usuario and not post.promocionada %}
-                <a href="{{ url_for('jugador.boosts', post_id=post.id_publicacion) }}" class="btn-primary" style="padding: 4px 12px; font-size: 12px; border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 4px;">
-                    <i class="fas fa-rocket"></i> Boost
-                </a>
-                {% endif %}
-                <div class="post-dropdown">
-                    <button class="post-dropdown-btn" data-dropdown-btn aria-label="Más opciones"><i class="fas fa-ellipsis-h"></i></button>
-                    <div class="dropdown-menu" data-dropdown-menu>
-                        {% if current_user.is_authenticated and current_user.id_usuario == post.id_usuario %}
-                        <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="fijarPublicacion({{ post.id_publicacion }}, this)"><i class="fas fa-thumbtack"></i> {% if post.fijada %}Desfijar del perfil{% else %}Fijar en el perfil{% endif %}</button>
-                        <button class="dropdown-item dropdown-item-danger" data-post-id="{{ post.id_publicacion }}" onclick="confirmarEliminar({{ post.id_publicacion }})"><i class="fas fa-trash-alt"></i> Eliminar publicación</button>
-                        {% else %}
-                        <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="reportarPublicacion({{ post.id_publicacion }})"><i class="fas fa-flag"></i> Reportar publicación / Spam</button>
-                        <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="ocultarPublicacion({{ post.id_publicacion }}, this)"><i class="fas fa-eye-slash"></i> Ocultar publicación</button>
-                        <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="copiarEnlace({{ post.id_publicacion }})"><i class="fas fa-link"></i> Copiar enlace del post</button>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+  {% if publicaciones %}
+  {% for p in publicaciones %}
+  <div class="post-item">
+    <div class="post-head">
+      <a href="{{ url_for('jugador.perfil_publico', username=p.autor.username) }}"><img src="{{ p.autor | user_avatar }}" alt="" class="ph-avatar"></a>
+      <a href="{{ url_for('jugador.perfil_publico', username=p.autor.username) }}" class="ph-info">
+        <div class="ph-name">{{ nombre_usuario(p.autor, false) }}</div>
+        <div class="ph-meta">
+          <span>@{{ p.autor.username }}</span>
+          {% if p.juego %}<span class="badge badge-purple" style="font-size:10px;padding:1px 8px;">{{ p.juego }}</span>{% endif %}
+          <span>{{ p.fecha_creacion | timeago }}</span>
         </div>
-        
-        <div class="post-content" data-href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" onclick="navegarPost(event, this)">
-            {{ post.contenido }}
-        </div>
-
-        {% if post.is_poll %}
-        <div class="post-poll" data-poll-post="{{ post.id_publicacion }}" data-poll-id="{{ post.poll.id_poll }}" data-multiple="{{ '1' if post.poll.multiple_choice else '0' }}" data-change="{{ '1' if post.poll.allow_change else '0' }}">
-            <p class="post-poll-question">{{ post.poll.pregunta }}</p>
-            <div class="post-poll-config-badges">
-                {% if post.poll.multiple_choice %}<span class="poll-badge multiple"><i class="fas fa-check-double"></i> Múltiple</span>{% endif %}
-                {% if post.poll.allow_change %}<span class="poll-badge changeable"><i class="fas fa-sync-alt"></i> Cambiable</span>{% endif %}
-            </div>
-            <div class="post-poll-options">
-                {% for opt in post.poll.options %}
-                <button type="button" class="post-poll-option" data-option-id="{{ opt.id_option }}" onclick="votePoll(this, {{ post.id_publicacion }})">
-                    <span class="post-poll-radio"></span>
-                    <span class="post-poll-text">{{ opt.texto }}</span>
-                    <span class="post-poll-bar" style="width:0%"></span>
-                    <span class="post-poll-pct" style="display:none;">0%</span>
-                </button>
-                {% endfor %}
-            </div>
-            <p class="post-poll-total"><i class="far fa-chart-bar"></i> <span class="post-poll-count">{{ post.poll.total_votos }}</span> voto(s)</p>
-        </div>
-        {% endif %}
-        
-        {% if post.imagen_url %}
-        <div class="post-media" data-href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" onclick="navegarPost(event, this)">
-            <img src="{{ post.imagen_url }}" alt="Media">
-        </div>
-        {% endif %}
-        
-        <div class="post-actions" style="margin-top:16px; margin-bottom:16px;">
-            {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
-            <button type="button" class="action-btn {% if post.is_liked_by(current_user) %}liked{% endif %}" data-like-btn data-post-id="{{ post.id_publicacion }}" id="like-btn-{{ post.id_publicacion }}" aria-label="Me gusta">
-                <i class="{% if post.is_liked_by(current_user) %}fas{% else %}far{% endif %} fa-heart"></i> <span id="like-count-{{ post.id_publicacion }}">{{ post.likes }}</span>
-            </button>
-            {% else %}
-            <span class="action-btn" style="cursor:default; opacity:0.7;"><i class="fas fa-heart"></i> {{ post.likes }}</span>
-            {% endif %}
-            <button type="button" class="action-btn" data-toggle-comments data-post-id="{{ post.id_publicacion }}" aria-label="Comentarios">
-                <i class="far fa-comment"></i> <span data-comment-count>{{ post.comentarios|length }}</span>
-            </button>
-            <button type="button" class="action-btn" disabled style="opacity:0.5; cursor:not-allowed;"><i class="fas fa-retweet"></i> 0</button>
-            <button type="button" class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
-        </div>
-
-        <!-- COMMENTS SECTION -->
-        <div id="comments-{{ post.id_publicacion }}" class="comments-section" style="display:none; border-top:1px solid var(--border-color); padding-top:16px;">
-            <div id="comments-list-{{ post.id_publicacion }}" class="comments-list">
-            {% for comment in post.comentarios %}
-            <div class="comment" style="display:flex; gap:12px; margin-bottom:12px;">
-                <img src="{{ comment.autor | user_avatar }}" alt="" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
-                <div class="comment-content" style="background:var(--bg-dark); padding:10px 12px; border-radius:var(--radius-md); flex:1;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:4px; gap:8px;">
-                        <span style="font-size:13px; font-weight:700;">{{ comment.autor.nombre if comment.autor.nombre else comment.autor.username }}</span>
-                        <span style="font-size:11px; color:var(--text-muted); flex-shrink:0;">{{ comment.fecha_creacion | timeago }}</span>
-                    </div>
-                    <p style="font-size:13px; color:white; line-height:1.4; margin:0;">{{ comment.contenido }}</p>
-                </div>
-            </div>
-            {% else %}
-            <p class="comments-empty" style="color:var(--text-muted); font-size:13px; margin:0 0 12px;">Sé el primero en comentar.</p>
-            {% endfor %}
-            </div>
-            
-            {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
-            <form class="comment-form" method="POST" action="{{ url_for('jugador.comentar', post_id=post.id_publicacion) }}" data-post-id="{{ post.id_publicacion }}" style="display:flex; gap:12px; margin-top:16px; align-items:center;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <img src="{{ current_user | user_avatar }}" alt="" style="width:32px; height:32px; border-radius:50%; object-fit:cover; flex-shrink:0;">
-                <input type="text" name="contenido" placeholder="Escribe un comentario..." autocomplete="off" style="flex:1; min-width:0; background:var(--bg-dark); border:1px solid var(--border-color); padding:8px 12px; border-radius:20px; color:white; font-size:13px;" required>
-                <button type="submit" style="background:transparent; border:none; color:var(--accent-purple); cursor:pointer; padding:8px;" aria-label="Enviar comentario"><i class="fas fa-paper-plane"></i></button>
+      </a>
+      <div class="ph-badges">
+        {% if p.is_poll %}<span class="badge badge-blue" style="font-size:10px;"><i class="fas fa-poll"></i></span>{% endif %}
+        {% if p.promocionada or p.boost_tipo %}<span class="badge badge-yellow" style="font-size:10px;"><i class="fas fa-rocket"></i></span>{% endif %}
+        {% if current_user.is_authenticated and p.autor.id_usuario == current_user.id_usuario %}
+        <div style="position:relative;">
+          <button class="btn btn-icon btn-ghost" style="width:28px;height:28px;font-size:12px;" onclick="event.stopPropagation();var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'"><i class="fas fa-ellipsis-v"></i></button>
+          <div style="display:none;position:absolute;top:100%;right:0;z-index:20;min-width:140px;background:var(--bg-panel);border:1px solid var(--border-color);border-radius:8px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);">
+            {% if not p.fijada %}
+            <form method="POST" action="{{ url_for('jugador.fijar_publicacion', post_id=p.id_publicacion) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" style="display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;border:none;background:none;color:var(--text-muted);font-size:13px;cursor:pointer;"><i class="fas fa-thumbtack"></i> Fijar</button>
             </form>
             {% else %}
-            <div style="text-align: center; margin-top: 16px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px dashed var(--border-color);">
-                <span style="font-size: 12px; color: var(--text-muted);"><i class="fas fa-lock"></i> Debes <a href="{{ url_for('auth.register') }}" style="color: var(--accent-purple); text-decoration: none;">registrarte</a> para poder comentar en las publicaciones.</span>
-            </div>
+            <form method="POST" action="{{ url_for('jugador.fijar_publicacion', post_id=p.id_publicacion) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" style="display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;border:none;background:none;color:var(--text-muted);font-size:13px;cursor:pointer;"><i class="fas fa-times"></i> Desfijar</button>
+            </form>
             {% endif %}
-        </div>
-    </div>
-    {% endfor %}
-{% else %}
-    <div style="text-align:center; padding:clamp(24px,6vw,40px); color:var(--text-muted);">
-        <i class="fas fa-gamepad" style="font-size:48px; margin-bottom:16px; opacity:0.5;"></i>
-        <h3>No hay publicaciones recientes</h3>
-        <p>Sé el primero en compartir algo con la comunidad.</p>
-    </div>
-{% endif %}
-
-<script>
-function votePoll(btn, postId) {
-    var optionId = parseInt(btn.getAttribute('data-option-id'));
-    var parent = btn.closest('.post-poll');
-    var multiple = parent.getAttribute('data-multiple') === '1';
-    var changeable = parent.getAttribute('data-change') === '1';
-    var hasVoted = parent.classList.contains('post-poll-voted');
-
-    // If changeable and already voted, allow toggle
-    if (changeable && hasVoted) {
-        var already = btn.classList.contains('post-poll-voted-opt');
-        if (already) {
-            // Un-vote this option
-            sendVote(postId, optionId, function(data) {
-                applyResults(parent, data);
-            });
-            return;
-        }
-    }
-
-    if (hasVoted && !changeable && !multiple) return;
-
-    sendVote(postId, optionId, function(data) {
-        applyResults(parent, data);
-    });
-}
-
-function sendVote(postId, optionId, callback) {
-    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-    var formData = new FormData();
-    formData.append('option_id', optionId);
-    formData.append('csrf_token', csrfToken);
-
-    fetch('/jugador/poll/vote/' + postId, {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrfToken },
-        body: formData
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-        if (data.success) {
-            callback(data);
-        } else {
-            showToast(data.message || 'Error al votar.', 'error');
-        }
-    })
-    .catch(function() { showToast('Error de conexión.', 'error'); });
-}
-
-function applyResults(parent, data) {
-    parent.classList.add('post-poll-voted');
-    var votedIds = data.voted_options || [];
-    
-    parent.querySelectorAll('.post-poll-option').forEach(function(opt) {
-        var optId = parseInt(opt.getAttribute('data-option-id'));
-        var result = data.results.find(function(r) { return r.id === optId; });
-        if (result) {
-            opt.querySelector('.post-poll-bar').style.width = result.porcentaje + '%';
-            opt.querySelector('.post-poll-pct').textContent = result.porcentaje + '%';
-            opt.querySelector('.post-poll-pct').style.display = 'inline';
-            opt.querySelector('.post-poll-radio').style.display = 'none';
-            if (votedIds.indexOf(optId) !== -1) {
-                opt.classList.add('post-poll-voted-opt');
-            } else {
-                opt.classList.remove('post-poll-voted-opt');
-            }
-        }
-    });
-    parent.querySelector('.post-poll-count').textContent = data.total_votos;
-}
-</script>
-
-{% endblock %}
-
-{% block right_sidebar %}
-<div class="feed-right-container">
-    <!-- COLUMNA MEDIA (Chats, Torneos, Jugadores) -->
-    <div class="feed-sidebar-col">
-        
-        <!-- CHATS ACTIVOS -->
-        <div class="widget">
-            <div class="widget-header">
-                <h3 class="widget-title">Chats activos</h3>
-                <i class="fas fa-chevron-right" style="color:var(--text-muted); font-size:12px;"></i>
-            </div>
-            <div class="friends-list">
-                <div class="friend-item" style="cursor:pointer; margin-bottom:12px;">
-                    <div class="friend-info-wrap">
-                        <img src="https://images.unsplash.com/photo-1618331835717-801e976710b2?w=50&h=50&fit=crop" alt="Global Chat" class="friend-avatar">
-                        <div class="friend-details">
-                            <h5>Global Chat</h5>
-                            <span class="friend-state">243 en línea</span>
-                        </div>
-                    </div>
-                    <div class="badge" style="position:static; padding:2px 6px; width:auto; border-radius:10px;">99+</div>
-                </div>
-                <div class="friend-item" style="cursor:pointer; margin-bottom:12px;">
-                    <div class="friend-info-wrap">
-                        <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=50&h=50&fit=crop" alt="Minecraft" class="friend-avatar" style="border-radius:8px;">
-                        <div class="friend-details">
-                            <h5>Minecraft</h5>
-                            <span class="friend-state">128 en línea</span>
-                        </div>
-                    </div>
-                    <div class="badge" style="position:static; padding:2px 6px; width:auto; border-radius:10px;">12</div>
-                </div>
-                <div class="friend-item" style="cursor:pointer; margin-bottom:12px;">
-                    <div class="friend-info-wrap">
-                        <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=50&h=50&fit=crop" alt="Valorant" class="friend-avatar" style="border-radius:8px;">
-                        <div class="friend-details">
-                            <h5>Valorant</h5>
-                            <span class="friend-state">98 en línea</span>
-                        </div>
-                    </div>
-                    <div class="badge" style="position:static; padding:2px 6px; width:auto; border-radius:10px;">5</div>
-                </div>
-                <div class="friend-item" style="cursor:pointer; margin-bottom:12px;">
-                    <div class="friend-info-wrap">
-                        <img src="https://images.unsplash.com/photo-1589241062272-c0a000072dfa?w=50&h=50&fit=crop" alt="Fortnite" class="friend-avatar" style="border-radius:8px;">
-                        <div class="friend-details">
-                            <h5>Fortnite</h5>
-                            <span class="friend-state">76 en línea</span>
-                        </div>
-                    </div>
-                    <div class="badge" style="position:static; padding:2px 6px; width:auto; border-radius:10px;">3</div>
-                </div>
-                <div style="text-align:center; padding-top:8px; border-top:1px solid var(--border-color);">
-                    <a href="#" style="color:var(--text-muted); font-size:13px; font-weight:600;">Ver todos los chats</a>
-                </div>
-            </div>
-        </div>
-        
-        <!-- TORNEOS DESTACADOS -->
-        <div class="widget">
-            <div class="widget-header">
-                <h3 class="widget-title">Torneos destacados</h3>
-                <a href="#" class="widget-link">Ver todos</a>
-            </div>
-            <div class="friends-list">
-                <div class="friend-item" style="cursor:pointer; align-items:flex-start; margin-bottom:16px;">
-                    <div class="friend-info-wrap">
-                        <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=50&h=50&fit=crop" alt="Valorant Tourney" class="friend-game-icon" style="width:36px; height:36px; border-radius:8px;">
-                        <div class="friend-details">
-                            <h5>Torneo de Verano</h5>
-                            <span class="friend-state" style="display:block; margin-bottom:2px;">Valorant</span>
-                            <span class="friend-state" style="font-size:11px;">24 / 32 equipos</span>
-                        </div>
-                    </div>
-                    <div style="color: var(--accent-green); font-weight:700; font-size:13px;">$120</div>
-                </div>
-                <div class="friend-item" style="cursor:pointer; align-items:flex-start; margin-bottom:16px;">
-                    <div class="friend-info-wrap">
-                        <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=50&h=50&fit=crop" alt="Minecraft Tourney" class="friend-game-icon" style="width:36px; height:36px; border-radius:8px;">
-                        <div class="friend-details">
-                            <h5>Minecraft Builders Cup</h5>
-                            <span class="friend-state" style="display:block; margin-bottom:2px;">Minecraft</span>
-                            <span class="friend-state" style="font-size:11px;">16 / 32 equipos</span>
-                        </div>
-                    </div>
-                    <div style="color: var(--accent-green); font-weight:700; font-size:13px;">$80</div>
-                </div>
-                <div class="friend-item" style="cursor:pointer; align-items:flex-start;">
-                    <div class="friend-info-wrap">
-                        <img src="https://images.unsplash.com/photo-1589241062272-c0a000072dfa?w=50&h=50&fit=crop" alt="Fortnite Tourney" class="friend-game-icon" style="width:36px; height:36px; border-radius:8px;">
-                        <div class="friend-details">
-                            <h5>Fortnite Battle Cup</h5>
-                            <span class="friend-state" style="display:block; margin-bottom:2px;">Fortnite</span>
-                            <span class="friend-state" style="font-size:11px;">48 / 64 equipos</span>
-                        </div>
-                    </div>
-                    <div style="color: var(--accent-green); font-weight:700; font-size:13px;">$200</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- JUGADORES DESTACADOS -->
-        <div class="widget">
-            <div class="widget-header">
-                <h3 class="widget-title">Jugadores destacados</h3>
-            </div>
-            <div class="friends-list">
-                <div class="friend-item" style="margin-bottom:12px;">
-                    <div class="friend-info-wrap">
-                        <span style="font-weight:700; color:var(--accent-green); margin-right:8px;">1</span>
-                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=50&h=50&fit=crop" alt="ShadowZ" class="friend-avatar">
-                        <div class="friend-details">
-                            <h5>ShadowZ</h5>
-                            <span class="friend-state">Diamante III</span>
-                        </div>
-                    </div>
-                    <div style="font-size:12px; color:var(--text-muted);">2450 XP</div>
-                </div>
-                <div class="friend-item" style="margin-bottom:12px;">
-                    <div class="friend-info-wrap">
-                        <span style="font-weight:700; color:white; margin-right:8px;">2</span>
-                        <img src="https://images.unsplash.com/photo-1618331835717-801e976710b2?w=50&h=50&fit=crop" alt="NexoBlade" class="friend-avatar">
-                        <div class="friend-details">
-                            <h5>NexoBlade</h5>
-                            <span class="friend-state">Inmortal I</span>
-                        </div>
-                    </div>
-                    <div style="font-size:12px; color:var(--text-muted);">2320 XP</div>
-                </div>
-                <div class="friend-item" style="margin-bottom:12px;">
-                    <div class="friend-info-wrap">
-                        <span style="font-weight:700; color:#F59E0B; margin-right:8px;">3</span>
-                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50&h=50&fit=crop" alt="Zer0Carry" class="friend-avatar">
-                        <div class="friend-details">
-                            <h5>Zer0Carry</h5>
-                            <span class="friend-state">Diamante II</span>
-                        </div>
-                    </div>
-                    <div style="font-size:12px; color:var(--text-muted);">2150 XP</div>
-                </div>
-                <div style="text-align:center; padding-top:8px; border-top:1px solid var(--border-color);">
-                    <a href="#" style="color:var(--text-muted); font-size:13px; font-weight:600;">Ver ranking completo</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- COLUMNA EXTREMO DERECHO (Profile, Juegos, Stats, Amigos) -->
-    <div class="feed-sidebar-col">
-        {% if current_user.is_authenticated %}
-        <!-- PROFILE SUMMARY -->
-        <div class="profile-summary-card">
-            <div class="banner"></div>
-            <div class="info">
-                <div class="avatar">
-                    <img src="{{ current_user | user_avatar }}" alt="Avatar">
-                </div>
-                <h3 style="font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:4px;">{{ nombre_usuario(current_user, false) }} <i class="fas fa-check-circle verified-icon" style="font-size:12px;"></i></h3>
-                <p style="color:var(--text-muted); font-size:12px; margin-bottom:16px;">@{{ current_user.username }}</p>
-                
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; margin-bottom:8px;">
-                    <span style="font-weight:600;">Nivel {{ current_user.nivel if current_user.nivel else 1 }}</span>
-                    <span style="color:var(--text-muted);">{{ current_user.xp if current_user.xp else 0 }} / 5,000 XP</span>
-                </div>
-                <div class="progress-bar" style="margin-bottom:16px;">
-                    <div class="progress-fill" style="width: 10%;"></div>
-                </div>
-                
-                <div style="display:flex; justify-content:center; gap:6px; color:{% if current_user.es_premium %}#FACC15{% else %}var(--text-muted){% endif %}; font-size:13px; font-weight:700; background:{% if current_user.es_premium %}rgba(250, 204, 21, 0.1){% else %}rgba(255,255,255,0.05){% endif %}; padding:8px; border-radius:8px;">
-                    <i class="fas {% if current_user.es_premium %}fa-crown{% else %}fa-user{% endif %}"></i> {{ 'Miembro Premium' if current_user.es_premium else 'Miembro Básico' }}
-                </div>
-            </div>
-        </div>
-        
-        <!-- JUEGOS FAVORITOS -->
-        <div class="widget">
-            <div class="widget-header">
-                <h3 class="widget-title">Juegos favoritos</h3>
-            </div>
-            <div style="display:flex; gap:12px;">
-                <img src="https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=50&h=50&fit=crop" style="width:40px; height:40px; border-radius:10px; object-fit:cover;" alt="Minecraft">
-                <img src="https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?w=50&h=50&fit=crop" style="width:40px; height:40px; border-radius:10px; object-fit:cover;" alt="Valorant">
-                <img src="https://images.unsplash.com/photo-1589241062272-c0a000072dfa?w=50&h=50&fit=crop" style="width:40px; height:40px; border-radius:10px; object-fit:cover;" alt="Fortnite">
-                <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=50&h=50&fit=crop" style="width:40px; height:40px; border-radius:10px; object-fit:cover;" alt="LoL">
-            </div>
-        </div>
-        
-        <!-- ESTADISTICAS QUICK -->
-        <div class="widget">
-            <h3 class="widget-title" style="margin-bottom:16px;">Estadísticas</h3>
-            <div style="display:flex; justify-content:space-between; text-align:center;">
-                <div>
-                    <div style="font-size:18px; font-weight:800; color:white;">87</div>
-                    <div style="font-size:11px; color:var(--text-muted);">Publicaciones</div>
-                </div>
-                <div>
-                    <div style="font-size:18px; font-weight:800; color:white;">1.2K</div>
-                    <div style="font-size:11px; color:var(--text-muted);">Seguidores</div>
-                </div>
-                <div>
-                    <div style="font-size:18px; font-weight:800; color:white;">342</div>
-                    <div style="font-size:11px; color:var(--text-muted);">Siguiendo</div>
-                </div>
-            </div>
-        </div>
-        
-        {% else %}
-        <!-- GUEST PROMO WIDGET -->
-        <div class="widget" style="text-align:center; padding:32px 16px;">
-            <div style="font-size:48px; color:var(--accent-purple); margin-bottom:16px;">
-                <i class="fas fa-gamepad"></i>
-            </div>
-            <h3 style="margin-bottom:12px;">Únete a la zona</h3>
-            <p style="color:var(--text-muted); font-size:14px; margin-bottom:24px;">Regístrate para crear publicaciones, comentar y conectar con otros gamers.</p>
-            <a href="{{ url_for('auth.register') }}" class="btn-primary" style="display:inline-block; width:100%; text-decoration:none; margin-bottom:12px; box-sizing:border-box;">Crear cuenta</a>
-            <a href="{{ url_for('auth.login') }}" style="color:var(--text-muted); font-size:13px; font-weight:600;">Ya tengo cuenta</a>
-        </div>
-        
-        <!-- AMIGOS EN LINEA (MINI) -->
-        <div class="widget">
-            <div class="widget-header">
-                <h3 class="widget-title">Amigos en línea</h3>
-                <a href="#" class="widget-link">Ver todos</a>
-            </div>
-            <div class="friends-list">
-                <div class="friend-item">
-                    <div class="friend-info-wrap">
-                        <div class="friend-avatar-wrap">
-                            <img src="https://images.unsplash.com/photo-1618331835717-801e976710b2?w=50&h=50&fit=crop" alt="NexoBlade" class="friend-avatar" style="width:32px; height:32px;">
-                            <div class="status-dot online" style="width:8px; height:8px;"></div>
-                        </div>
-                        <div class="friend-details">
-                            <h5 style="font-size:13px;">NexoBlade</h5>
-                            <span class="friend-state" style="font-size:11px;">En línea</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="friend-item">
-                    <div class="friend-info-wrap">
-                        <div class="friend-avatar-wrap">
-                            <img src="https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?w=50&h=50&fit=crop" alt="PixelCraft" class="friend-avatar" style="width:32px; height:32px;">
-                            <div class="status-dot ingame" style="width:8px; height:8px;"></div>
-                        </div>
-                        <div class="friend-details">
-                            <h5 style="font-size:13px;">PixelCraft</h5>
-                            <span class="friend-state ingame" style="font-size:11px;">En línea</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="friend-item">
-                    <div class="friend-info-wrap">
-                        <div class="friend-avatar-wrap">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50&h=50&fit=crop" alt="LunaGamer" class="friend-avatar" style="width:32px; height:32px;">
-                            <div class="status-dot ingame" style="width:8px; height:8px;"></div>
-                        </div>
-                        <div class="friend-details">
-                            <h5 style="font-size:13px;">LunaGamer</h5>
-                            <span class="friend-state ingame" style="font-size:11px;">En partida</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <form method="POST" action="{{ url_for('jugador.eliminar_publicacion', post_id=p.id_publicacion) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" onclick="return confirm('¿Eliminar?')" style="display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;border:none;background:none;color:#ef4444;font-size:13px;cursor:pointer;"><i class="fas fa-trash-alt"></i> Eliminar</button>
+            </form>
+          </div>
         </div>
         {% endif %}
-        
+      </div>
     </div>
+    <div class="post-body">
+      <p>{{ p.contenido }}</p>
+      {% if p.imagen_url %}
+      <img src="{{ p.imagen_url }}" alt="" loading="lazy">
+      {% endif %}
+      {% if p.is_poll and p.poll %}
+      <div class="post-poll" data-post-id="{{ p.id_publicacion }}" data-change="{{ '1' if p.poll.allow_change else '0' }}">
+        <div class="pp-q">{{ p.poll.pregunta }}</div>
+        {% for opt in p.poll.options %}
+        <button type="button" class="pp-opt" data-poll-vote data-option-id="{{ opt.id_option }}" data-votos="{{ opt.votos }}">
+          <span class="pp-text">{{ opt.texto }}</span>
+          <span class="pp-votes">{{ opt.votos }} votos</span>
+          <span class="pp-bar" style="display:none;"></span>
+          <span class="pp-pct" style="display:none;"></span>
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <div class="post-foot">
+      <button class="pf-btn like-btn" onclick="dashboardLike({{ p.id_publicacion }}, this)">
+        <i class="far fa-heart"></i> <span>{{ p.likes_count or 0 }}</span>
+      </button>
+      <a href="{{ url_for('jugador.ver_publicacion', post_id=p.id_publicacion) }}" class="pf-btn"><i class="far fa-comment"></i> {{ p.comentarios_count or 0 }}</a>
+      {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+      <button class="pf-btn" onclick="dashboardRepost({{ p.id_publicacion }}, this)"><i class="fas fa-retweet"></i></button>
+      {% endif %}
+      <button class="pf-btn" onclick="dashboardShare({{ p.id_publicacion }}, '{{ url_for('jugador.ver_publicacion', post_id=p.id_publicacion) }}', this)"><i class="fas fa-share"></i></button>
+      <div class="pf-right">
+        {% if p.juego %}<a href="{{ url_for('jugador.comunidad_detalle', juego=p.juego) }}" class="pf-btn"><i class="fas fa-tag"></i></a>{% endif %}
+        <a href="{{ url_for('jugador.boosts') }}" class="pf-btn" title="Boost"><i class="fas fa-rocket"></i></a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="empty-feed">
+    <i class="far fa-newspaper"></i>
+    <h3>Aún no hay publicaciones</h3>
+    <p>Sé el primero en compartir algo con la comunidad.</p>
+  </div>
+  {% endif %}
+
+  <!-- ── Retos Activos ── -->
+  <div class="retos-section">
+    <div class="section-header">
+      <h3><i class="fas fa-fire" style="color:#FF6B35;"></i> Retos activos</h3>
+      <a href="{{ url_for('jugador.boosts') }}" class="see-all">Ver todos <i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="reto-grid">
+      <div class="reto-card">
+        <div class="reto-header">
+          <div class="reto-icon" style="background:rgba(139,92,246,0.12);color:var(--accent-purple);"><i class="fas fa-crosshairs"></i></div>
+          <div>
+            <div class="reto-name">Imbatible en Valorant</div>
+            <p class="reto-desc">Gana 5 partidas competitivas esta semana</p>
+          </div>
+        </div>
+        <div class="reto-bar">
+          <div class="rb-track"><div class="rb-fill" style="width:60%;background:linear-gradient(90deg,var(--accent-purple),#C084FC);"></div></div>
+          <div class="rb-label"><span>3/5 victorias</span><span>60%</span></div>
+        </div>
+        <div class="reto-footer">
+          <span class="rf-meta"><i class="fas fa-users"></i> 128 jugando · <i class="fas fa-clock"></i> 4 días</span>
+          <span class="rf-meta" style="color:#FACC15;"><i class="fas fa-coins"></i> +50 RC</span>
+        </div>
+      </div>
+      <div class="reto-card">
+        <div class="reto-header">
+          <div class="reto-icon" style="background:rgba(52,211,153,0.12);color:#34D399;"><i class="fas fa-tree"></i></div>
+          <div>
+            <div class="reto-name">Arquitecto en Minecraft</div>
+            <p class="reto-desc">Construye 3 estructuras y comparte capturas</p>
+          </div>
+        </div>
+        <div class="reto-bar">
+          <div class="rb-track"><div class="rb-fill" style="width:33%;background:linear-gradient(90deg,#34D399,#6EE7B7);"></div></div>
+          <div class="rb-label"><span>1/3 construcciones</span><span>33%</span></div>
+        </div>
+        <div class="reto-footer">
+          <span class="rf-meta"><i class="fas fa-users"></i> 84 jugando · <i class="fas fa-clock"></i> 6 días</span>
+          <span class="rf-meta" style="color:#FACC15;"><i class="fas fa-coins"></i> +35 RC</span>
+        </div>
+      </div>
+      <div class="reto-card" style="background:linear-gradient(135deg,var(--bg-card),rgba(250,204,21,0.03));border-color:rgba(250,204,21,0.15);">
+        <div class="reto-header">
+          <div class="reto-icon" style="background:rgba(250,204,21,0.12);color:#FACC15;"><i class="fas fa-trophy"></i></div>
+          <div>
+            <div class="reto-name">Racha de Fortnite</div>
+            <p class="reto-desc">ConsigueTop 10 en 10 partidas consecutivas</p>
+          </div>
+        </div>
+        <div class="reto-bar">
+          <div class="rb-track"><div class="rb-fill" style="width:80%;background:linear-gradient(90deg,#FACC15,#FBBF24);"></div></div>
+          <div class="rb-label"><span>8/10 top 10</span><span>80%</span></div>
+        </div>
+        <div class="reto-footer">
+          <span class="rf-meta"><i class="fas fa-users"></i> 203 jugando · <i class="fas fa-clock"></i> 2 días</span>
+          <span class="rf-meta" style="color:#FACC15;"><i class="fas fa-coins"></i> +75 RC</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.feed-tab');
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){
+      tabs.forEach(function(x){ x.classList.remove('active'); });
+      this.classList.add('active');
+      var url = new URL(window.location);
+      url.searchParams.set('tab', this.getAttribute('data-tab'));
+      window.location.href = url.toString();
+    });
+  });
+  /* ── Nav pills active state ── */
+  var path = window.location.pathname.replace(/\/+$/, '');
+  document.querySelectorAll('.nav-pill').forEach(function(pill){
+    var href = pill.getAttribute('href').replace(/\/+$/, '');
+    if (path === href || path.startsWith(href + '/')) {
+      pill.classList.add('active');
+    }
+  });
+  var createCard = document.querySelector('.create-post-card');
+  if(createCard) {
+    createCard.querySelectorAll('.cp-actions button').forEach(function(b){
+      b.addEventListener('click', function(e){ e.stopPropagation(); });
+    });
+  }
+})();
+
+function getCsrf() { return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')||''; }
+
+function dashboardLike(postId, btn) {
+  var icon = btn.querySelector('i');
+  var countEl = btn.querySelector('span');
+  btn.disabled = true;
+  fetch('/jugador/like/' + postId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':getCsrf(), 'X-Requested-With':'XMLHttpRequest' }
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if (data.success) {
+      btn.classList.toggle('liked', data.liked);
+      icon.className = data.liked ? 'fas fa-heart' : 'far fa-heart';
+      countEl.textContent = data.likes_count;
+    }
+  }).catch(function(e){ console.error(e); })
+  .finally(function(){ btn.disabled = false; });
+}
+
+function dashboardShare(postId, url, btn) {
+  fetch('/jugador/share/' + postId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':getCsrf(), 'X-Requested-With':'XMLHttpRequest' }
+  }).catch(function(){});
+  if (navigator.share) { navigator.share({ url: url }).catch(function(){}); }
+  else {
+    navigator.clipboard.writeText(url).then(function(){
+      var toast = document.createElement('div');
+      toast.textContent = 'Enlace copiado';
+      toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f1b3a;color:white;padding:10px 20px;border-radius:100px;font-size:13px;z-index:9999;border:1px solid rgba(139,92,246,.3);box-shadow:0 8px 30px rgba(0,0,0,.5);';
+      document.body.appendChild(toast);
+      setTimeout(function(){ toast.remove(); }, 2500);
+    }).catch(function(){});
+  }
+}
+
+function dashboardRepost(postId, btn) {
+  btn.disabled = true;
+  fetch('/jugador/repost/' + postId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':getCsrf(), 'X-Requested-With':'XMLHttpRequest', 'Content-Type':'application/json' },
+    body: JSON.stringify({ contenido: '' })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if (data.success) {
+      var toast = document.createElement('div');
+      toast.textContent = '¡Reposteado!';
+      toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f1b3a;color:white;padding:10px 20px;border-radius:100px;font-size:13px;z-index:9999;border:1px solid rgba(139,92,246,.3);box-shadow:0 8px 30px rgba(0,0,0,.5);';
+      document.body.appendChild(toast);
+      setTimeout(function(){ toast.remove(); }, 2500);
+    }
+  }).catch(function(e){ console.error(e); })
+  .finally(function(){ btn.disabled = false; });
+}
+</script>
 {% endblock %}

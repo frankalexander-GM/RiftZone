@@ -1,0 +1,248 @@
+<!-- Modal de creación de publicación -->
+<div id="post-modal" style="display:none;position:fixed;inset:0;background:rgba(10,8,22,0.85);backdrop-filter:blur(10px);z-index:2000;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;">
+  <div class="card card-glass" style="width:100%;max-width:550px;animation:slideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);max-height:90vh;overflow-y:auto;background:rgba(20,18,38,0.95);border:1px solid rgba(139,92,246,0.25);border-radius:20px;padding:24px;">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid var(--border-color);padding-bottom:12px;">
+      <h3 id="modal-title" style="margin:0;font-size:18px;color:white;display:flex;align-items:center;gap:10px;">
+        <i class="fas fa-edit" style="color:var(--accent-purple);"></i> Crear publicación
+      </h3>
+      <button onclick="closePostModal()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Type selector pills -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;" id="modal-type-pills">
+      <button type="button" class="modal-type-pill active" data-type="texto" onclick="switchModalType('texto')"><i class="fas fa-pen"></i> Texto</button>
+      <button type="button" class="modal-type-pill" data-type="imagen" onclick="switchModalType('imagen')"><i class="far fa-image"></i> Imagen</button>
+      <button type="button" class="modal-type-pill" data-type="video" onclick="switchModalType('video')"><i class="fas fa-video"></i> Video</button>
+      <button type="button" class="modal-type-pill" data-type="clip" onclick="switchModalType('clip')"><i class="fas fa-film"></i> Clip</button>
+      <button type="button" class="modal-type-pill" data-type="encuesta" onclick="switchModalType('encuesta')"><i class="fas fa-poll"></i> Encuesta</button>
+    </div>
+
+    <!-- Form 1: Texto -->
+    <form id="post-form-texto" class="post-creation-form" action="{{ url_for('jugador.crear_publicacion') }}" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_post" value="texto">
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.5px;">Etiquetar juego / Comunidad</label>
+        <select name="juego" style="width:100%;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:10px;padding:10px 14px;outline:none;font-family:inherit;font-size:13px;cursor:pointer;">
+          <option value="">Ninguno (General)</option>
+          <option value="Valorant">Valorant</option>
+          <option value="Minecraft">Minecraft</option>
+          <option value="Fortnite">Fortnite</option>
+          <option value="League of Legends">League of Legends</option>
+          <option value="Rocket League">Rocket League</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.5px;">¿Qué quieres compartir?</label>
+        <textarea name="contenido" placeholder="Escribe algo increíble..." style="width:100%;height:120px;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:12px;padding:14px;box-sizing:border-box;font-family:inherit;font-size:14px;outline:none;resize:none;"></textarea>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:12px;border-top:1px solid var(--border-color);padding-top:16px;margin-top:20px;">
+        <button type="button" onclick="closePostModal()" class="btn btn-secondary" style="border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;">Cancelar</button>
+        <button type="submit" class="btn btn-primary" style="border-radius:10px;padding:10px 24px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(139,92,246,0.3);"><i class="fas fa-paper-plane" style="margin-right:6px;"></i> Publicar</button>
+      </div>
+    </form>
+
+    <!-- Form 2: Imagen -->
+    <form id="post-form-imagen" class="post-creation-form" action="{{ url_for('jugador.crear_publicacion') }}" method="POST" enctype="multipart/form-data" style="display:none;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_post" value="imagen">
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.5px;">Etiquetar juego / Comunidad</label>
+        <select name="juego" style="width:100%;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:10px;padding:10px 14px;outline:none;font-family:inherit;font-size:13px;cursor:pointer;">
+          <option value="">Ninguno (General)</option>
+          <option value="Valorant">Valorant</option>
+          <option value="Minecraft">Minecraft</option>
+          <option value="Fortnite">Fortnite</option>
+          <option value="League of Legends">League of Legends</option>
+          <option value="Rocket League">Rocket League</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.5px;">Descripción de la imagen (opcional)</label>
+        <textarea name="contenido" placeholder="Escribe un pie de foto o descripción..." style="width:100%;height:80px;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:12px;padding:14px;box-sizing:border-box;font-family:inherit;font-size:14px;outline:none;resize:none;"></textarea>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <button type="button" onclick="document.getElementById('img-file-input').click()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--accent-purple);color:white;border:none;cursor:pointer;font-family:inherit;"><i class="far fa-image"></i> Seleccionar imagen</button>
+          <span style="font-size:11px;color:var(--text-muted);">PNG, JPG · Máx 10 MB</span>
+          <input type="file" name="imagen_archivo" id="img-file-input" accept="image/*" style="display:none;" onchange="previewImage(this)">
+        </div>
+        <div id="image-preview-container" style="display:none;position:relative;">
+          <img id="image-preview" src="#" alt="Preview" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;">
+          <button type="button" onclick="removeImagePreview()" style="position:absolute;top:8px;right:8px;background:rgba(239,68,68,0.85);color:white;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:12px;border-top:1px solid var(--border-color);padding-top:16px;margin-top:20px;">
+        <button type="button" onclick="closePostModal()" class="btn btn-secondary" style="border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;">Cancelar</button>
+        <button type="submit" class="btn btn-primary" style="border-radius:10px;padding:10px 24px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(139,92,246,0.3);"><i class="fas fa-paper-plane" style="margin-right:6px;"></i> Publicar</button>
+      </div>
+    </form>
+
+    <!-- Form 3: Video -->
+    <form id="post-form-video" class="post-creation-form" action="{{ url_for('jugador.crear_publicacion') }}" method="POST" enctype="multipart/form-data" style="display:none;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_post" value="video">
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.5px;">Etiquetar juego / Comunidad</label>
+        <select name="juego" style="width:100%;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:10px;padding:10px 14px;outline:none;font-family:inherit;font-size:13px;cursor:pointer;">
+          <option value="">Ninguno (General)</option>
+          <option value="Valorant">Valorant</option>
+          <option value="Minecraft">Minecraft</option>
+          <option value="Fortnite">Fortnite</option>
+          <option value="League of Legends">League of Legends</option>
+          <option value="Rocket League">Rocket League</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.5px;">Descripción del video (opcional)</label>
+        <textarea name="contenido" placeholder="Escribe una descripción del video..." style="width:100%;height:80px;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:12px;padding:14px;box-sizing:border-box;font-family:inherit;font-size:14px;outline:none;resize:none;"></textarea>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <button type="button" onclick="document.getElementById('video-file-input').click()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--accent-purple);color:white;border:none;cursor:pointer;font-family:inherit;"><i class="fas fa-video"></i> Seleccionar video</button>
+          <span style="font-size:11px;color:var(--text-muted);">MP4, MOV, AVI · Máx 100 MB</span>
+          <input type="file" name="video_archivo" id="video-file-input" accept="video/*" style="display:none;" onchange="previewVideo(this)">
+        </div>
+        <div id="video-preview-container" style="display:none;border-radius:10px;overflow:hidden;position:relative;background:#000;">
+          <video id="video-preview-tag" controls style="width:100%;max-height:250px;display:block;" preload="metadata"></video>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(0,0,0,0.3);">
+            <i class="fas fa-file-video" style="font-size:14px;color:var(--accent-purple);"></i>
+            <span id="video-filename-label" style="font-size:11px;color:rgba(255,255,255,0.6);flex:1;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;"></span>
+            <button type="button" onclick="removeVideoPreview()" style="background:none;border:none;color:#ef4444;font-size:14px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:12px;border-top:1px solid var(--border-color);padding-top:16px;margin-top:20px;">
+        <button type="button" onclick="closePostModal()" class="btn btn-secondary" style="border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;">Cancelar</button>
+        <button type="submit" class="btn btn-primary" style="border-radius:10px;padding:10px 24px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(139,92,246,0.3);"><i class="fas fa-paper-plane" style="margin-right:6px;"></i> Publicar</button>
+      </div>
+    </form>
+
+    <!-- Form 4: Clip -->
+    <form id="post-form-clip" class="post-creation-form" action="{{ url_for('jugador.crear_publicacion') }}" method="POST" enctype="multipart/form-data" style="display:none;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_post" value="clip">
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.5px;">Etiquetar juego / Comunidad</label>
+        <select name="juego" style="width:100%;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:10px;padding:10px 14px;outline:none;font-family:inherit;font-size:13px;cursor:pointer;">
+          <option value="">Ninguno (General)</option>
+          <option value="Valorant">Valorant</option>
+          <option value="Minecraft">Minecraft</option>
+          <option value="Fortnite">Fortnite</option>
+          <option value="League of Legends">League of Legends</option>
+          <option value="Rocket League">Rocket League</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.5px;">Descripción del clip (opcional)</label>
+        <textarea name="contenido" placeholder="Escribe una descripción del clip..." style="width:100%;height:80px;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:12px;padding:14px;box-sizing:border-box;font-family:inherit;font-size:14px;outline:none;resize:none;"></textarea>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <button type="button" onclick="document.getElementById('clip-file-input').click()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;background:#60A5FA;color:white;border:none;cursor:pointer;font-family:inherit;"><i class="fas fa-film"></i> Seleccionar clip</button>
+          <span style="font-size:11px;color:var(--text-muted);">MP4, MOV · Máx 1 min · Máx 30 MB</span>
+          <input type="file" name="clip_archivo" id="clip-file-input" accept="video/*" style="display:none;" onchange="previewClip(this)">
+        </div>
+        <div id="clip-preview-container" style="display:none;border-radius:10px;overflow:hidden;position:relative;background:#000;">
+          <video id="clip-preview-tag" controls style="width:100%;max-height:250px;display:block;" preload="metadata"></video>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(0,0,0,0.3);">
+            <i class="fas fa-film" style="font-size:14px;color:#60A5FA;"></i>
+            <span id="clip-filename-label" style="font-size:11px;color:rgba(255,255,255,0.6);flex:1;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;"></span>
+            <span id="clip-duration-label" style="font-size:11px;color:var(--text-muted);"></span>
+            <button type="button" onclick="removeClipPreview()" style="background:none;border:none;color:#ef4444;font-size:14px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:12px;border-top:1px solid var(--border-color);padding-top:16px;margin-top:20px;">
+        <button type="button" onclick="closePostModal()" class="btn btn-secondary" style="border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;">Cancelar</button>
+        <button type="submit" class="btn btn-primary" style="border-radius:10px;padding:10px 24px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(139,92,246,0.3);"><i class="fas fa-paper-plane" style="margin-right:6px;"></i> Publicar</button>
+      </div>
+    </form>
+
+    <!-- Form 5: Encuesta -->
+    <form id="post-form-encuesta" class="post-creation-form" action="{{ url_for('jugador.crear_publicacion') }}" method="POST" enctype="multipart/form-data" style="display:none;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_post" value="poll">
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.5px;">Etiquetar juego / Comunidad</label>
+        <select name="juego" style="width:100%;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:10px;padding:10px 14px;outline:none;font-family:inherit;font-size:13px;cursor:pointer;">
+          <option value="">Ninguno (General)</option>
+          <option value="Valorant">Valorant</option>
+          <option value="Minecraft">Minecraft</option>
+          <option value="Fortnite">Fortnite</option>
+          <option value="League of Legends">League of Legends</option>
+          <option value="Rocket League">Rocket League</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.5px;">Detalles o descripción (opcional)</label>
+        <textarea name="contenido" placeholder="Agrega contexto a tu encuesta..." style="width:100%;height:60px;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:12px;padding:14px;box-sizing:border-box;font-family:inherit;font-size:14px;outline:none;resize:none;"></textarea>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;letter-spacing:0.5px;"><i class="fas fa-poll" style="color:var(--accent-purple);margin-right:4px;"></i> Pregunta</label>
+        <div style="margin-bottom:12px;">
+          <input type="text" name="poll_pregunta" id="poll-question-input" placeholder="¿Qué prefieren?" style="width:100%;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:10px;padding:12px;outline:none;font-family:inherit;font-size:13px;">
+        </div>
+        <div id="poll-options-container" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:12px;color:var(--text-muted);font-weight:600;width:20px;">1</span>
+            <input type="text" name="poll_op[]" placeholder="Escribe una opción..." style="flex:1;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:10px;padding:10px 12px;outline:none;font-family:inherit;font-size:13px;">
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:12px;color:var(--text-muted);font-weight:600;width:20px;">2</span>
+            <input type="text" name="poll_op[]" placeholder="Escribe una opción..." style="flex:1;background:var(--bg-dark);color:white;border:1px solid var(--border-color);border-radius:10px;padding:10px 12px;outline:none;font-family:inherit;font-size:13px;">
+          </div>
+        </div>
+        <button type="button" onclick="addPollOption()" style="background:none;border:none;color:var(--accent-purple);font-size:12px;font-weight:700;cursor:pointer;margin-bottom:12px;padding:0;display:flex;align-items:center;gap:6px;"><i class="fas fa-plus"></i> Añadir opción</button>
+
+        <div style="display:flex;gap:16px;flex-wrap:wrap;padding:10px 12px;background:var(--bg-dark);border-radius:10px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;">
+            <input type="checkbox" name="poll_multiple" value="1"> Múltiple
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;">
+            <input type="checkbox" name="poll_change" value="1"> Cambiar voto
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;">
+            <input type="checkbox" name="poll_hide_results" value="1"> Ocultar resultados
+          </label>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);">
+            <i class="far fa-clock"></i>
+            <select name="poll_duration" style="background:none;color:var(--text-muted);border:1px solid var(--border-color);border-radius:6px;padding:4px 6px;font-size:11px;outline:none;">
+              <option value="1h">1 hora</option>
+              <option value="6h">6 horas</option>
+              <option value="12h">12 horas</option>
+              <option value="24h" selected>24 horas</option>
+              <option value="3d">3 días</option>
+              <option value="7d">7 días</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:12px;border-top:1px solid var(--border-color);padding-top:16px;margin-top:20px;">
+        <button type="button" onclick="closePostModal()" class="btn btn-secondary" style="border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;">Cancelar</button>
+        <button type="submit" class="btn btn-primary" style="border-radius:10px;padding:10px 24px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(139,92,246,0.3);"><i class="fas fa-paper-plane" style="margin-right:6px;"></i> Publicar</button>
+      </div>
+    </form>
+
+  </div>
+</div>

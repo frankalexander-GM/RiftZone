@@ -9,8 +9,6 @@ def crear_notificacion(usuario_id, tipo, mensaje, enlace=None, icono=None):
         'comentario': 'fas fa-comment',
         'respuesta': 'fas fa-reply',
         'mencion': 'fas fa-at',
-        'torneo_inscripcion': 'fas fa-trophy',
-        'torneo_recordatorio': 'fas fa-clock',
         'sistema': 'fas fa-bell',
     }
 

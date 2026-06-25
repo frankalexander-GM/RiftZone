@@ -3,10 +3,104 @@
 {% block title %}VIP - RiftZone{% endblock %}
 
 {% block content %}
+<div class="page">
+
+  <div class="text-center premium-hero">
+    <div class="premium-hero-icon">
+      <i class="fas fa-crown"></i>
+    </div>
+    <h2 class="section-title premium-hero-title">Desbloquea el Estatus VIP</h2>
+    <p class="section-subtitle" style="max-width:540px; margin:0 auto 14px;">Personaliza tu perfil, gana RiftCoins exclusivos y destaca en toda la comunidad con una membresía premium.</p>
+    <span class="badge badge-purple"><i class="fas fa-lock"></i> Cada pase se activa una sola vez por cuenta</span>
+  </div>
+
+  {% if current_user.es_premium %}
+  <div class="card card-glass vip-active-banner">
+    <div class="card-body text-center">
+      <h3 style="color:#facc15; font-size:22px; font-weight:700; margin:0 0 6px;"><i class="fas fa-crown"></i> ¡Eres VIP {{ current_user.membresia_tipo|capitalize }}!</h3>
+      <p class="text-muted text-sm" style="margin:0;">Pases activados: {% if planes_reclamados %}{{ planes_reclamados|join(', ')|capitalize }}{% else %}Ninguno{% endif %} &mdash; Puedes activar otro nivel que aún no hayas reclamado.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="grid-3 plans-grid">
+    <div class="card card-hover plan-card plan-card--silver">
+      <div class="plan-icon plan-icon--silver"><i class="fas fa-medal"></i></div>
+      <div class="plan-name plan-name--silver">Pase Plata</div>
+      <div class="plan-price">$4.99 <span>/ mes</span></div>
+      <div class="plan-coins plan-coins--silver"><i class="fas fa-coins"></i> +500 RiftCoins</div>
+      <ul class="plan-features">
+        <li><i class="fas fa-check feat-check"></i> Insignia VIP Básica</li>
+        <li><i class="fas fa-check feat-check"></i> 500 RiftCoins al mes</li>
+        <li><i class="fas fa-check feat-check"></i> Acceso a canales VIP</li>
+      </ul>
+      {% with plan_key='plata', btn_label='Activar Plata' %}
+      {% include 'jugador/_vip_plan_button.html' %}
+      {% endwith %}
+    </div>
+
+    <div class="card card-hover plan-card plan-card--gold">
+      <span class="badge badge-yellow plan-badge"><i class="fas fa-star"></i> RECOMENDADO</span>
+      <div class="plan-icon plan-icon--gold"><i class="fas fa-crown"></i></div>
+      <div class="plan-name plan-name--gold">Pase Oro</div>
+      <div class="plan-price">$9.99 <span>/ mes</span></div>
+      <div class="plan-coins plan-coins--gold"><i class="fas fa-coins"></i> +1,500 RiftCoins</div>
+      <ul class="plan-features">
+        <li><i class="fas fa-star feat-star"></i> Corona Dorada VIP</li>
+        <li><i class="fas fa-star feat-star"></i> 1,500 RiftCoins al mes</li>
+        <li><i class="fas fa-star feat-star"></i> Resplandor en Publicaciones</li>
+        <li><i class="fas fa-star feat-star"></i> Nombre destacado en Chat</li>
+      </ul>
+      {% with plan_key='oro', btn_label='Activar Oro' %}
+      {% include 'jugador/_vip_plan_button.html' %}
+      {% endwith %}
+    </div>
+
+    <div class="card card-hover plan-card plan-card--diamond">
+      <div class="plan-icon plan-icon--diamond"><i class="fas fa-gem"></i></div>
+      <div class="plan-name plan-name--diamond">Pase Diamante</div>
+      <div class="plan-price">$19.99 <span>/ mes</span></div>
+      <div class="plan-coins plan-coins--diamond"><i class="fas fa-coins"></i> +4,000 RiftCoins</div>
+      <ul class="plan-features">
+        <li><i class="fas fa-gem feat-gem"></i> Todos los beneficios Oro</li>
+        <li><i class="fas fa-gem feat-gem"></i> 4,000 RiftCoins al mes</li>
+        <li><i class="fas fa-gem feat-gem"></i> Fondos animados para perfil</li>
+        <li><i class="fas fa-gem feat-gem"></i> Soporte Técnico Prioritario</li>
+      </ul>
+      {% with plan_key='diamante', btn_label='Activar Diamante' %}
+      {% include 'jugador/_vip_plan_button.html' %}
+      {% endwith %}
+    </div>
+  </div>
+
+  <div class="features-compare">
+    <h3 class="section-title"><i class="fas fa-table text-gradient"></i> Comparativa de beneficios</h3>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Beneficio</th>
+          <th>Plata</th>
+          <th>Oro</th>
+          <th>Diamante</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Insignia VIP</td><td><i class="fas fa-check check"></i></td><td><i class="fas fa-check check"></i></td><td><i class="fas fa-check check"></i></td></tr>
+        <tr><td>Marco de perfil</td><td><i class="fas fa-check check"></i></td><td><i class="fas fa-check check"></i></td><td><i class="fas fa-check check"></i></td></tr>
+        <tr><td>Canales VIP</td><td><i class="fas fa-check check"></i></td><td><i class="fas fa-check check"></i></td><td><i class="fas fa-check check"></i></td></tr>
+        <tr><td>Nombre destacado en Chat</td><td><i class="fas fa-times cross"></i></td><td><i class="fas fa-check check"></i></td><td><i class="fas fa-check check"></i></td></tr>
+        <tr><td>Resplandor en publicaciones</td><td><i class="fas fa-times cross"></i></td><td><i class="fas fa-check check"></i></td><td><i class="fas fa-check check"></i></td></tr>
+        <tr><td>RiftCoins mensuales</td><td>500 RC</td><td>1,500 RC</td><td>4,000 RC</td></tr>
+        <tr><td>Fondo animado de perfil</td><td><i class="fas fa-times cross"></i></td><td><i class="fas fa-times cross"></i></td><td><i class="fas fa-check check"></i></td></tr>
+        <tr><td>Soporte prioritario</td><td><i class="fas fa-times cross"></i></td><td><i class="fas fa-times cross"></i></td><td><i class="fas fa-check check"></i></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
 <style>
 .premium-hero {
-  text-align: center;
-  padding: 48px 24px 32px;
   position: relative;
   overflow: hidden;
 }
@@ -39,142 +133,36 @@
   background-clip: text;
   filter: drop-shadow(0 0 12px rgba(250,204,21,0.4));
 }
-.premium-hero h2 {
-  font-size: 36px;
-  font-weight: 800;
+.premium-hero-title {
   background: linear-gradient(135deg, #fff 30%, #FACC15 70%, #A78BFA);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 10px;
-  letter-spacing: -0.5px;
-}
-.premium-hero p {
-  color: var(--text-muted);
-  font-size: 16px;
-  max-width: 540px;
-  margin: 0 auto;
-  line-height: 1.6;
-}
-.premium-hero .note {
-  display: inline-block;
-  margin-top: 14px;
-  padding: 6px 16px;
-  background: rgba(139,92,246,0.1);
-  border: 1px solid rgba(139,92,246,0.2);
-  border-radius: 20px;
-  color: var(--accent-purple);
-  font-size: 12px;
-  font-weight: 600;
-}
-.premium-hero .note i {
-  margin-right: 6px;
 }
 
-/* Already VIP banner */
 .vip-active-banner {
-  max-width: 860px;
-  margin: 0 auto 40px;
-  padding: 28px 32px;
-  background: linear-gradient(135deg, rgba(250,204,21,0.12), rgba(139,92,246,0.08));
-  border: 1px solid rgba(250,204,21,0.3);
-  border-radius: 20px;
-  text-align: center;
-  backdrop-filter: blur(8px);
-  position: relative;
-  overflow: hidden;
-}
-.vip-active-banner::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: conic-gradient(from 0deg, transparent, rgba(250,204,21,0.05), transparent, rgba(139,92,246,0.05), transparent);
-  animation: vipGlow 6s linear infinite;
-  pointer-events: none;
-}
-@keyframes vipGlow {
-  to { transform: rotate(360deg); }
-}
-.vip-active-banner h3 {
-  font-size: 22px;
-  font-weight: 700;
-  color: #FACC15;
-  margin-bottom: 6px;
-  position: relative;
-}
-.vip-active-banner p {
-  color: var(--text-muted);
-  font-size: 14px;
-  position: relative;
+  margin-bottom: 40px;
 }
 
-/* Plans grid */
 .plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
-  max-width: 960px;
-  margin: 0 auto 48px;
-  padding: 0 16px;
+  margin-bottom: 48px;
 }
 
 .plan-card {
-  border-radius: 20px;
-  padding: 32px 28px;
   text-align: center;
+  padding: 32px 28px;
+  overflow: visible;
   position: relative;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  display: flex;
-  flex-direction: column;
 }
-.plan-card:hover {
-  transform: translateY(-6px);
-}
-.plan-card--silver {
-  background: linear-gradient(180deg, rgba(156,163,175,0.08), var(--bg-card));
-  border: 1px solid rgba(156,163,175,0.25);
-}
-.plan-card--silver:hover {
-  box-shadow: 0 20px 50px rgba(156,163,175,0.08);
-}
-.plan-card--gold {
-  background: linear-gradient(180deg, rgba(250,204,21,0.12), var(--bg-card) 60%);
-  border: 1.5px solid rgba(250,204,21,0.4);
-  box-shadow: 0 10px 40px rgba(250,204,21,0.1);
-  z-index: 2;
-}
-.plan-card--gold:hover {
-  box-shadow: 0 20px 60px rgba(250,204,21,0.2);
-}
-.plan-card--diamond {
-  background: linear-gradient(180deg, rgba(139,92,246,0.08), var(--bg-card));
-  border: 1px solid rgba(139,92,246,0.25);
-}
-.plan-card--diamond:hover {
-  box-shadow: 0 20px 50px rgba(139,92,246,0.08);
-}
-
 .plan-badge {
   position: absolute;
-  top: -12px;
+  top: -13px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 5px 18px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
+  z-index: 2;
 }
-.plan-badge--gold {
-  background: linear-gradient(135deg, #FACC15, #EAB308);
-  color: #000;
-  box-shadow: 0 4px 15px rgba(250,204,21,0.35);
-}
-
 .plan-icon {
   width: 56px;
   height: 56px;
@@ -185,18 +173,9 @@
   justify-content: center;
   font-size: 24px;
 }
-.plan-icon--silver {
-  background: rgba(156,163,175,0.12);
-  color: #9CA3AF;
-}
-.plan-icon--gold {
-  background: rgba(250,204,21,0.12);
-  color: #FACC15;
-}
-.plan-icon--diamond {
-  background: rgba(139,92,246,0.12);
-  color: #A78BFA;
-}
+.plan-icon--silver { background: rgba(156,163,175,0.12); color: #9CA3AF; }
+.plan-icon--gold { background: rgba(250,204,21,0.12); color: #FACC15; }
+.plan-icon--diamond { background: rgba(139,92,246,0.12); color: #A78BFA; }
 
 .plan-name {
   font-size: 22px;
@@ -229,19 +208,9 @@
   font-weight: 700;
   margin: 8px 0 24px;
 }
-.plan-coins--silver {
-  background: rgba(156,163,175,0.08);
-  color: #9CA3AF;
-}
-.plan-coins--gold {
-  background: rgba(250,204,21,0.1);
-  border: 1px solid rgba(250,204,21,0.2);
-  color: #FACC15;
-}
-.plan-coins--diamond {
-  background: rgba(139,92,246,0.08);
-  color: #A78BFA;
-}
+.plan-coins--silver { background: rgba(156,163,175,0.08); color: #9CA3AF; }
+.plan-coins--gold { background: rgba(250,204,21,0.10); border: 1px solid rgba(250,204,21,0.20); color: #FACC15; }
+.plan-coins--diamond { background: rgba(139,92,246,0.08); color: #A78BFA; }
 
 .plan-features {
   list-style: none;
@@ -260,72 +229,17 @@
   border-bottom: 1px solid rgba(255,255,255,0.04);
 }
 .plan-features li:last-child { border-bottom: none; }
-.plan-features li i {
-  width: 18px;
-  text-align: center;
-  font-size: 12px;
-}
+.plan-features li i { width: 18px; text-align: center; font-size: 12px; }
 .plan-features li .feat-check { color: var(--accent-green); }
 .plan-features li .feat-star { color: #FACC15; }
 .plan-features li .feat-gem { color: #A78BFA; }
 
-.plan-btn {
-  width: 100%;
-  padding: 14px 24px;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-}
-.plan-btn--silver {
-  background: rgba(156,163,175,0.12);
-  color: #D1D5DB;
-  border: 1px solid rgba(156,163,175,0.25);
-}
-.plan-btn--silver:hover {
-  background: rgba(156,163,175,0.2);
-}
-.plan-btn--gold {
-  background: linear-gradient(135deg, #FACC15, #EAB308);
-  color: #000;
-  box-shadow: 0 4px 20px rgba(250,204,21,0.3);
-}
-.plan-btn--gold:hover {
-  box-shadow: 0 6px 30px rgba(250,204,21,0.45);
-  transform: scale(1.02);
-}
-.plan-btn--diamond {
-  background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(0,229,255,0.15));
-  color: #A78BFA;
-  border: 1px solid rgba(139,92,246,0.3);
-}
-.plan-btn--diamond:hover {
-  background: linear-gradient(135deg, rgba(139,92,246,0.3), rgba(0,229,255,0.2));
-}
-.plan-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-/* Features comparison */
 .features-compare {
-  max-width: 960px;
   margin: 0 auto 48px;
-  padding: 0 16px;
 }
 .features-compare h3 {
   text-align: center;
-  font-size: 20px;
-  font-weight: 700;
-  color: #fff;
   margin-bottom: 24px;
-}
-.features-compare h3 i {
-  color: var(--accent-purple);
-  margin-right: 8px;
 }
 .compare-table {
   width: 100%;
@@ -355,160 +269,18 @@
   color: #d1d5db;
   font-weight: 500;
 }
-.compare-table tr {
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-}
+.compare-table tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
 .compare-table tr:last-child { border-bottom: none; }
-.compare-table tr:hover td {
-  background: rgba(255,255,255,0.02);
-}
+.compare-table tr:hover td { background: rgba(255,255,255,0.02); }
 .compare-table .check { color: var(--accent-green); }
 .compare-table .cross { color: var(--accent-red); opacity: 0.4; }
-.compare-table .star { color: #FACC15; }
 
-/* Responsive */
 @media (max-width: 768px) {
-  .premium-hero h2 { font-size: 28px; }
   .plan-card { padding: 24px 20px; }
   .compare-table th,
   .compare-table td { padding: 10px 12px; font-size: 12px; }
-  .vip-active-banner { padding: 20px 16px; }
 }
 </style>
-
-<div class="premium-hero">
-  <div class="premium-hero-icon">
-    <i class="fas fa-crown"></i>
-  </div>
-  <h2>Desbloquea el Estatus VIP</h2>
-  <p>Personaliza tu perfil, gana RiftCoins exclusivos y destaca en toda la comunidad con una membresía premium.</p>
-  <span class="note"><i class="fas fa-lock"></i> Cada pase se activa una sola vez por cuenta</span>
-</div>
-
-{% if current_user.es_premium %}
-<div class="vip-active-banner">
-  <h3><i class="fas fa-crown"></i> ¡Eres VIP {{ current_user.membresia_tipo|capitalize }}!</h3>
-  <p>Pases activados: {% if planes_reclamados %}{{ planes_reclamados|join(', ')|capitalize }}{% else %}Ninguno{% endif %} &mdash; Puedes activar otro nivel que aún no hayas reclamado.</p>
-</div>
-{% endif %}
-
-<div class="plans-grid">
-  <!-- Pase Plata -->
-  <div class="plan-card plan-card--silver">
-    <div class="plan-icon plan-icon--silver"><i class="fas fa-medal"></i></div>
-    <div class="plan-name plan-name--silver">Pase Plata</div>
-    <div class="plan-price">$4.99 <span>/ mes</span></div>
-    <div class="plan-coins plan-coins--silver"><i class="fas fa-coins"></i> +500 RiftCoins</div>
-    <ul class="plan-features">
-      <li><i class="fas fa-check feat-check"></i> Insignia VIP Básica</li>
-      <li><i class="fas fa-check feat-check"></i> 500 RiftCoins al mes</li>
-      <li><i class="fas fa-check feat-check"></i> Acceso a canales VIP</li>
-    </ul>
-    {% with plan_key='plata', btn_label='Activar Plata' %}
-    {% include 'jugador/_vip_plan_button.html' %}
-    {% endwith %}
-  </div>
-
-  <!-- Pase Oro -->
-  <div class="plan-card plan-card--gold">
-    <div class="plan-badge plan-badge--gold"><i class="fas fa-star"></i> Más popular</div>
-    <div class="plan-icon plan-icon--gold"><i class="fas fa-crown"></i></div>
-    <div class="plan-name plan-name--gold">Pase Oro</div>
-    <div class="plan-price">$9.99 <span>/ mes</span></div>
-    <div class="plan-coins plan-coins--gold"><i class="fas fa-coins"></i> +1,500 RiftCoins</div>
-    <ul class="plan-features">
-      <li><i class="fas fa-star feat-star"></i> Corona Dorada VIP</li>
-      <li><i class="fas fa-star feat-star"></i> 1,500 RiftCoins al mes</li>
-      <li><i class="fas fa-star feat-star"></i> Resplandor en Publicaciones</li>
-      <li><i class="fas fa-star feat-star"></i> Nombre destacado en Chat</li>
-    </ul>
-    {% with plan_key='oro', btn_label='Activar Oro' %}
-    {% include 'jugador/_vip_plan_button.html' %}
-    {% endwith %}
-  </div>
-
-  <!-- Pase Diamante -->
-  <div class="plan-card plan-card--diamond">
-    <div class="plan-icon plan-icon--diamond"><i class="fas fa-gem"></i></div>
-    <div class="plan-name plan-name--diamond">Pase Diamante</div>
-    <div class="plan-price">$19.99 <span>/ mes</span></div>
-    <div class="plan-coins plan-coins--diamond"><i class="fas fa-coins"></i> +4,000 RiftCoins</div>
-    <ul class="plan-features">
-      <li><i class="fas fa-gem feat-gem"></i> Todos los beneficios Oro</li>
-      <li><i class="fas fa-gem feat-gem"></i> 4,000 RiftCoins al mes</li>
-      <li><i class="fas fa-gem feat-gem"></i> Fondos animados para perfil</li>
-      <li><i class="fas fa-gem feat-gem"></i> Soporte Técnico Prioritario</li>
-    </ul>
-    {% with plan_key='diamante', btn_label='Activar Diamante' %}
-    {% include 'jugador/_vip_plan_button.html' %}
-    {% endwith %}
-  </div>
-</div>
-
-<!-- Feature Comparison -->
-<div class="features-compare">
-  <h3><i class="fas fa-table"></i> Comparativa de beneficios</h3>
-  <table class="compare-table">
-    <thead>
-      <tr>
-        <th>Beneficio</th>
-        <th>Plata</th>
-        <th>Oro</th>
-        <th>Diamante</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Insignia VIP</td>
-        <td><i class="fas fa-check check"></i></td>
-        <td><i class="fas fa-check check"></i></td>
-        <td><i class="fas fa-check check"></i></td>
-      </tr>
-      <tr>
-        <td>Marco de perfil</td>
-        <td><i class="fas fa-check check"></i></td>
-        <td><i class="fas fa-check check"></i></td>
-        <td><i class="fas fa-check check"></i></td>
-      </tr>
-      <tr>
-        <td>Canales VIP</td>
-        <td><i class="fas fa-check check"></i></td>
-        <td><i class="fas fa-check check"></i></td>
-        <td><i class="fas fa-check check"></i></td>
-      </tr>
-      <tr>
-        <td>Nombre destacado en Chat</td>
-        <td><i class="fas fa-times cross"></i></td>
-        <td><i class="fas fa-check check"></i></td>
-        <td><i class="fas fa-check check"></i></td>
-      </tr>
-      <tr>
-        <td>Resplandor en publicaciones</td>
-        <td><i class="fas fa-times cross"></i></td>
-        <td><i class="fas fa-check check"></i></td>
-        <td><i class="fas fa-check check"></i></td>
-      </tr>
-      <tr>
-        <td>RiftCoins mensuales</td>
-        <td>500 RC</td>
-        <td>1,500 RC</td>
-        <td>4,000 RC</td>
-      </tr>
-      <tr>
-        <td>Fondo animado de perfil</td>
-        <td><i class="fas fa-times cross"></i></td>
-        <td><i class="fas fa-times cross"></i></td>
-        <td><i class="fas fa-check check"></i></td>
-      </tr>
-      <tr>
-        <td>Soporte prioritario</td>
-        <td><i class="fas fa-times cross"></i></td>
-        <td><i class="fas fa-times cross"></i></td>
-        <td><i class="fas fa-check check"></i></td>
-      </tr>
-    </tbody>
-  </table>
-</div>
 
 <script>
 function comprarPremium(plan, btn) {

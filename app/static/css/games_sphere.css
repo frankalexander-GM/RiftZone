@@ -552,6 +552,8 @@ input, textarea {
     min-height: 0;
     overflow: hidden;
     width: 100%;
+    display: flex;
+    justify-content: center;
 }
 
 .layout-grid {
@@ -559,6 +561,7 @@ input, textarea {
     grid-template-columns: 1fr;
     gap: 0;
     width: 100%;
+    max-width: 1400px;
     height: 100%;
     min-height: 0;
 }
@@ -621,7 +624,7 @@ input, textarea {
         position: fixed;
         top: 0;
         left: 0;
-        width: min(320px, 85vw);
+        width: min(260px, 80vw);
         height: 100vh;
         z-index: 999;
         transform: translateX(-100%);
@@ -679,8 +682,8 @@ input, textarea {
     }
 
     .left-sidebar .menu-item {
-        padding: 14px 20px;
-        font-size: 14px;
+        padding: 12px 18px;
+        font-size: 13px;
     }
 
     .left-sidebar .menu-title {
@@ -1198,10 +1201,10 @@ input, textarea {
 .menu-item {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 12px 24px;
+    gap: 12px;
+    padding: 10px 18px;
     color: var(--text-muted);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 500;
     transition: all 0.2s ease;
     position: relative;
@@ -1913,7 +1916,6 @@ input, textarea {
 .post-type-btn.image i { color: #10B981; }
 .post-type-btn.clip i { color: #8B5CF6; }
 .post-type-btn.poll i { color: #3B82F6; }
-.post-type-btn.tournament i { color: #FF2D95; }
 
 .post-type-btn.active {
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(255, 45, 149, 0.2));
@@ -3153,64 +3155,6 @@ button.action-btn {
     color: #FACC15;
 }
 
-/* CLANS WIDGET */
-.clan-card {
-    background: linear-gradient(135deg, rgba(255, 45, 149, 0.05), rgba(139, 92, 246, 0.05));
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.clan-logo {
-    width: 48px;
-    height: 48px;
-    background-color: #1a1a1a;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--accent-magenta);
-    font-weight: 900;
-    font-size: 24px;
-    border: 1px solid rgba(255, 45, 149, 0.3);
-}
-
-.clan-info h4 {
-    font-size: 15px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
-}
-
-.role-badge {
-    background-color: rgba(139, 92, 246, 0.2);
-    color: var(--accent-purple);
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    text-transform: uppercase;
-}
-
-.clan-members {
-    font-size: 12px;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 8px;
-}
-
-.clan-desc {
-    font-size: 12px;
-    color: var(--text-muted);
-    line-height: 1.4;
-}
-
 /* FRIENDS WIDGET */
 .friends-list {
     display: flex;
@@ -3632,15 +3576,19 @@ body.panel-open {
     .layout-grid {
         display: grid;
         grid-template-columns: repeat(12, 1fr);
-        gap: 24px;
-        padding: 0 16px;
+        gap: 12px;
+        padding: 0 24px;
         box-sizing: border-box;
         height: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
     }
 
     .left-sidebar {
         display: flex;
         grid-column: span 3;
+        max-width: 220px;
         border-right: none;
         border-radius: var(--radius-lg);
         border: 1px solid var(--border-color);
@@ -3648,6 +3596,10 @@ body.panel-open {
 
     .layout-feed {
         grid-column: span 9;
+    }
+
+    .layout-right-panel {
+        display: none !important;
     }
 
     .mobile-bottom-nav {
@@ -3662,27 +3614,8 @@ body.panel-open {
 
 /* xl (1280px+): panel derecho visible */
 @media (min-width: 1280px) {
-    .layout-feed {
-        grid-column: span 6;
-    }
-
-    .layout-right-panel:has(.feed-right-container) {
-        display: block;
-        grid-column: span 3;
-        min-width: 0;
-        overflow-y: auto;
-        max-height: 100%;
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--border-color);
-    }
-
-    .layout-right-panel:not(:has(.feed-right-container)) {
-        display: none;
-    }
-
-    /* Sin panel derecho: el feed usa 9 columnas */
-    .layout-grid:not(:has(.feed-right-container)) .layout-feed {
-        grid-column: span 9;
+    .layout-right-panel {
+        display: none !important;
     }
 
     .feed-right-container {
@@ -4261,7 +4194,15 @@ table {
     padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    position: relative;
+    scroll-behavior: smooth;
+}
+
+.chat-messages-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: auto;
 }
 
 .chat-loading,
@@ -4300,8 +4241,8 @@ table {
 .msg {
     display: flex;
     gap: 8px;
-    max-width: 70%;
-    margin-bottom: 4px;
+    max-width: 75%;
+    margin-bottom: 1px;
 }
 
 .msg-mine {
@@ -4322,14 +4263,24 @@ table {
     flex-shrink: 0;
 }
 
+.msg-avatar-spacer {
+    width: 30px;
+    flex-shrink: 0;
+}
+
 .msg-bubble {
     padding: 10px 14px;
     border-radius: var(--radius-md);
     position: relative;
+    transition: box-shadow 0.15s;
+}
+
+.msg-bubble:hover {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
 }
 
 .msg-mine .msg-bubble {
-    background: var(--accent-purple);
+    background: var(--chat-self, linear-gradient(135deg, #8B5CF6, #A78BFA));
     color: white;
     border-bottom-right-radius: 4px;
 }
@@ -4342,8 +4293,9 @@ table {
 
 .msg-text {
     font-size: 14px;
-    line-height: 1.4;
+    line-height: 1.45;
     word-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .msg-meta {
@@ -4358,6 +4310,10 @@ table {
     opacity: 0.6;
 }
 
+.msg-other .msg-time {
+    color: var(--text-muted);
+}
+
 .msg-read {
     font-size: 10px;
     opacity: 0.4;
@@ -4368,32 +4324,56 @@ table {
     color: var(--accent-blue);
 }
 
+.status-dot.online {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    display: inline-block;
+    margin-left: 4px;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px rgba(34,197,94,0.5);
+}
+
 /* ---- INPUT ---- */
 .chat-input-area {
     padding: 12px 20px;
     border-top: 1px solid var(--border-color);
     background: var(--bg-dark);
+    position: relative;
 }
 
 .chat-input-area form {
     display: flex;
     gap: 10px;
+    align-items: flex-end;
 }
 
-.chat-input-area input {
+.chat-input-area textarea {
     flex: 1;
-    padding: 12px 16px;
+    padding: 10px 16px;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-lg);
     color: var(--text-main);
     font-size: 14px;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    resize: none;
+    min-height: 40px;
+    max-height: 120px;
+    line-height: 1.4;
+    font-family: inherit;
+    scrollbar-width: thin;
 }
 
-.chat-input-area input:focus {
+.chat-input-area textarea:focus {
     border-color: var(--accent-purple);
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+}
+
+.chat-input-area textarea::placeholder {
+    color: var(--text-muted);
 }
 
 .chat-send-btn {
@@ -5131,6 +5111,72 @@ table {
     color: var(--accent-purple);
     text-decoration: underline;
 }
+.ph-game-tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: rgba(139, 92, 246, 0.2);
+    color: #C4B5FD;
+    text-decoration: none;
+    line-height: 1.4;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+.ph-game-tag:hover {
+    background: rgba(139, 92, 246, 0.4);
+    color: white;
+}
+.ph-game-tag--general {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    cursor: default;
+    pointer-events: none;
+}
+.ph-game-tag--general:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+}
+.repost-embed {
+    margin-top: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(255,255,255,0.02);
+}
+.repost-embed .repost-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    text-decoration: none;
+    color: inherit;
+}
+.repost-embed .repost-header:hover .repost-name {
+    text-decoration: underline;
+}
+.repost-embed .repost-header img {
+    width: 24px; height: 24px; border-radius: 50%; object-fit: cover;
+    flex-shrink: 0;
+}
+.repost-embed .repost-header .repost-name {
+    font-size: 12px; font-weight: 600; color: white;
+}
+.repost-embed .repost-content {
+    font-size: 13px; color: rgba(255,255,255,0.8);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.repost-embed .repost-content img,
+.repost-embed .repost-content video {
+    display: none;
+}
 
 /* ——— Modal Overlay (generic) ——— */
 .modal-overlay {
@@ -5228,4 +5274,19 @@ table {
 .post-content:active,
 .post-media:active {
     opacity: 0.85;
+}
+
+/* ===== SHARE MENU ===== */
+@keyframes shareMenuIn {
+    from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.share-menu button:active {
+    transform: scale(0.97);
+}
+
+/* ===== LIKED STATE ===== */
+button.liked i.fa-heart,
+button.liked {
+    color: #ef4444 !important;
 }

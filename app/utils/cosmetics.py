@@ -149,10 +149,6 @@ def color_nombre_etiqueta(user):
 
 def estilo_nombre_usuario(user):
     """Estilos inline seguros solo para el texto del nombre (no usar en chat)."""
-    from app.services.boost_service import color_nombre_boost
-    boost_color = color_nombre_boost(user.id_usuario) if user else None
-    if boost_color:
-        return f'color: {boost_color}; font-weight: 800; text-shadow: 0 0 8px {boost_color};'
     color = color_nombre_etiqueta(user)
     if not color:
         return ''

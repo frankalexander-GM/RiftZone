@@ -1,0 +1,22 @@
+<div id="comments-list-{{ p.id_publicacion }}">
+  {% for c in p.comentarios %}
+  <div class="cd-comment-item">
+    <img src="{{ c.autor | user_avatar }}" alt="">
+    <div class="cd-comment-bubble">
+      <div class="cd-comment-head">
+        <a href="{{ url_for('jugador.perfil_publico', username=c.autor.username) }}">{{ c.autor.nombre or c.autor.username }}</a>
+        <span>{{ c.fecha_creacion | timeago }}</span>
+      </div>
+      <p>{{ c.contenido }}</p>
+    </div>
+  </div>
+  {% else %}
+  <p class="cd-empty-msg" style="font-size:13px;color:var(--text-muted);margin:0 0 10px;">Sin comentarios aun. Se el primero.</p>
+  {% endfor %}
+</div>
+{% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+<form class="cd-comment-form" onsubmit="return comSubmitComment(event, {{ p.id_publicacion }})">
+  <input type="text" placeholder="Escribe un comentario..." required>
+  <button type="submit"><i class="fas fa-paper-plane"></i></button>
+</form>
+{% endif %}

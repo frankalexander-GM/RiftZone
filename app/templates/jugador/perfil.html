@@ -3,6 +3,139 @@
 
 {% block title %}{{ (usuario|nombre_display) if usuario is defined else (current_user|nombre_display) }} - RiftZone{% endblock %}
 
+{% block head %}
+<style>
+/* ── Post Cards Redesign ── */
+.pf-post-card {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px;
+  transition: all .3s; margin-bottom: 18px; position: relative;
+  animation: pfIn .4s ease forwards;
+  animation-delay: calc(var(--i,0) * 0.05s);
+  opacity: 0; transform: translateY(16px);
+}
+@keyframes pfIn { to{ opacity:1; transform:translateY(0); } }
+.pf-post-card:hover { border-color: rgba(139,92,246,.3); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,.15); }
+
+.pf-post-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 18px 0; justify-content: space-between;
+}
+.pf-post-author { display: flex; align-items: center; gap: 10px; text-decoration: none; min-width: 0; flex: 1; }
+.pf-post-avatar {
+  width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+  border: 2px solid transparent; transition: all .25s;
+}
+.pf-post-author:hover .pf-post-avatar { border-color: #8b5cf6; transform: scale(1.05); }
+.pf-author-info { min-width: 0; }
+.pf-author-name { font-size: 14px; font-weight: 700; color: white; display: block; }
+.pf-author-name:hover { color: #c4b5fd; }
+.pf-post-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 1px; }
+.pf-post-meta a, .pf-post-meta span { font-size: 11px; color: var(--text-muted); text-decoration: none; }
+.pf-post-meta a:hover { color: #c4b5fd; }
+.pf-meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-muted); display: inline-block; }
+.pf-game-tag {
+  font-size: 10px; font-weight: 700; padding: 2px 10px; border-radius: 100px;
+  background: rgba(139,92,246,.12); color: #c4b5fd; text-decoration: none;
+}
+.pf-game-tag:hover { background: rgba(139,92,246,.2); }
+.pf-game-tag--general { background: rgba(255,255,255,.05); color: var(--text-muted); }
+.pf-pin-badge { font-size: 10px; color: #f59e0b; display: inline-flex; align-items: center; gap: 3px; }
+.pf-boost-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 100px; display: inline-flex; align-items: center; gap: 3px; }
+
+.pf-post-dropdown { position: relative; }
+.pf-dropdown-btn {
+  width: 32px; height: 32px; border-radius: 8px; border: none;
+  background: transparent; color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; font-size: 14px;
+}
+.pf-dropdown-btn:hover { background: rgba(255,255,255,.08); color: white; }
+
+.pf-post-content {
+  font-size: 14px; color: #d1d5db; line-height: 1.6;
+  padding: 12px 18px 0; margin: 0;
+}
+
+.pf-post-media { width: 100%; margin-top: 12px; }
+.pf-post-media img { width: 100%; max-height: 440px; object-fit: contain; display: block; background: #0a0818; }
+
+/* ── Repost embed ── */
+.pf-repost {
+  margin: 10px 16px 0; padding: 12px 14px;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.05);
+  border-radius: 14px; border-left: 3px solid #8b5cf6;
+}
+.pf-repost-header { display: flex; align-items: center; gap: 8px; text-decoration: none; margin-bottom: 6px; }
+.pf-repost-header img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+.pf-repost-name { font-size: 12px; font-weight: 700; color: white; }
+.pf-repost-name:hover { color: #c4b5fd; }
+.pf-repost-text { font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.4; }
+.pf-repost-media { width: 100%; border-radius: 8px; margin-top: 6px; max-height: 180px; object-fit: cover; position:relative; }
+.pf-vplay {
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.35);opacity:0;transition:opacity .25s;z-index:2;border-radius:8px;
+}
+.pf-repost-media:hover .pf-vplay,
+.pf-post-media:hover .pf-vplay { opacity:1; }
+.pf-vplay i {
+  width:48px;height:48px;border-radius:50%;background:rgba(139,92,246,.9);
+  display:flex;align-items:center;justify-content:center;color:white;font-size:20px;
+  box-shadow:0 0 25px rgba(139,92,246,.3);transition:transform .2s;
+}
+.pf-vplay:hover i { transform:scale(1.1); }
+
+/* ── Actions ── */
+.pf-actions {
+  display: flex; align-items: center; gap: 2px;
+  padding: 10px 16px 14px; margin-top: 4px;
+}
+.pf-action-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 12px; border-radius: 8px; border: none;
+  background: transparent; color: var(--text-muted); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all .2s; font-family: inherit; text-decoration: none;
+}
+.pf-action-btn:hover { background: rgba(139,92,246,.1); color: white; transform: translateY(-1px); }
+.pf-action-btn:active { transform: scale(.92); }
+.pf-action-btn i { font-size: 14px; }
+.pf-action-btn.liked { color: #f43f5e; }
+.pf-action-btn.liked i { font-weight: 900; }
+
+/* ── Comments ── */
+.pf-comments {
+  border-top: 1px solid rgba(255,255,255,.05); padding: 16px 18px;
+  animation: pfSlide .25s ease;
+}
+@keyframes pfSlide { from{ opacity:0; max-height:0; } to{ opacity:1; max-height:500px; } }
+.pf-comment-item { display: flex; gap: 10px; margin-bottom: 14px; align-items: flex-start; }
+.pf-comment-item img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.pf-comment-bubble {
+  background: rgba(255,255,255,.04); padding: 10px 14px; border-radius: 14px; flex: 1;
+  border: 1px solid rgba(255,255,255,.04);
+}
+.pf-comment-bubble:hover { background: rgba(255,255,255,.06); }
+.pf-comment-head { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.pf-comment-head a { font-size: 12px; font-weight: 700; color: white; text-decoration: none; }
+.pf-comment-head a:hover { color: #8b5cf6; }
+.pf-comment-head span { font-size: 10px; color: var(--text-muted); }
+.pf-comment-bubble p { font-size: 13px; color: #d1d5db; margin: 0; line-height: 1.4; }
+.pf-comment-form { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+.pf-comment-form input {
+  flex: 1; padding: 9px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.05); color: white; font-size: 13px; font-family: inherit; outline: none;
+  transition: all .2s;
+}
+.pf-comment-form input:focus { border-color: rgba(139,92,246,.4); background: rgba(255,255,255,.08); }
+.pf-comment-form button {
+  width: 38px; height: 38px; border-radius: 50%; border: none;
+  background: #8b5cf6; color: white; cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s; flex-shrink: 0;
+}
+.pf-comment-form button:hover { opacity: .85; transform: scale(1.1); }
+</style>
+{% endblock %}
+
 {% block content %}
 {% set perfil_user = usuario if usuario is defined else current_user %}
 {% set is_own = perfil_user.id_usuario == current_user.id_usuario %}
@@ -264,7 +397,6 @@
             <button type="button" class="post-type-btn image"><i class="far fa-image"></i> Imagen</button>
             <button type="button" class="post-type-btn clip"><i class="fas fa-video"></i> Clip</button>
             <button type="button" class="post-type-btn poll"><i class="fas fa-poll"></i> Encuesta</button>
-            <button type="button" class="post-type-btn tournament"><i class="fas fa-trophy"></i> Torneo</button>
         </div>
         <button type="submit" class="btn-primary" style="padding:8px 24px; border-radius:20px;">Publicar</button>
     </div>
@@ -279,89 +411,152 @@
 <!-- PUBLICACIONES DEL USUARIO -->
 {% if publicaciones %}
     {% for post in publicaciones %}
-    <div class="post-card{% if post.promocionada and post.boost_tipo %} post-card--boosted{% elif post.autor.es_premium %} post-card--vip-author{% endif %}" data-post-id="{{ post.id_publicacion }}" data-href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" onclick="navegarPost(event, this)">
-        <div class="post-header">
-            <div class="post-author">
-                <a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" class="post-avatar-link">
-                    <span class="post-avatar-wrap"{% if post.autor.marco_perfil %} style="{{ post.autor.marco_perfil }}"{% elif post.autor.es_premium %} style="border: 2px solid #FACC15; box-shadow: 0 0 8px rgba(250, 204, 21, 0.4);"{% endif %}>
-                        <img src="{{ post.autor | user_avatar }}" alt="{{ post.autor.username }}">
-                    </span>
-                </a>
-                <div class="author-info">
-                    <h4><a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" class="author-name-link">{{ nombre_usuario(post.autor, true) }}</a>{% if post.autor.es_premium %} <i class="fas fa-crown" style="color: #FACC15; font-size:14px; margin-left:4px; text-shadow: 0 0 5px rgba(250, 204, 21, 0.5);" title="Usuario Premium"></i>{% endif %}</h4>
-                    <div class="post-meta">
-                        <a href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" class="post-meta-link">{{ post.fecha_creacion | timeago }}</a> <span class="game-tag" style="background:rgba(139, 92, 246, 0.2);">{{ post.juego }}</span>
+    <div class="pf-post-card" style="--i:{{ loop.index0 }};" data-post-id="{{ post.id_publicacion }}">
+        <div class="pf-post-header">
+            <a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" class="pf-post-author">
+                <img class="pf-post-avatar" src="{{ post.autor | user_avatar }}" alt="{{ post.autor.username }}"{% if post.autor.marco_perfil %} style="border-color:transparent;{{ post.autor.marco_perfil }}"{% endif %}>
+                <div class="pf-author-info">
+                    <span class="pf-author-name">{{ nombre_usuario(post.autor, false) }}{% if post.autor.es_premium %} <i class="fas fa-crown" style="color:#FACC15;font-size:12px;margin-left:2px;" title="Premium"></i>{% endif %}</span>
+                    <div class="pf-post-meta">
+                        <a href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}">{{ post.fecha_creacion | timeago }}</a>
+                        <span class="pf-meta-dot"></span>
+                        {% if post.juego %}
+                        <a href="{{ url_for('jugador.comunidad_detalle', juego=post.juego) }}" class="pf-game-tag">{{ post.juego }}</a>
+                        {% else %}
+                        <span class="pf-game-tag pf-game-tag--general">General</span>
+                        {% endif %}
                         {% if post.fijada %}
-                        <span class="pin-badge"><i class="fas fa-thumbtack"></i> Fijado</span>
+                        <span class="pf-pin-badge"><i class="fas fa-thumbtack"></i> Fijado</span>
                         {% endif %}
                         {% if post.promocionada and post.boost_tipo %}
-                        <span class="boost-badge boost-{{ post.boost_tipo }}"><i class="fas fa-rocket"></i> {{ {'rapido': 'RÁPIDO', 'mega': 'MEGA', 'titan': 'TITÁN'}.get(post.boost_tipo, post.boost_tipo) }}</span>
+                        <span class="pf-boost-badge boost-{{ post.boost_tipo }}"><i class="fas fa-rocket"></i> {{ {'rapido': 'RÁPIDO', 'mega': 'MEGA', 'titan': 'TITÁN'}.get(post.boost_tipo, post.boost_tipo) }}</span>
                         {% endif %}
                     </div>
                 </div>
-            </div>
-            <div class="post-dropdown">
-                <button class="post-dropdown-btn" data-dropdown-btn aria-label="Más opciones"><i class="fas fa-ellipsis-h"></i></button>
-                <div class="dropdown-menu" data-dropdown-menu>
+            </a>
+            <div class="pf-post-dropdown">
+                <button class="pf-dropdown-btn" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'" aria-label="Más opciones"><i class="fas fa-ellipsis-h"></i></button>
+                <div class="dropdown-menu" style="display:none;position:absolute;top:100%;right:0;z-index:20;min-width:150px;background:var(--bg-panel);border:1px solid var(--border-color);border-radius:10px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);">
                     {% if current_user.is_authenticated and current_user.id_usuario == post.id_usuario %}
-                    <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="fijarPublicacion({{ post.id_publicacion }}, this)"><i class="fas fa-thumbtack"></i> {% if post.fijada %}Desfijar del perfil{% else %}Fijar en el perfil{% endif %}</button>
-                    <button class="dropdown-item dropdown-item-danger" data-post-id="{{ post.id_publicacion }}" onclick="confirmarEliminar({{ post.id_publicacion }})"><i class="fas fa-trash-alt"></i> Eliminar publicación</button>
+                    <button class="dropdown-item" onclick="fijarPublicacion({{ post.id_publicacion }}, this)"><i class="fas fa-thumbtack"></i> {% if post.fijada %}Desfijar{% else %}Fijar{% endif %}</button>
+                    <button class="dropdown-item dropdown-item-danger" onclick="confirmarEliminar({{ post.id_publicacion }})"><i class="fas fa-trash-alt"></i> Eliminar</button>
                     {% else %}
-                    <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="reportarPublicacion({{ post.id_publicacion }})"><i class="fas fa-flag"></i> Reportar publicación / Spam</button>
-                    <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="ocultarPublicacion({{ post.id_publicacion }}, this)"><i class="fas fa-eye-slash"></i> Ocultar publicación</button>
-                    <button class="dropdown-item" data-post-id="{{ post.id_publicacion }}" onclick="copiarEnlace({{ post.id_publicacion }})"><i class="fas fa-link"></i> Copiar enlace del post</button>
+                    <button class="dropdown-item" onclick="reportarPublicacion({{ post.id_publicacion }})"><i class="fas fa-flag"></i> Reportar</button>
+                    <button class="dropdown-item" onclick="ocultarPublicacion({{ post.id_publicacion }}, this)"><i class="fas fa-eye-slash"></i> Ocultar</button>
+                    <button class="dropdown-item" onclick="copiarEnlace({{ post.id_publicacion }})"><i class="fas fa-link"></i> Copiar enlace</button>
                     {% endif %}
                 </div>
             </div>
         </div>
-        
-        <div class="post-content" data-href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" onclick="navegarPost(event, this)">{{ post.contenido }}</div>
 
-        {% if post.is_poll %}
-        <div class="post-poll" data-poll-post="{{ post.id_publicacion }}" data-poll-id="{{ post.poll.id_poll }}" data-multiple="{{ '1' if post.poll.multiple_choice else '0' }}" data-change="{{ '1' if post.poll.allow_change else '0' }}">
-            <p class="post-poll-question">{{ post.poll.pregunta }}</p>
-            <div class="post-poll-config-badges">
-                {% if post.poll.multiple_choice %}<span class="poll-badge multiple"><i class="fas fa-check-double"></i> Múltiple</span>{% endif %}
-                {% if post.poll.allow_change %}<span class="poll-badge changeable"><i class="fas fa-sync-alt"></i> Cambiable</span>{% endif %}
-            </div>
-            <div class="post-poll-options">
-                {% for opt in post.poll.options %}
-                <button type="button" class="post-poll-option" data-option-id="{{ opt.id_option }}" onclick="votePoll(this, {{ post.id_publicacion }})">
-                    <span class="post-poll-radio"></span>
-                    <span class="post-poll-text">{{ opt.texto }}</span>
-                    <span class="post-poll-bar" style="width:0%"></span>
-                    <span class="post-poll-pct" style="display:none;">0%</span>
-                </button>
-                {% endfor %}
-            </div>
-            <p class="post-poll-total"><i class="far fa-chart-bar"></i> <span class="post-poll-count">{{ post.poll.total_votos }}</span> voto(s)</p>
+        <div class="pf-post-content">{{ post.contenido }}</div>
+
+        {% if post.is_poll and post.poll %}
+        <div class="post-poll" data-post-id="{{ post.id_publicacion }}" data-change="{{ '1' if post.poll.allow_change else '0' }}" style="padding:0 18px;margin-top:10px;">
+            <div class="pp-q">{{ post.poll.pregunta }}</div>
+            {% for opt in post.poll.options %}
+            <button type="button" class="pp-opt" data-poll-vote data-option-id="{{ opt.id_option }}" data-votos="{{ opt.votos }}">
+              <span class="pp-text">{{ opt.texto }}</span>
+              <span class="pp-votes">{{ opt.votos }} votos</span>
+              <span class="pp-bar" style="display:none;"></span>
+              <span class="pp-pct" style="display:none;"></span>
+            </button>
+            {% endfor %}
         </div>
         {% endif %}
-        
-        {% if post.imagen_url %}
-        <div class="post-media" data-href="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" onclick="navegarPost(event, this)">
-            <img src="{{ post.imagen_url }}" alt="Media">
+
+        {% if post.repost_id and post.reposteado %}
+        {% set embed = post.root_reposteado %}
+        <div class="pf-repost">
+          <a href="{{ url_for('jugador.perfil_publico', username=embed.autor.username) }}" class="pf-repost-header">
+            <img src="{{ embed.autor | user_avatar }}" alt="">
+            <span class="pf-repost-name">{{ embed.autor.nombre or embed.autor.username }}</span>
+          </a>
+          <p class="pf-repost-text">{{ embed.contenido[:300] }}{% if embed.contenido|length > 300 %}...{% endif %}</p>
+          {% if embed.video_archivo %}
+          <div class="pf-repost-media" onclick="openVideoPlayer('{{ embed.video_archivo }}')" style="position:relative;cursor:pointer;">
+            <video src="{{ embed.video_archivo }}" playsinline muted style="width:100%;display:block;"></video>
+            <div class="pf-vplay"><i class="fas fa-play"></i></div>
+          </div>
+          {% elif embed.imagen_url %}
+          <img src="{{ embed.imagen_url }}" alt="" class="pf-repost-media">
+          {% endif %}
+          {% if embed.is_poll and embed.poll %}
+          <div class="post-poll" style="margin-top:8px;" data-post-id="{{ embed.id_publicacion }}" data-change="{{ '1' if embed.poll.allow_change else '0' }}">
+            <div class="pp-q">{{ embed.poll.pregunta }}</div>
+            {% for opt in embed.poll.options %}
+            <button type="button" class="pp-opt" data-poll-vote data-option-id="{{ opt.id_option }}" data-votos="{{ opt.votos }}">
+              <span class="pp-text">{{ opt.texto }}</span>
+              <span class="pp-votes">{{ opt.votos }} votos</span>
+              <span class="pp-bar" style="display:none;"></span>
+              <span class="pp-pct" style="display:none;"></span>
+            </button>
+            {% endfor %}
+          </div>
+          {% endif %}
         </div>
         {% endif %}
-        
-        <div class="post-actions" style="margin-top:16px; margin-bottom:16px;">
+
+        {% if post.video_archivo %}
+        <div class="pf-post-media" onclick="openVideoPlayer('{{ post.video_archivo }}')" style="position:relative;cursor:pointer;">
+            <video src="{{ post.video_archivo }}" playsinline muted style="width:100%;display:block;"></video>
+            <div class="pf-vplay"><i class="fas fa-play"></i></div>
+        </div>
+        {% elif post.imagen_url %}
+        <div class="pf-post-media">
+            <img src="{{ post.imagen_url }}" alt="" loading="lazy">
+        </div>
+        {% endif %}
+
+        <div class="pf-actions">
             {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
-            <button type="button" class="action-btn {% if post.is_liked_by(current_user) %}liked{% endif %}" data-like-btn data-post-id="{{ post.id_publicacion }}" id="like-btn-{{ post.id_publicacion }}" aria-label="Me gusta">
-                <i class="{% if post.is_liked_by(current_user) %}fas{% else %}far{% endif %} fa-heart"></i> <span id="like-count-{{ post.id_publicacion }}">{{ post.likes }}</span>
+            <button type="button" class="pf-action-btn {% if post.is_liked_by(current_user) %}liked{% endif %}" onclick="perfilLike({{ post.id_publicacion }}, this)">
+                <i class="{% if post.is_liked_by(current_user) %}fas{% else %}far{% endif %} fa-heart"></i> <span>{{ post.likes }}</span>
             </button>
             {% else %}
-            <span class="action-btn" style="cursor:default; opacity:0.7;"><i class="fas fa-heart"></i> {{ post.likes }}</span>
+            <span class="pf-action-btn" style="cursor:default;opacity:.7;"><i class="fas fa-heart"></i> {{ post.likes }}</span>
             {% endif %}
-            <button type="button" class="action-btn" disabled style="opacity:0.5; cursor:not-allowed;"><i class="far fa-comment"></i> {{ post.comentarios|length }}</button>
-            <button type="button" class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
+            <button type="button" class="pf-action-btn" onclick="perfilToggleComments({{ post.id_publicacion }})">
+                <i class="far fa-comment"></i> <span>{{ post.comentarios|length }}</span>
+            </button>
+            {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+            <button type="button" class="pf-action-btn" onclick="perfilRepost({{ post.id_publicacion }}, this)"><i class="fas fa-retweet"></i></button>
+            {% endif %}
+            <button type="button" class="pf-action-btn" onclick="perfilShare('{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}')"><i class="fas fa-share-alt"></i></button>
+        </div>
+
+        <div id="comments-{{ post.id_publicacion }}" class="pf-comments" style="display:none;">
+            <div id="comments-list-{{ post.id_publicacion }}">
+                {% for c in post.comentarios %}
+                <div class="pf-comment-item">
+                    <img src="{{ c.autor | user_avatar }}" alt="">
+                    <div class="pf-comment-bubble">
+                        <div class="pf-comment-head">
+                            <a href="{{ url_for('jugador.perfil_publico', username=c.autor.username) }}">{{ c.autor.nombre or c.autor.username }}</a>
+                            <span>{{ c.fecha_creacion | timeago }}</span>
+                        </div>
+                        <p>{{ c.contenido }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <p style="font-size:13px;color:var(--text-muted);margin:0 0 10px;">Sin comentarios aún.</p>
+                {% endfor %}
+            </div>
+            {% if current_user.rol != 'invitado' %}
+            <form class="pf-comment-form" method="POST" action="{{ url_for('jugador.comentar', post_id=post.id_publicacion) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="contenido" placeholder="Escribe un comentario..." required>
+                <button type="submit"><i class="fas fa-paper-plane"></i></button>
+            </form>
+            {% endif %}
         </div>
     </div>
     {% endfor %}
 {% else %}
-<div style="text-align:center; padding:clamp(24px,6vw,40px); color:var(--text-muted);">
-    <i class="fas fa-gamepad" style="font-size:48px; margin-bottom:16px; opacity:0.5;"></i>
-    <h3>Sin publicaciones aún</h3>
-    <p>{% if is_own %}Comparte tu primer momento con la comunidad.{% else %}Este usuario no ha publicado nada todavía.{% endif %}</p>
+<div style="text-align:center;padding:56px 20px;color:var(--text-muted);">
+    <i class="fas fa-gamepad" style="font-size:48px;margin-bottom:14px;opacity:.15;display:block;"></i>
+    <h3 style="color:var(--text-muted);font-size:18px;margin:0 0 6px;">Sin publicaciones aún</h3>
+    <p style="margin:0;font-size:13px;">{% if is_own %}Comparte tu primer momento con la comunidad.{% else %}Este usuario no ha publicado nada todavía.{% endif %}</p>
 </div>
 {% endif %}
 
@@ -473,57 +668,6 @@ function applyResults(parent, data) {
         </div>
     </div>
     
-    <!-- CLANES -->
-    <div class="widget">
-        <div class="widget-header">
-            <h3 class="widget-title">Clanes</h3>
-            <a href="{{ url_for('clanes.index') }}" class="widget-link">Explorar</a>
-        </div>
-        
-        {% set membresias = perfil_user.membresias_clan.all() if perfil_user.membresias_clan else [] %}
-        {% if membresias %}
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-            {% for membresia in membresias %}
-                {% set clan = membresia.clan %}
-                <a href="{{ url_for('clanes.detalle', clan_id=clan.id_clan) }}" style="text-decoration: none; display: block;">
-                    <div class="clan-card" style="transition: transform 0.2s, border-color 0.2s; margin: 0;" onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='var(--accent-purple)';" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='var(--border-color)';">
-                        {% if clan.logo_url %}
-                            <img src="{{ clan.logo_url }}" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(139, 92, 246, 0.3);">
-                        {% else %}
-                            <div class="clan-logo">{{ clan.nombre[0] | upper }}</div>
-                        {% endif %}
-                        
-                        <div class="clan-info">
-                            <h4>
-                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; display: inline-block; vertical-align: bottom;">{{ clan.nombre }}</span>
-                                
-                                {% if membresia.rol == 'lider' %}
-                                    <span class="role-badge" style="background: rgba(251, 191, 36, 0.15); color: #FBBF24; border: 1px solid rgba(251, 191, 36, 0.3);"><i class="fas fa-crown" style="margin-right:2px;"></i> Líder</span>
-                                {% elif membresia.rol == 'moderador' %}
-                                    <span class="role-badge" style="background: rgba(59, 130, 246, 0.15); color: #3B82F6; border: 1px solid rgba(59, 130, 246, 0.3);"><i class="fas fa-shield-alt" style="margin-right:2px;"></i> Mod</span>
-                                {% else %}
-                                    <span class="role-badge" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid rgba(255, 255, 255, 0.1);"><i class="fas fa-user" style="margin-right:2px;"></i> Miembro</span>
-                                {% endif %}
-                                
-                                {% if clan.privacidad == 'privado' %}
-                                    <i class="fas fa-lock" style="font-size: 10px; color: var(--accent-red); margin-left: 4px;" title="Clan Privado"></i>
-                                {% endif %}
-                            </h4>
-                            <div class="clan-members"><i class="fas fa-users"></i> {{ clan.miembros.count() }} miembros</div>
-                        </div>
-                    </div>
-                </a>
-            {% endfor %}
-            </div>
-        {% else %}
-            <div style="text-align: center; padding: 24px 16px; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
-                <i class="fas fa-ghost" style="color: var(--text-muted); font-size: 32px; margin-bottom: 12px; opacity: 0.3;"></i>
-                <h4 style="color: white; font-size: 14px; margin-bottom: 4px;">Lobo Solitario</h4>
-                <p style="color: var(--text-muted); font-size: 12px; margin: 0;">Aún no se ha unido a ningún clan competitivo.</p>
-            </div>
-        {% endif %}
-    </div>
-    
     <!-- AMIGOS EN LINEA -->
     <div class="widget">
         <div class="widget-header">
@@ -560,6 +704,61 @@ function toggleFollow(userId) {
             countSpan.textContent = data.seguidores_count;
         }
     });
+}
+
+function getCsrf() { return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')||''; }
+
+function perfilLike(postId, btn) {
+  var icon = btn.querySelector('i');
+  var count = btn.querySelector('span');
+  btn.disabled = true;
+  fetch('/jugador/like/' + postId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':getCsrf(), 'X-Requested-With':'XMLHttpRequest' }
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.success) {
+      btn.classList.toggle('liked', d.liked);
+      icon.className = d.liked ? 'fas fa-heart' : 'far fa-heart';
+      if (count) count.textContent = d.likes_count;
+    }
+  }).catch(function(e){ console.error(e); })
+  .finally(function(){ btn.disabled = false; });
+}
+
+function perfilToggleComments(postId) {
+  var el = document.getElementById('comments-' + postId);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function perfilShare(url) {
+  if (navigator.share) { navigator.share({ url: url }).catch(function(){}); }
+  else {
+    navigator.clipboard.writeText(url).then(function(){
+      var t = document.createElement('div');
+      t.textContent = 'Enlace copiado';
+      t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f1b3a;color:white;padding:10px 20px;border-radius:100px;font-size:13px;z-index:9999;border:1px solid rgba(139,92,246,.3);box-shadow:0 8px 30px rgba(0,0,0,.5);';
+      document.body.appendChild(t);
+      setTimeout(function(){ t.remove(); }, 2500);
+    }).catch(function(){});
+  }
+}
+
+function perfilRepost(postId, btn) {
+  btn.disabled = true;
+  fetch('/jugador/repost/' + postId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':getCsrf(), 'X-Requested-With':'XMLHttpRequest', 'Content-Type':'application/json' },
+    body: JSON.stringify({ contenido: '' })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if (data.success) {
+      var t = document.createElement('div');
+      t.textContent = '¡Reposteado!';
+      t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f1b3a;color:white;padding:10px 20px;border-radius:100px;font-size:13px;z-index:9999;border:1px solid rgba(139,92,246,.3);box-shadow:0 8px 30px rgba(0,0,0,.5);';
+      document.body.appendChild(t);
+      setTimeout(function(){ t.remove(); }, 2500);
+    }
+  }).catch(function(e){ console.error(e); })
+  .finally(function(){ btn.disabled = false; });
 }
 </script>
 {% endblock %}

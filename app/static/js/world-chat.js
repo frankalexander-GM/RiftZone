@@ -23,10 +23,7 @@
             : '<i class="fas fa-crown" style="font-size: 12px; margin-left: 4px;"></i>';
         let nameColor = 'white';
         let nameShadow = 'none';
-        if (msg.boost_color) {
-            nameColor = msg.boost_color;
-            nameShadow = `0 0 8px ${msg.boost_color}88`;
-        } else if (msg.es_premium) {
+        if (msg.es_premium) {
             nameColor = '#FACC15';
             nameShadow = mini
                 ? '0 0 5px rgba(250, 204, 21, 0.3)'

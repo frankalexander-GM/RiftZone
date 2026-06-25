@@ -6,7 +6,7 @@
         <h1><i class="fas fa-search"></i> Resultados para "{{ query }}"</h1>
     </div>
 
-    {% if not usuarios and not clanes and not juegos %}
+    {% if not usuarios and not juegos %}
     <div class="empty-state">
         <i class="fas fa-search-minus"></i>
         <h3>Sin resultados</h3>
@@ -28,29 +28,6 @@
                 <div class="search-user-info">
                     <strong>{{ u | nombre_display }}</strong>
                     <span>@{{ u.username }}</span>
-                </div>
-            </a>
-            {% endfor %}
-        </div>
-    </section>
-    {% endif %}
-
-    {% if clanes %}
-    <section class="search-section">
-        <h2><i class="fas fa-shield-alt"></i> Clanes <span class="count">{{ clanes|length }}</span></h2>
-        <div class="search-clan-list">
-            {% for c in clanes %}
-            <a href="{{ url_for('clanes.detalle', clan_id=c.id_clan) }}" class="search-clan-card">
-                <div class="search-clan-icon">
-                    {% if c.logo_url %}
-                    <img src="{{ c.logo_url }}" alt="">
-                    {% else %}
-                    <i class="fas fa-shield-alt"></i>
-                    {% endif %}
-                </div>
-                <div class="search-clan-info">
-                    <strong>{{ c.nombre }}</strong>
-                    <span>{{ c.descripcion[:80] if c.descripcion else 'Sin descripción' }}{% if c.descripcion and c.descripcion|length > 80 %}...{% endif %}</span>
                 </div>
             </a>
             {% endfor %}

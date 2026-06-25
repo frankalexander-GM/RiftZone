@@ -1,334 +1,1176 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="messages-page-wrapper">
-    <div class="mensajes-app">
-        <div class="mensajes-sidebar" id="mensajes-sidebar">
-            <div class="mensajes-sidebar-header">
-                <h3><i class="fas fa-comment-dots"></i> Mensajes</h3>
-                <button class="icon-btn" id="nueva-conversacion-btn" title="Nueva conversación">
-                    <i class="fas fa-pen"></i>
-                </button>
-            </div>
-            <div class="mensajes-search">
-                <i class="fas fa-search"></i>
-                <input type="text" id="buscar-usuarios-input" placeholder="Buscar o iniciar chat...">
-                <div id="resultados-busqueda" class="busqueda-usuarios" style="display:none;"></div>
-            </div>
-            <div class="conversaciones-list" id="conversaciones-list">
-                <div class="conversaciones-loading"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
-            </div>
+<style>
+.ms-app {
+  display:flex;height:calc(100vh - var(--nav-height) - 80px);min-height:520px;
+  background:var(--bg-panel);border-radius:var(--radius-lg);overflow:hidden;
+  position:relative;border:1px solid var(--border-color);
+}
+/* ── Sidebar ── */
+.ms-sidebar {
+  width:340px;min-width:340px;
+  border-right:1px solid var(--border-color);
+  display:flex;flex-direction:column;
+  background:rgba(0,0,0,.15);
+  transition:transform .3s ease;
+}
+.ms-sidebar-header {
+  padding:18px 20px 12px;
+  border-bottom:1px solid var(--border-color);
+}
+.ms-sidebar-header h2 {
+  font-size:20px;font-weight:800;
+  background:linear-gradient(135deg,var(--accent-purple),var(--accent-magenta));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;margin:0;
+}
+.ms-sidebar-header h2 i {
+  -webkit-text-fill-color:initial;color:var(--accent-purple);margin-right:8px;
+}
+/* ── Search ── */
+.ms-search-wrap {
+  padding:10px 16px;position:relative;
+}
+.ms-search-wrap .ms-search-inner {
+  display:flex;align-items:center;gap:8px;
+  background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);
+  border-radius:var(--radius-full);padding:9px 16px;transition:all .25s;
+}
+.ms-search-wrap .ms-search-inner:focus-within {
+  border-color:var(--accent-purple);
+  box-shadow:0 0 0 4px rgba(139,92,246,.12),0 0 20px rgba(139,92,246,.06);
+  background:rgba(139,92,246,.06);
+}
+.ms-search-wrap .ms-search-inner i { color:var(--accent-purple);font-size:13px;opacity:.6; }
+.ms-search-wrap .ms-search-inner:focus-within i { opacity:1; }
+.ms-search-wrap .ms-search-inner input {
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--text-main);font-size:13px;
+}
+.ms-search-wrap .ms-search-inner input::placeholder { color:var(--text-muted); }
+.ms-search-dropdown {
+  position:absolute;top:100%;left:16px;right:16px;z-index:100;
+  background:var(--bg-card);border:1px solid var(--border-color);
+  border-radius:var(--radius-md);box-shadow:0 12px 40px rgba(0,0,0,.5);
+  display:none;overflow:hidden;max-height:320px;overflow-y:auto;
+  animation:msFadeIn .2s ease;
+}
+@keyframes msFadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+.ms-search-head { padding:8px 14px 4px;font-size:10px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.6px;font-weight:700; }
+.ms-search-item {
+  display:flex;align-items:center;gap:12px;padding:10px 16px;
+  cursor:pointer;transition:all .15s;border-left:3px solid transparent;
+}
+.ms-search-item:hover { background:rgba(139,92,246,.08);border-left-color:var(--accent-purple); }
+.ms-search-item:active { background:rgba(139,92,246,.12); }
+.ms-search-item img { width:36px;height:36px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px rgba(139,92,246,.15);transition:box-shadow .2s; }
+.ms-search-item:hover img { box-shadow:0 0 0 2px rgba(139,92,246,.3); }
+.ms-search-item div strong { display:block;font-size:13px;color:var(--text-main);font-weight:600; }
+.ms-search-item div span { font-size:11px;color:var(--text-muted); }
+.ms-search-empty { padding:20px;text-align:center;color:var(--text-muted);font-size:12px; }
+.ms-search-loading { padding:20px;text-align:center;color:var(--text-muted);font-size:12px; }
+/* ── Conversations ── */
+.ms-convs { flex:1;overflow-y:auto;padding:2px 0; }
+.ms-convs::-webkit-scrollbar { width:4px; }
+.ms-convs::-webkit-scrollbar-thumb { background:var(--border-color);border-radius:4px; }
+.ms-conv-load { display:flex;align-items:center;justify-content:center;padding:50px;gap:8px;color:var(--text-muted);font-size:13px; }
+.ms-conv-empty {
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 20px;color:var(--text-muted);gap:14px;
+}
+.ms-conv-empty i { font-size:48px;opacity:.08; }
+.ms-conv-empty p { font-size:13px;margin:0;text-align:center;line-height:1.5; }
+.ms-conv-empty span { font-size:11px;color:var(--text-muted);opacity:.6; }
+.ms-conv {
+  display:flex;align-items:center;gap:10px;padding:12px 16px;margin:2px 8px;
+  border-radius:var(--radius-md);cursor:pointer;transition:all .18s;
+  position:relative;
+}
+.ms-conv:hover { background:rgba(139,92,246,.05); }
+.ms-conv:active { transform:scale(.98); }
+.ms-conv.active {
+  background:rgba(139,92,246,.1) !important;
+  box-shadow:inset 3px 0 0 var(--accent-purple);
+}
+.ms-conv.active::after {
+  content:'';position:absolute;top:50%;right:6px;transform:translateY(-50%);
+  width:6px;height:6px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent-purple),var(--accent-magenta));
+}
+.ms-conv-av { position:relative;flex-shrink:0; }
+.ms-conv-av img {
+  width:44px;height:44px;border-radius:50%;object-fit:cover;
+  border:2px solid transparent;transition:border-color .2s;
+}
+.ms-conv.active .ms-conv-av img { border-color:var(--accent-purple); }
+.ms-conv-av .ms-dot {
+  position:absolute;bottom:0;right:0;width:11px;height:11px;
+  border-radius:50%;border:2.5px solid var(--bg-panel);transition:background .3s;
+}
+.ms-dot.on { background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.4);animation:msPulse 2s infinite; }
+.ms-dot.off { background:#4b5563; }
+@keyframes msPulse { 0%,100%{box-shadow:0 0 4px rgba(34,197,94,.2)} 50%{box-shadow:0 0 10px rgba(34,197,94,.35)} }
+.ms-conv-info { flex:1;min-width:0; }
+.ms-conv-top { display:flex;justify-content:space-between;align-items:center;gap:6px; }
+.ms-conv-top strong { font-size:13px;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600; }
+.ms-name-link { cursor:pointer;transition:color .15s; }
+.ms-name-link:hover { color:var(--accent) !important; }
+.ms-search-item .ms-name-link:hover { color:#a855f7 !important; }
+.ms-conv-time { font-size:10px;color:var(--text-muted);flex-shrink:0; }
+.ms-conv-bot { display:flex;justify-content:space-between;align-items:center;margin-top:1px;gap:6px; }
+.ms-conv-last { font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.ms-conv-badge {
+  background:linear-gradient(135deg,var(--accent-purple),var(--accent-magenta));
+  color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;
+  border-radius:9px;display:flex;align-items:center;justify-content:center;
+  padding:0 5px;flex-shrink:0;box-shadow:0 0 8px rgba(139,92,246,.25);
+}
+/* ── Main panel ── */
+.ms-main { flex:1;display:flex;flex-direction:column;min-width:0; }
+.ms-placeholder {
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:16px;color:var(--text-muted);padding:40px;
+}
+.ms-placeholder-icon {
+  width:80px;height:80px;border-radius:50%;
+  background:rgba(139,92,246,.06);display:flex;align-items:center;justify-content:center;
+  font-size:36px;color:var(--accent-purple);animation:msFloat 3.5s ease-in-out infinite;
+}
+@keyframes msFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.ms-placeholder h3 { font-size:20px;color:var(--text-main);font-weight:700;margin:0; }
+.ms-placeholder p { font-size:13px;text-align:center;max-width:280px;line-height:1.5;margin:0; }
+.ms-chat { flex:1;display:none;flex-direction:column;min-height:0; }
+.ms-chat.show { display:flex;animation:msChatIn .2s ease; }
+@keyframes msChatIn { from{opacity:0} to{opacity:1} }
+/* ── Chat header ── */
+.ms-chat-hd {
+  display:flex;align-items:center;gap:12px;padding:12px 20px;
+  border-bottom:1px solid var(--border-color);
+  background:linear-gradient(135deg,rgba(139,92,246,.04) 0%,rgba(255,45,149,.02) 100%);
+  flex-shrink:0;min-height:64px;
+}
+.ms-back {
+  display:none;width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,.04);border:1px solid var(--border-color);
+  color:var(--text-main);cursor:pointer;align-items:center;justify-content:center;
+  transition:all .18s;flex-shrink:0;
+}
+.ms-back:hover { background:rgba(139,92,246,.12);color:var(--accent-purple); }
+.ms-chat-hd .ms-conv-av img { width:38px;height:38px; }
+.ms-chat-hd .ms-conv-info { flex:1; }
+.ms-chat-hd .ms-conv-top strong { font-size:16px;font-weight:700;color:var(--text-main); }
+.ms-chat-hd .ms-conv-bot { margin-top:0; }
+.ms-chat-status { font-size:11px;color:var(--text-muted); }
+.ms-chat-hd-actions { display:flex;gap:4px; }
+.ms-chat-hd-actions button {
+  width:32px;height:32px;border-radius:50%;border:1px solid var(--border-color);
+  background:transparent;color:var(--text-muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .18s;font-size:13px;
+}
+.ms-chat-hd-actions button:hover { background:rgba(139,92,246,.1);color:var(--accent-purple);border-color:rgba(139,92,246,.25); }
+.ms-chat-hd-actions .danger:hover { color:var(--accent-red);background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.25); }
+.ms-menu-wrap { position:relative; }
+.ms-menu-dd {
+  position:absolute;top:100%;right:0;margin-top:6px;min-width:180px;
+  background:rgba(20,20,30,.92);backdrop-filter:blur(16px);border:1px solid rgba(139,92,246,.15);
+  border-radius:10px;padding:4px;display:none;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,.4);
+  animation:msFadeIn .12s ease;
+}
+.ms-menu-dd.show { display:block; }
+.ms-menu-dd button {
+  display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:none;
+  background:transparent;color:var(--text-main);font-size:13px;cursor:pointer;
+  border-radius:6px;transition:background .15s;
+}
+.ms-menu-dd button:hover { background:rgba(139,92,246,.12);color:var(--accent-purple); }
+.ms-menu-dd button.danger:hover { background:rgba(248,113,113,.12);color:var(--accent-red); }
+.ms-menu-dd button i { width:16px;font-size:12px; }
+/* ── Messages ── */
+.ms-msgs {
+  flex:1;overflow-y:auto;padding:14px 20px;scroll-behavior:smooth;
+  background:radial-gradient(ellipse at 50% 0%,rgba(139,92,246,.012),transparent 70%);
+}
+.ms-msgs::-webkit-scrollbar { width:5px; }
+.ms-msgs::-webkit-scrollbar-thumb { background:var(--border-color);border-radius:4px; }
+.ms-msgs-load { display:none;align-items:center;justify-content:center;padding:50px;color:var(--accent-purple);gap:8px;font-size:13px; }
+.ms-blocked { display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;margin:0 20px;border-radius:8px;background:rgba(248,113,113,.08);color:var(--accent-red);font-size:12px;font-weight:500; }
+.ms-msgs-empty { text-align:center;color:var(--text-muted);padding:60px 20px;font-size:13px;line-height:1.6; }
+.ms-msgs-empty i { font-size:36px;opacity:.1;margin-bottom:10px;display:block; }
+.ms-msgs-empty strong { color:var(--accent-purple);font-weight:600; }
+.ms-date-sep {
+  text-align:center;margin:20px 0 16px;position:relative;
+}
+.ms-date-sep::before {
+  content:'';position:absolute;left:0;right:0;top:50%;height:1px;
+  background:rgba(255,255,255,.04);
+}
+.ms-date-sep span {
+  background:var(--bg-panel);padding:3px 16px;border-radius:var(--radius-full);
+  font-size:10px;color:var(--text-muted);position:relative;z-index:1;
+  border:1px solid rgba(255,255,255,.04);
+}
+/* ── Message bubble ── */
+.ms-msg { display:flex;gap:8px;margin-bottom:3px;max-width:78%;animation:msMsgIn .2s ease; }
+@keyframes msMsgIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.ms-msg.mine { margin-left:auto;flex-direction:row-reverse; }
+.ms-msg-av { width:28px;height:28px;border-radius:50%;object-fit:cover;align-self:flex-end;flex-shrink:0; }
+.ms-msg-av-sp { width:28px;flex-shrink:0; }
+.ms-msg-bub {
+  padding:9px 14px;border-radius:16px;
+  position:relative;word-wrap:break-word;overflow-wrap:break-word;
+  transition:box-shadow .2s;
+}
+.mine .ms-msg-bub {
+  background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(255,45,149,.1));
+  border-bottom-right-radius:4px;border:1px solid rgba(139,92,246,.1);
+  box-shadow:0 2px 6px rgba(139,92,246,.06);
+}
+.other .ms-msg-bub {
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+  border-bottom-left-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.ms-msg-txt { font-size:13px;line-height:1.5;color:var(--text-main); }
+.ms-msg-img { margin-top:6px;border-radius:var(--radius-sm);max-width:240px;cursor:pointer;transition:transform .2s;display:block; }
+.ms-msg-img:hover { transform:scale(1.02); }
+.ms-msg-meta {
+  display:flex;align-items:center;gap:5px;margin-top:3px;
+  font-size:10px;color:var(--text-muted);
+}
+.mine .ms-msg-meta { justify-content:flex-end; }
+.ms-msg-read { color:var(--text-muted); }
+.ms-msg-read.yes { color:var(--accent-blue); }
+/* ── Reactions ── */
+.ms-msg-reacts { display:flex;gap:2px;margin-top:3px;flex-wrap:wrap; }
+.ms-reac {
+  display:inline-flex;align-items:center;gap:2px;
+  padding:1px 6px;border-radius:8px;font-size:11px;line-height:1;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+  cursor:pointer;transition:all .12s;
+}
+.ms-reac:hover { background:rgba(139,92,246,.1);transform:scale(1.06); }
+.ms-reac.me { background:rgba(139,92,246,.12);border-color:rgba(139,92,246,.3); }
+/* ── Reaction bar ── */
+.ms-reac-bar {
+  display:none;position:absolute;bottom:100%;left:-2px;margin-bottom:5px;
+  background:var(--bg-card);border:1px solid var(--border-color);
+  border-radius:var(--radius-full);padding:2px 4px;gap:1px;
+  box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:10;white-space:nowrap;
+  animation:msPop .12s ease;
+}
+@keyframes msPop { from{transform:scale(.85);opacity:0} to{transform:scale(1);opacity:1} }
+.ms-reac-bar.show { display:flex; }
+.ms-reac-bar button {
+  width:28px;height:28px;border-radius:50%;border:none;
+  background:transparent;cursor:pointer;font-size:16px;line-height:1;
+  display:flex;align-items:center;justify-content:center;transition:all .1s;
+}
+.ms-reac-bar button:hover { transform:scale(1.2);background:rgba(139,92,246,.1); }
+.mine .ms-reac-bar { left:auto;right:-2px; }
+/* ── Delete button ── */
+.ms-msg-del {
+  position:absolute;top:-7px;right:-7px;display:none;z-index:5;
+}
+.mine:hover .ms-msg-del { display:block;animation:msFadeIn .12s ease; }
+.ms-msg-del button {
+  width:22px;height:22px;border-radius:50%;border:none;
+  background:var(--bg-card);color:var(--text-muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;box-shadow:0 2px 6px rgba(0,0,0,.3);transition:all .12s;
+}
+.ms-msg-del button:hover { color:var(--accent-red);background:rgba(248,113,113,.12);transform:scale(1.1); }
+/* ── Typing ── */
+.ms-typing {
+  display:none;align-items:center;gap:8px;padding:4px 20px 2px;
+  font-size:11px;color:var(--text-muted);min-height:22px;
+  border-bottom:1px solid var(--border-color);
+}
+.ms-typing.show { display:flex;animation:msFadeIn .12s ease; }
+.ms-typing-dots { display:flex;gap:2px;align-items:center; }
+.ms-typing-dots span {
+  width:5px;height:5px;border-radius:50%;
+  background:var(--accent-purple);animation:msTyping 1.4s infinite ease-in-out both;
+}
+.ms-typing-dots span:nth-child(1) { animation-delay:-.32s; }
+.ms-typing-dots span:nth-child(2) { animation-delay:-.16s; }
+@keyframes msTyping { 0%,80%,100%{transform:scale(.6)} 40%{transform:scale(1)} }
+/* ── Input ── */
+.ms-input-area {
+  padding:8px 16px 10px;border-top:1px solid var(--border-color);
+  background:rgba(0,0,0,.06);
+}
+.ms-input-target {
+  display:none;align-items:center;gap:8px;padding:6px 20px;
+  font-size:12px;color:var(--text-muted);
+  background:rgba(139,92,246,.04);border-top:1px solid var(--border-color);
+  flex-shrink:0;
+}
+.ms-input-target.show { display:flex;animation:msFadeIn .15s ease; }
+.ms-input-target img { width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid rgba(139,92,246,.2); }
+.ms-input-target span { display:flex;align-items:center;gap:4px; }
+.ms-input-target strong { color:var(--accent-purple);font-weight:600;cursor:pointer; }
+.ms-input-target strong:hover { text-decoration:underline; }
+.ms-input-row {
+  display:flex;align-items:flex-end;gap:6px;
+}
+.ms-input-row textarea {
+  flex:1;resize:none;border:1px solid var(--border-color);
+  border-radius:14px;padding:9px 14px;
+  background:rgba(255,255,255,.03);color:var(--text-main);
+  font-size:13px;font-family:inherit;outline:none;
+  max-height:100px;line-height:1.4;transition:border-color .2s,box-shadow .2s;
+}
+.ms-input-row textarea:focus {
+  border-color:rgba(139,92,246,.35);
+  box-shadow:0 0 0 2px rgba(139,92,246,.05);
+}
+.ms-input-row textarea::placeholder { color:var(--text-muted); }
+.ms-input-acts { display:flex;align-items:flex-end;gap:3px; }
+.ms-input-btn {
+  width:36px;height:36px;border-radius:50%;border:1px solid var(--border-color);
+  background:transparent;color:var(--text-muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .18s;font-size:15px;flex-shrink:0;
+}
+.ms-input-btn:hover { background:rgba(139,92,246,.08);color:var(--accent-purple);border-color:rgba(139,92,246,.2); }
+.ms-send {
+  width:36px;height:36px;border-radius:50%;border:none;
+  background:transparent;color:var(--accent-purple);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .18s;font-size:18px;flex-shrink:0;
+}
+.ms-send:hover { transform:scale(1.1); }
+.ms-send:disabled { opacity:.25;cursor:default;transform:none; }
+/* ── Image preview ── */
+.ms-img-preview {
+  display:none;padding:8px 16px 2px;position:relative;
+}
+.ms-img-preview.show { display:block;animation:msFadeIn .12s ease; }
+.ms-img-preview img {
+  width:72px;height:72px;border-radius:var(--radius-md);
+  object-fit:cover;border:1px solid var(--border-color);
+}
+.ms-img-preview .ms-remove-preview {
+  position:absolute;top:2px;left:58px;width:20px;height:20px;border-radius:50%;
+  background:rgba(0,0,0,.6);color:#fff;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:11px;
+  transition:background .12s;
+}
+.ms-img-preview .ms-remove-preview:hover { background:rgba(248,113,113,.75); }
+/* ── Toast ── */
+#ms-toast {
+  position:fixed;top:20px;right:20px;z-index:99999;
+  display:flex;flex-direction:column;gap:8px;pointer-events:none;
+}
+.ms-toast-el {
+  background:var(--bg-card);border:1px solid var(--border-color);
+  border-radius:var(--radius-md);padding:12px 20px;font-size:13px;
+  color:var(--text-main);display:flex;align-items:center;gap:10px;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);pointer-events:auto;
+  animation:msToastIn .3s ease;max-width:380px;
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-left:3px solid var(--accent-purple);
+}
+.ms-toast-el.err { border-left-color:var(--accent-red); }
+.ms-toast-el.ok { border-left-color:var(--accent-green); }
+.ms-toast-el i { font-size:15px;width:20px;text-align:center; }
+.ms-toast-el.err i { color:var(--accent-red); }
+.ms-toast-el.ok i { color:var(--accent-green); }
+.ms-toast-el.out { animation:msToastOut .3s ease forwards; }
+@keyframes msToastIn { from{opacity:0;transform:translateY(-16px) scale(.96)} to{opacity:1;transform:translateY(0) scale(1)} }
+@keyframes msToastOut { from{opacity:1;transform:translateY(0) scale(1)} to{opacity:0;transform:translateY(-16px) scale(.96)} }
+/* ── Lightbox ── */
+.ms-lb {
+  position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.85);
+  display:none;align-items:center;justify-content:center;cursor:pointer;
+  backdrop-filter:blur(8px);animation:msFadeIn .15s ease;
+}
+.ms-lb img { max-width:90%;max-height:90%;border-radius:var(--radius-md);object-fit:contain; }
+/* ── Responsive ── */
+@media(max-width:767px) {
+  .ms-app { height:calc(100vh - var(--nav-height) - 120px);border-radius:0;margin:0 -16px;border:none; }
+  .ms-sidebar { width:100%;min-width:100%; }
+  .ms-sidebar.hide { display:none; }
+  .ms-back { display:flex !important; }
+  .ms-msg { max-width:92%; }
+  .ms-conv { margin:1px 4px;padding:10px 12px; }
+  .ms-msgs { padding:10px 14px; }
+}
+@media(min-width:768px)and(max-width:1023px) {
+  .ms-app { height:calc(100vh - var(--nav-height) - 100px); }
+  .ms-sidebar { width:300px;min-width:300px; }
+  .ms-msg { max-width:85%; }
+}
+@media(min-width:1024px) {
+  #ms-back { display:none !important; }
+}
+</style>
+
+<div class="page">
+  <div class="card" style="overflow:hidden;padding:0;">
+    <div class="ms-app">
+      <!-- SIDEBAR -->
+      <div class="ms-sidebar" id="ms-sidebar">
+        <div class="ms-sidebar-header">
+          <h2><i class="fas fa-comment-dots"></i> Mensajes</h2>
+        </div>
+        <div class="ms-search-wrap">
+          <div class="ms-search-inner">
+            <i class="fas fa-search"></i>
+            <input type="text" id="ms-search" placeholder="Buscar usuarios..." autocomplete="off">
+          </div>
+          <div id="ms-search-dd" class="ms-search-dropdown"></div>
+        </div>
+        <div class="ms-convs" id="ms-convs">
+          <div class="ms-conv-load"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+        </div>
+      </div>
+
+      <!-- MAIN PANEL -->
+      <div class="ms-main">
+        <!-- Placeholder -->
+        <div class="ms-placeholder" id="ms-placeholder">
+          <div class="ms-placeholder-icon"><i class="fas fa-comment-dots"></i></div>
+          <h3>Tus mensajes</h3>
+          <p>Busca un usuario arriba para iniciar un chat o selecciona una conversaci&oacute;n.</p>
         </div>
 
-        <div class="mensajes-chat-panel" id="chat-panel">
-            <div class="chat-placeholder" id="chat-placeholder">
-                <div class="chat-placeholder-icon"><i class="fas fa-comment-dots"></i></div>
-                <h3>Tus mensajes</h3>
-                <p>Selecciona una conversación o inicia una nueva.</p>
+        <!-- Active chat -->
+        <div class="ms-chat" id="ms-chat">
+          <div class="ms-chat-hd" id="ms-chat-hd">
+            <button class="ms-back" id="ms-back"><i class="fas fa-arrow-left"></i></button>
+            <div class="ms-conv-av">
+              <img src="" alt="" id="ms-hd-av">
+              <span class="ms-dot off" id="ms-hd-dot"></span>
             </div>
-            <div class="chat-activo" id="chat-activo" style="display:none;">
-                <div class="chat-header" id="chat-header">
-                    <button class="chat-back-btn" id="chat-back-btn"><i class="fas fa-arrow-left"></i></button>
-                    <img src="" alt="" class="chat-header-avatar" id="chat-header-avatar">
-                    <div class="chat-header-info">
-                        <strong id="chat-header-name"></strong>
-                        <span id="chat-header-status"></span>
-                    </div>
-                </div>
-                <div class="chat-messages" id="chat-messages">
-                    <div class="chat-loading"><i class="fas fa-spinner fa-spin"></i></div>
-                </div>
-                <div class="chat-input-area">
-                    <form id="chat-send-form" autocomplete="off">
-                        <input type="text" id="chat-input-msg" placeholder="Escribe un mensaje..." maxlength="1000" required>
-                        <button type="submit" class="chat-send-btn" aria-label="Enviar">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </form>
-                </div>
+            <div class="ms-conv-info">
+              <div class="ms-conv-top"><strong id="ms-hd-name" class="ms-name-link"></strong></div>
+              <div class="ms-conv-bot"><span class="ms-chat-status" id="ms-hd-status"></span></div>
             </div>
+            <div class="ms-chat-hd-actions">
+              <div class="ms-menu-wrap">
+                <button id="ms-menu-btn" title="M&aacute;s"><i class="fas fa-ellipsis-v"></i></button>
+                <div class="ms-menu-dd" id="ms-menu-dd">
+                  <button data-action="perfil"><i class="fas fa-user"></i> Ver perfil</button>
+                  <button data-action="bloquear" id="ms-menu-bloq"><i class="fas fa-ban"></i> <span>Bloquear usuario</span></button>
+                  <button data-action="limpiar" class="danger"><i class="fas fa-eraser"></i> Limpiar mensajes</button>
+                </div>
+              </div>
+              <button id="ms-del-conv" class="danger" title="Eliminar conversaci&oacute;n"><i class="fas fa-trash-alt"></i></button>
+            </div>
+          </div>
+
+          <div class="ms-typing" id="ms-typing">
+            <div class="ms-typing-dots"><span></span><span></span><span></span></div>
+            <span id="ms-typing-txt"></span>
+          </div>
+
+          <div class="ms-blocked" id="ms-blocked" style="display:none">
+            <i class="fas fa-ban"></i> Has bloqueado a este usuario
+          </div>
+
+          <div class="ms-msgs" id="ms-msgs">
+            <div class="ms-msgs-load" id="ms-msgs-load"><i class="fas fa-spinner fa-spin"></i></div>
+            <div id="ms-msgs-inner"></div>
+          </div>
+
+          <div class="ms-img-preview" id="ms-img-preview">
+            <img id="ms-preview-img" src="" alt="">
+            <button class="ms-remove-preview" id="ms-remove-preview">&times;</button>
+          </div>
+
+          <div class="ms-input-target" id="ms-input-target">
+            <img src="" alt="" id="ms-target-av">
+            <span>Enviando a <strong id="ms-target-name"></strong></span>
+          </div>
+          <div class="ms-input-area">
+            <form id="ms-form" autocomplete="off">
+              <div class="ms-input-row">
+                <textarea id="ms-input" placeholder="Escribe un mensaje..." rows="1"></textarea>
+                <div class="ms-input-acts">
+                  <button type="button" class="ms-input-btn" id="ms-attach" title="Adjuntar imagen"><i class="fas fa-image"></i></button>
+                  <input type="file" id="ms-file" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none">
+                  <button type="submit" class="ms-send" aria-label="Enviar" id="ms-send">
+                    <i class="fas fa-paper-plane"></i>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
-<div class="modal-overlay" id="nueva-conv-modal" style="display:none;">
-    <div class="modal-content" style="max-width: 400px;">
-        <div class="modal-header">
-            <h3>Nueva conversación</h3>
-            <button class="icon-btn" onclick="document.getElementById('nueva-conv-modal').style.display='none'"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <input type="text" id="modal-buscar" placeholder="Buscar usuario..." style="width:100%; padding:12px; background:var(--bg-dark); border:1px solid var(--border-color); border-radius:var(--radius-md); color:white; font-size:14px; outline:none;">
-            <div id="modal-resultados" style="margin-top:12px;"></div>
-        </div>
-    </div>
-</div>
+<div id="ms-toast"></div>
+<div class="ms-lb" id="ms-lb" onclick="this.style.display='none'"><img id="ms-lb-img" src="" alt=""></div>
+<input type="hidden" id="ms-uid" value="{{ current_user.id_usuario }}">
 {% endblock %}
 
-{% block scripts %}
-{{ super() }}
+{% block extra_js %}
 <script>
-(function() {
-    var conversaciones = [];
-    var otroId = null;
-    var pollInterval = null;
-    var searchTimeout = null;
-    var enviando = false;
+(function(){
+  var st = {
+    convs: [],
+    otro: null,
+    msgs: [],
+    enviando: false,
+    imgUrl: null,
+    typingTm: null,
+    searchTm: null,
+    searchActive: false,
+    bloqueado: false,
+  };
 
-    var sidebar = document.getElementById('mensajes-sidebar');
-    var chatActivo = document.getElementById('chat-activo');
-    var chatPlaceholder = document.getElementById('chat-placeholder');
-    var conversacionesList = document.getElementById('conversaciones-list');
-    var chatMessages = document.getElementById('chat-messages');
-    var chatInput = document.getElementById('chat-input-msg');
-    var chatSendForm = document.getElementById('chat-send-form');
-    var buscarInput = document.getElementById('buscar-usuarios-input');
-    var resultadosBusqueda = document.getElementById('resultados-busqueda');
+  var $ = function(id) { return document.getElementById(id); };
+  var sidebar = $('ms-sidebar');
+  var chat = $('ms-chat');
+  var placeholder = $('ms-placeholder');
+  var convsEl = $('ms-convs');
+  var msgsEl = $('ms-msgs');
+  var msgsInner = $('ms-msgs-inner');
+  var input = $('ms-input');
+  var form = $('ms-form');
+  var searchInput = $('ms-search');
+  var searchDd = $('ms-search-dd');
+  var toastEl = $('ms-toast');
+  var sendBtn = $('ms-send');
+  var typingEl = $('ms-typing');
+  var typingTxt = $('ms-typing-txt');
+  var fileInput = $('ms-file');
+  var attachBtn = $('ms-attach');
+  var imgPreview = $('ms-img-preview');
+  var previewImg = $('ms-preview-img');
+  var removePreview = $('ms-remove-preview');
+  var uid = parseInt($('ms-uid').value);
+  var msgsLoad = $('ms-msgs-load');
+  var inputTarget = $('ms-input-target');
+  var targetAv = $('ms-target-av');
+  var targetName = $('ms-target-name');
+  var blockedEl = $('ms-blocked');
+  var menuBloqBtn = $('ms-menu-bloq');
+  var menuBloqTxt = menuBloqBtn ? menuBloqBtn.querySelector('span') : null;
 
-    function getCsrf() {
-        var m = document.querySelector('meta[name="csrf-token"]');
-        return m ? m.getAttribute('content') : '';
+  var EMOJIS = ['❤️','👍','😂','😮','😢','🔥'];
+
+  function csrf() {
+    var m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.getAttribute('content') : '';
+  }
+
+  function esc(t) {
+    if (!t) return '';
+    var d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+  }
+
+  function toast(msg, type) {
+    var el = document.createElement('div');
+    el.className = 'ms-toast-el' + (type ? ' ' + type : '');
+    var icon = type === 'err' ? 'fa-exclamation-circle' : type === 'ok' ? 'fa-check-circle' : 'fa-info-circle';
+    el.innerHTML = '<i class="fas ' + icon + '"></i> ' + esc(msg);
+    toastEl.appendChild(el);
+    setTimeout(function() {
+      el.classList.add('out');
+      setTimeout(function() { if (el.parentNode) el.remove(); }, 280);
+    }, 3000);
+  }
+
+  function scrollDown(smooth) {
+    msgsEl.scrollTo({ top: msgsEl.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+  }
+
+  /* ── SocketIO ── */
+  var sock = null;
+  try {
+    if (typeof io !== 'undefined') sock = io('/', { transports: ['websocket', 'polling'] });
+  } catch(e) { console.warn('SocketIO no disponible', e); }
+
+  function sockOn(ev, fn) { if (sock) sock.on(ev, fn); }
+  function sockEmit(ev, data) { if (sock) sock.emit(ev, data); }
+
+  sockOn('connect', function() {
+    sockEmit('join', { user_id: uid });
+  });
+
+  sockOn('private_message', function(d) {
+    var msg = d.mensaje;
+    var de = d.de;
+    if (st.otro && (de === st.otro || de === uid)) {
+      if (de === st.otro) {
+        fetch('/mensajes/api/leer/' + st.otro, {
+          method: 'POST', headers: {'X-CSRFToken': csrf()}
+        }).catch(function(){});
+        sockEmit('messages_read', { otro_id: uid, leido_por: st.otro });
+      }
+      var exists = st.msgs.some(function(m) { return m.id === msg.id; });
+      if (!exists) {
+        st.msgs.push(msg);
+        renderMsgs(st.msgs);
+        scrollDown(true);
+        // refresh convos in background
+        loadConvs(true);
+      }
+    } else if (de !== uid) {
+      loadConvs(true);
     }
+  });
 
-    function escapeHtml(text) {
-        var d = document.createElement('div');
-        d.textContent = text;
-        return d.innerHTML;
+  sockOn('typing', function(d) {
+    if (st.otro && d.de === st.otro) {
+      typingEl.classList.add('show');
+      typingTxt.textContent = esc(d.username) + ' est\u00e1 escribiendo';
+      clearTimeout(st._tyHide);
+      st._tyHide = setTimeout(function() { typingEl.classList.remove('show'); }, 3000);
     }
+  });
 
-    function cargarConversaciones() {
-        fetch('/mensajes/api/conversaciones')
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                conversaciones = data;
-                renderConversaciones(data);
-            })
-            .catch(function() {});
+  sockOn('messages_read', function(d) {
+    if (st.otro && d.leido_por === st.otro && st.msgs) {
+      var changed = false;
+      st.msgs.forEach(function(m) { if (m.emisor_id === uid && !m.leido) { m.leido = true; changed = true; } });
+      if (changed) renderMsgs(st.msgs);
     }
+  });
 
-    function renderConversaciones(data) {
-        if (data.length === 0) {
-            conversacionesList.innerHTML = '<div class="conversaciones-empty"><i class="far fa-comment-dots"></i><p>Sin conversaciones aún</p></div>';
-            return;
-        }
-        var html = '';
-        data.forEach(function(c) {
-            var active = (otroId === c.usuario_id) ? ' conv-item-active' : '';
-            var badge = c.no_leidas > 0 ? '<span class="conv-badge">' + c.no_leidas + '</span>' : '';
-            html += '<div class="conv-item' + active + '" data-id="' + c.usuario_id + '">';
-            html += '<img src="' + escapeHtml(c.foto) + '" alt="" class="conv-avatar">';
-            html += '<div class="conv-info"><div class="conv-top"><strong>' + escapeHtml(c.nombre) + '</strong><span class="conv-time">' + escapeHtml(c.ultimo_time) + '</span></div>';
-            html += '<div class="conv-preview"><span class="conv-last-msg">' + escapeHtml(c.ultimo_mensaje) + '</span>' + badge + '</div></div></div>';
-        });
-        conversacionesList.innerHTML = html;
-
-        document.querySelectorAll('.conv-item').forEach(function(item) {
-            item.addEventListener('click', function() {
-                abrirChat(parseInt(this.getAttribute('data-id')));
-            });
-        });
+  /* ── Conversations ── */
+  function loadConvs(silent) {
+    if (!silent) {
+      convsEl.innerHTML = '<div class="ms-conv-load"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>';
     }
+    fetch('/mensajes/api/conversaciones')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        st.convs = data;
+        if (!st.searchActive) renderConvs(data);
+      }).catch(function(e) {
+        if (!silent) console.error('Error cargando conversaciones:', e);
+      });
+  }
 
-    function abrirChat(id) {
-        if (pollInterval) clearInterval(pollInterval);
-        otroId = id;
-
-        document.querySelectorAll('.conv-item').forEach(function(el) {
-            el.classList.toggle('conv-item-active', parseInt(el.getAttribute('data-id')) === id);
-        });
-
-        chatPlaceholder.style.display = 'none';
-        chatActivo.style.display = 'flex';
-
-        if (window.innerWidth < 768) {
-            sidebar.style.display = 'none';
-        }
-
-        var conv = conversaciones.find(function(c) { return c.usuario_id === id; });
-        if (conv) {
-            document.getElementById('chat-header-avatar').src = conv.foto;
-            document.getElementById('chat-header-name').textContent = conv.nombre;
-        }
-
-        cargarMensajes(id);
-        pollInterval = setInterval(function() {
-            if (otroId === id) cargarMensajes(id);
-        }, 2500);
+  function renderConvs(data, emptyMsg) {
+    if (data.length === 0) {
+      var icon = emptyMsg ? 'far fa-search' : 'far fa-comment-dots';
+      var hint = emptyMsg ? '<span>Prueba con otro nombre</span>' : '<span>Busca usuarios arriba para iniciar un chat</span>';
+      convsEl.innerHTML = '<div class="ms-conv-empty"><i class="' + icon + '"></i><p>' + (emptyMsg || 'Sin conversaciones a&uacute;n') + '</p>' + hint + '</div>';
+      return;
     }
-
-    function cargarMensajes(id) {
-        fetch('/mensajes/api/mensajes/' + id)
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                var prevScrollTop = chatMessages.scrollTop;
-                var prevScrollHeight = chatMessages.scrollHeight;
-                var isNearBottom = prevScrollHeight - prevScrollTop - chatMessages.clientHeight < 100;
-
-                renderMensajes(data);
-
-                var badge = document.querySelector('.conv-item[data-id="' + id + '"] .conv-badge');
-                if (badge) badge.remove();
-
-                if (isNearBottom) {
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                } else {
-                    chatMessages.scrollTop = chatMessages.scrollHeight - prevScrollHeight + prevScrollTop;
-                }
-
-                cargarConversaciones();
-            })
-            .catch(function() {});
+    var html = '';
+    data.forEach(function(c) {
+      var active = st.otro === c.usuario_id ? ' active' : '';
+      var badge = c.no_leidas > 0 ? '<span class="ms-conv-badge">' + (c.no_leidas > 99 ? '+99' : c.no_leidas) + '</span>' : '';
+      var dotCls = c.online ? 'on' : 'off';
+      var txt = c.ultimo_mensaje || '';
+      var time = c.ultimo_time || '';
+      html += '<div class="ms-conv' + active + '" data-id="' + c.usuario_id + '">';
+      html += '<div class="ms-conv-av"><img src="' + esc(c.foto) + '" alt=""><span class="ms-dot ' + dotCls + '"></span></div>';
+      html += '<div class="ms-conv-info"><div class="ms-conv-top"><strong class="ms-name-link" data-username="' + esc(c.username) + '">' + esc(c.nombre) + '</strong><span class="ms-conv-time">' + esc(time) + '</span></div>';
+      html += '<div class="ms-conv-bot"><span class="ms-conv-last">' + esc(txt) + '</span>' + badge + '</div></div></div>';
+    });
+    convsEl.innerHTML = html;
+    convsEl.querySelectorAll('.ms-conv').forEach(function(el) {
+      el.addEventListener('click', function(e) { if (!e.target.closest('.ms-name-link')) openChat(parseInt(this.getAttribute('data-id'))); });
+    });
+    convsEl.querySelectorAll('.ms-name-link').forEach(function(el) {
+      el.addEventListener('click', function(e) { e.stopPropagation(); window.location.href = '/jugador/perfil/' + encodeURIComponent(this.getAttribute('data-username')); });
+    });
+    if (st.otro) {
+      var activeEl = convsEl.querySelector('.ms-conv[data-id="' + st.otro + '"]');
+      if (activeEl) activeEl.classList.add('active');
     }
+  }
 
-    function renderMensajes(data) {
-        if (data.length === 0) {
-            chatMessages.innerHTML = '<div class="chat-empty-msg">Envía un mensaje para iniciar la conversación</div>';
-            return;
-        }
-        var html = '';
-        var lastDate = '';
-        var userId = {{ current_user.id_usuario }};
-        data.forEach(function(m) {
-            var msgDate = m.fecha_completa ? m.fecha_completa.split(' ')[0] : '';
-            if (msgDate && msgDate !== lastDate) {
-                html += '<div class="chat-date-sep"><span>' + msgDate + '</span></div>';
-                lastDate = msgDate;
-            }
-            var isMine = m.emisor_id === userId;
-            html += '<div class="msg ' + (isMine ? 'msg-mine' : 'msg-other') + '">';
-            if (!isMine) {
-                html += '<img src="' + escapeHtml(m.emisor_foto) + '" alt="" class="msg-avatar">';
-            }
-            html += '<div class="msg-bubble"><div class="msg-text">' + escapeHtml(m.contenido) + '</div>';
-            html += '<div class="msg-meta"><span class="msg-time">' + escapeHtml(m.fecha) + '</span>';
-            if (isMine) {
-                html += '<span class="msg-read ' + (m.leido ? 'msg-read-yes' : '') + '"><i class="fas fa-check' + (m.leido ? '-double' : '') + '"></i></span>';
-            }
-            html += '</div></div></div>';
-        });
-        chatMessages.innerHTML = html;
-        if (data.length > 0) {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-    }
+  /* ── Open chat ── */
+  function openChat(id) {
+    st.otro = id;
+    st.msgs = [];
+    st.imgUrl = null;
+    imgPreview.classList.remove('show');
+    typingEl.classList.remove('show');
 
-    chatSendForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        var contenido = chatInput.value.trim();
-        if (!contenido || !otroId || enviando) return;
-        enviando = true;
-        chatInput.disabled = true;
-
-        fetch('/mensajes/api/enviar', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
-            body: JSON.stringify({receptor_id: otroId, contenido: contenido})
-        }).then(function(r) {
-            if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || 'Error'); });
-            return r.json();
-        }).then(function() {
-            chatInput.value = '';
-            cargarMensajes(otroId);
-        }).catch(function(err) {
-            console.error('Error enviando mensaje:', err);
-        }).then(function() {
-            enviando = false;
-            chatInput.disabled = false;
-            chatInput.focus();
-        });
+    convsEl.querySelectorAll('.ms-conv').forEach(function(el) {
+      el.classList.toggle('active', parseInt(el.getAttribute('data-id')) === id);
     });
 
-    buscarInput.addEventListener('input', function() {
-        var q = this.value.trim();
-        if (searchTimeout) clearTimeout(searchTimeout);
-        if (!q) {
-            resultadosBusqueda.style.display = 'none';
-            return;
-        }
-        searchTimeout = setTimeout(function() {
-            fetch('/mensajes/api/buscar?q=' + encodeURIComponent(q))
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (data.length === 0) {
-                        resultadosBusqueda.innerHTML = '<div class="busqueda-empty">No se encontraron usuarios</div>';
-                    } else {
-                        var html = '<div class="busqueda-title">Usuarios:</div>';
-                        data.forEach(function(u) {
-                            html += '<div class="busqueda-item" data-id="' + u.usuario_id + '">';
-                            html += '<img src="' + escapeHtml(u.foto) + '" alt="" class="busqueda-avatar">';
-                            html += '<div><strong>' + escapeHtml(u.nombre) + '</strong><span>@' + escapeHtml(u.username) + '</span></div></div>';
-                        });
-                        resultadosBusqueda.innerHTML = html;
-                        document.querySelectorAll('.busqueda-item').forEach(function(item) {
-                            item.addEventListener('click', function() {
-                                var id = parseInt(this.getAttribute('data-id'));
-                                buscarInput.value = '';
-                                resultadosBusqueda.style.display = 'none';
-                                abrirChat(id);
-                            });
-                        });
-                    }
-                    resultadosBusqueda.style.display = 'block';
-                });
-        }, 300);
+    placeholder.style.display = 'none';
+    chat.classList.add('show');
+
+    if (window.innerWidth < 768) sidebar.classList.add('hide');
+
+    var conv = st.convs.find(function(c) { return c.usuario_id === id; });
+    var name = '', foto = '', username = '';
+    if (conv) {
+      name = conv.nombre;
+      foto = conv.foto;
+      username = conv.username;
+    } else if (st._clickedUser && st._clickedUser.id === id) {
+      name = st._clickedUser.nombre;
+      foto = st._clickedUser.foto;
+      username = st._clickedUser.username;
+      st._clickedUser = null;
+    }
+    st.targetUsername = username;
+    $('ms-hd-av').src = foto;
+    $('ms-hd-name').textContent = name;
+    $('ms-hd-name').setAttribute('data-username', username);
+    var dot = $('ms-hd-dot');
+    dot.className = 'ms-dot off';
+    $('ms-hd-status').textContent = 'Desconectado';
+    targetAv.src = foto;
+    targetName.textContent = name;
+    targetName.setAttribute('data-username', username);
+    inputTarget.classList.add('show');
+
+    loadMsgs(id);
+    sockEmit('messages_read', { otro_id: id, leido_por: uid });
+
+    fetch('/mensajes/api/bloquear/check/' + id)
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        st.bloqueado = !!d.bloqueaste;
+        blockedEl.style.display = st.bloqueado ? 'flex' : 'none';
+        input.disabled = st.bloqueado;
+        sendBtn.disabled = st.bloqueado;
+        input.placeholder = st.bloqueado ? 'Has bloqueado a este usuario' : 'Escribe un mensaje...';
+        if (menuBloqTxt) menuBloqTxt.textContent = st.bloqueado ? 'Desbloquear usuario' : 'Bloquear usuario';
+      }).catch(function(){});
+  }
+
+  function loadMsgs(id) {
+    msgsLoad.style.display = 'flex';
+    fetch('/mensajes/api/mensajes/' + id)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        msgsLoad.style.display = 'none';
+        var nearBottom = msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight < 100;
+        st.msgs = data;
+        renderMsgs(data);
+        scrollDown(false);
+        loadConvs(true);
+      }).catch(function(e) {
+        msgsLoad.style.display = 'none';
+        console.error('Error cargando mensajes:', e);
+      });
+  }
+
+  function makeReacBar(id) {
+    var h = '<div class="ms-reac-bar" data-id="' + id + '">';
+    EMOJIS.forEach(function(e) { h += '<button data-e="' + e + '" data-id="' + id + '">' + e + '</button>'; });
+    h += '</div>';
+    return h;
+  }
+
+  function renderMsgs(data) {
+    if (!data || data.length === 0) {
+      var nm = $('ms-hd-name').textContent || 'este usuario';
+      msgsInner.innerHTML = '<div class="ms-msgs-empty"><i class="far fa-paper-plane"></i>Env&iacute;a un mensaje a <strong>' + esc(nm) + '</strong> para iniciar la conversaci&oacute;n</div>';
+      return;
+    }
+    var html = '';
+    var lastDate = '';
+    for (var i = 0; i < data.length; i++) {
+      var m = data[i];
+      var d = m.fecha_completa ? m.fecha_completa.split(' ')[0] : '';
+      if (d && d !== lastDate) {
+        html += '<div class="ms-date-sep"><span>' + d + '</span></div>';
+        lastDate = d;
+      }
+      var mine = m.emisor_id === uid;
+      var next = data[i + 1];
+      var grouped = next && next.emisor_id === m.emisor_id && next.fecha_completa && m.fecha_completa &&
+        next.fecha_completa.split(' ')[0] === d;
+      var showAv = !mine && !grouped;
+
+      html += '<div class="ms-msg ' + (mine ? 'mine' : 'other') + '" data-id="' + m.id + '">';
+      if (!mine) {
+        html += showAv ? '<img src="' + esc(m.emisor_foto) + '" class="ms-msg-av">' : '<div class="ms-msg-av-sp"></div>';
+      }
+      html += '<div class="ms-msg-bub" style="position:relative;">' + makeReacBar(m.id);
+      if (mine) {
+        html += '<div class="ms-msg-del"><button data-id="' + m.id + '" title="Eliminar"><i class="fas fa-times"></i></button></div>';
+      }
+      html += '<div class="ms-msg-txt">' + esc(m.contenido) + '</div>';
+      if (m.imagen_url) {
+        html += '<img src="' + esc(m.imagen_url) + '" class="ms-msg-img" onclick="document.getElementById(\'ms-lb\').style.display=\'flex\';document.getElementById(\'ms-lb-img\').src=this.src">';
+      }
+      if (m.reacciones && m.reacciones.length > 0) {
+        html += '<div class="ms-msg-reacts">';
+        m.reacciones.forEach(function(r) {
+          var me = r.usuario_id === uid ? 'me' : '';
+          html += '<span class="ms-reac ' + me + '" data-e="' + esc(r.emoji) + '" data-id="' + m.id + '">' + esc(r.emoji) + '</span>';
+        });
+        html += '</div>';
+      }
+      html += '<div class="ms-msg-meta"><span>' + esc(m.fecha) + '</span>';
+      if (mine) {
+        html += '<span class="ms-msg-read' + (m.leido ? ' yes' : '') + '"><i class="fas fa-check' + (m.leido ? '-double' : '') + '"></i></span>';
+      }
+      html += '</div></div></div>';
+    }
+    msgsInner.innerHTML = html;
+
+    // Reaction bar: click to toggle, click outside to close
+    msgsInner.querySelectorAll('.ms-msg-bub').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        if (e.detail === 0) return;
+        var bar = this.querySelector('.ms-reac-bar');
+        if (!bar) return;
+        var was = bar.classList.contains('show');
+        msgsInner.querySelectorAll('.ms-reac-bar.show').forEach(function(b) { b.classList.remove('show'); });
+        if (!was) bar.classList.add('show');
+        e.stopPropagation();
+      });
+      el.addEventListener('dblclick', function(e) {
+        e.stopPropagation();
+        var id = parseInt(this.closest('.ms-msg').getAttribute('data-id'));
+        if (id) react(id, '\u2764\ufe0f');
+      });
+    });
+    document.addEventListener('click', function() {
+      msgsInner.querySelectorAll('.ms-reac-bar.show').forEach(function(b) { b.classList.remove('show'); });
     });
 
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.mensajes-search')) {
-            resultadosBusqueda.style.display = 'none';
-        }
+    msgsInner.querySelectorAll('.ms-reac-bar button').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        react(parseInt(this.getAttribute('data-id')), this.getAttribute('data-e'));
+      });
     });
 
-    document.getElementById('nueva-conversacion-btn').onclick = function() {
-        document.getElementById('nueva-conv-modal').style.display = 'flex';
-        document.getElementById('modal-buscar').value = '';
-        document.getElementById('modal-resultados').innerHTML = '';
-        document.getElementById('modal-buscar').focus();
+    msgsInner.querySelectorAll('.ms-reac').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        e.stopPropagation();
+        react(parseInt(this.getAttribute('data-id')), this.getAttribute('data-e'));
+      });
+    });
+
+    msgsInner.querySelectorAll('.ms-msg-del button').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        deleteMsg(parseInt(this.getAttribute('data-id')));
+      });
+    });
+  }
+
+  function react(msgId, emoji) {
+    fetch('/mensajes/api/reaccionar/' + msgId, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf()},
+      body: JSON.stringify({emoji: emoji})
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d.success && st.msgs) {
+        var msg = st.msgs.find(function(m) { return m.id === msgId; });
+        if (msg) { msg.reacciones = d.reacciones; renderMsgs(st.msgs); }
+      }
+    }).catch(function(){});
+  }
+
+  function deleteMsg(msgId) {
+    if (!confirm('¿Eliminar este mensaje?')) return;
+    fetch('/mensajes/api/mensaje/' + msgId, {
+      method: 'DELETE', headers: {'X-CSRFToken': csrf()}
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d.success && st.msgs) {
+        st.msgs = st.msgs.filter(function(m) { return m.id !== msgId; });
+        renderMsgs(st.msgs);
+        toast('Mensaje eliminado', 'ok');
+      }
+    }).catch(function(){});
+  }
+
+  /* ── Send ── */
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var txt = input.value.trim();
+    if ((!txt && !st.imgUrl) || !st.otro || st.enviando || st.bloqueado) return;
+    st.enviando = true;
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    var img = st.imgUrl;
+    var opt = {
+      id: 'opt-' + Date.now(),
+      emisor_id: uid,
+      contenido: txt || '',
+      imagen_url: img || null,
+      fecha: '...',
+      fecha_completa: new Date().toISOString(),
+      leido: false,
+      reacciones: [],
+      emisor_foto: '',
     };
+    st.msgs.push(opt);
+    renderMsgs(st.msgs);
+    scrollDown(true);
+    input.value = '';
+    autoResize();
+    st.imgUrl = null;
+    imgPreview.classList.remove('show');
 
-    document.getElementById('modal-buscar').addEventListener('input', function() {
-        var q = this.value.trim();
-        if (!q) { document.getElementById('modal-resultados').innerHTML = ''; return; }
-        fetch('/mensajes/api/buscar?q=' + encodeURIComponent(q))
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                var container = document.getElementById('modal-resultados');
-                if (data.length === 0) {
-                    container.innerHTML = '<div style="color:var(--text-muted);padding:20px;text-align:center;">Sin resultados</div>';
-                } else {
-                    var html = '';
-                    data.forEach(function(u) {
-                        html += '<div class="modal-usuario-item" data-id="' + u.usuario_id + '">';
-                        html += '<img src="' + escapeHtml(u.foto) + '" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">';
-                        html += '<div><strong>' + escapeHtml(u.nombre) + '</strong><span style="color:var(--text-muted);font-size:13px;"> @' + escapeHtml(u.username) + '</span></div></div>';
-                    });
-                    container.innerHTML = html;
-                    document.querySelectorAll('.modal-usuario-item').forEach(function(item) {
-                        item.addEventListener('click', function() {
-                            var id = parseInt(this.getAttribute('data-id'));
-                            document.getElementById('nueva-conv-modal').style.display = 'none';
-                            abrirChat(id);
-                        });
-                    });
-                }
-            });
+    fetch('/mensajes/api/enviar', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf()},
+      body: JSON.stringify({receptor_id: st.otro, contenido: txt, imagen_url: img || undefined})
+    }).then(function(r) {
+      return r.json().then(function(d) {
+        if (!r.ok) throw new Error(d.error || 'Error');
+        return d;
+      });
+    }).then(function() {
+      if (st.otro) loadMsgs(st.otro);
+    }).catch(function(err) {
+      st.msgs = st.msgs.filter(function(m) { return m.id !== opt.id; });
+      renderMsgs(st.msgs);
+      toast(err.message || 'Error al enviar', 'err');
+    }).then(function() {
+      st.enviando = false;
+      sendBtn.disabled = false;
+      sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+      input.focus();
     });
+  });
 
-    document.getElementById('chat-back-btn').addEventListener('click', function() {
-        if (window.innerWidth < 768) {
-            sidebar.style.display = 'flex';
-        }
-        chatActivo.style.display = 'none';
-        chatPlaceholder.style.display = 'flex';
-        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-        otroId = null;
-    });
+  /* ── Typing ── */
+  input.addEventListener('input', function() {
+    autoResize();
+    if (!st.otro) return;
+    clearTimeout(st.typingTm);
+    st.typingTm = setTimeout(function() {
+      sockEmit('typing', { de: uid, para: st.otro, username: {{ current_user.username|tojson }} });
+    }, 200);
+  });
 
-    cargarConversaciones();
-
-    if (window.innerWidth < 768) {
-        sidebar.style.display = 'flex';
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      form.dispatchEvent(new Event('submit'));
     }
+  });
+
+  function autoResize() {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+  }
+
+  /* ── Image ── */
+  attachBtn.addEventListener('click', function() { fileInput.click(); });
+  fileInput.addEventListener('change', function() {
+    var f = this.files[0];
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) {
+      toast('La imagen no debe superar los 5 MB', 'err');
+      this.value = '';
+      return;
+    }
+    previewImg.src = URL.createObjectURL(f);
+    imgPreview.classList.add('show');
+    var fd = new FormData();
+    fd.append('imagen', f);
+    fetch('/mensajes/api/subir-imagen', {
+      method: 'POST', headers: {'X-CSRFToken': csrf()}, body: fd
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d.url) { st.imgUrl = d.url; }
+      else { toast(d.error || 'Error', 'err'); imgPreview.classList.remove('show'); }
+    }).catch(function() {
+      toast('Error de conexi&oacute;n', 'err');
+      imgPreview.classList.remove('show');
+    });
+    this.value = '';
+  });
+  removePreview.addEventListener('click', function() {
+    st.imgUrl = null;
+    imgPreview.classList.remove('show');
+  });
+
+  /* ── Search ── */
+  searchInput.addEventListener('input', function() {
+    var q = this.value.trim();
+    if (st.searchTm) { clearTimeout(st.searchTm); st.searchTm = null; }
+    if (!q) {
+      st.searchActive = false;
+      renderConvs(st.convs);
+      searchDd.style.display = 'none';
+      return;
+    }
+    st.searchActive = true;
+    searchDd.style.display = 'none';
+    var ql = q.toLowerCase();
+    var filt = st.convs.filter(function(c) {
+      return c.nombre.toLowerCase().indexOf(ql) !== -1 || c.username.toLowerCase().indexOf(ql) !== -1;
+    });
+    renderConvs(filt, 'No se encontraron conversaciones');
+
+    st.searchTm = setTimeout(function() {
+      searchDd.innerHTML = '<div class="ms-search-loading"><i class="fas fa-spinner fa-spin"></i> Buscando...</div>';
+      searchDd.style.display = 'block';
+      fetch('/mensajes/api/buscar?q=' + encodeURIComponent(q))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var known = new Set(st.convs.map(function(c) { return c.usuario_id; }));
+          var nuevos = data.filter(function(u) { return !known.has(u.usuario_id); });
+          if (nuevos.length === 0) {
+            searchDd.innerHTML = '<div class="ms-search-empty">No se encontraron usuarios</div>';
+          } else {
+            var h = '<div class="ms-search-head">Usuarios:</div>';
+            nuevos.forEach(function(u) {
+                h += '<div class="ms-search-item" data-id="' + u.usuario_id + '" data-nombre="' + esc(u.nombre) + '" data-username="' + esc(u.username) + '" data-foto="' + esc(u.foto) + '">';
+              h += '<img src="' + esc(u.foto) + '">';
+              h += '<div><strong class="ms-name-link" data-username="' + esc(u.username) + '">' + esc(u.nombre) + '</strong><span>@' + esc(u.username) + '</span></div></div>';
+            });
+            searchDd.innerHTML = h;
+            searchDd.querySelectorAll('.ms-search-item').forEach(function(item) {
+              item.addEventListener('click', function(e) {
+                if (e.target.closest('.ms-name-link')) return;
+                searchInput.value = '';
+                searchDd.style.display = 'none';
+                st.searchActive = false;
+                renderConvs(st.convs);
+                st._clickedUser = {
+                  id: parseInt(this.getAttribute('data-id')),
+                  nombre: this.getAttribute('data-nombre'),
+                  username: this.getAttribute('data-username'),
+                  foto: this.getAttribute('data-foto'),
+                };
+                openChat(st._clickedUser.id);
+              });
+            });
+            searchDd.querySelectorAll('.ms-search-item .ms-name-link').forEach(function(el) {
+              el.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var u = this.getAttribute('data-username');
+                if (u) window.location.href = '/jugador/perfil/' + encodeURIComponent(u);
+              });
+            });
+          }
+        }).catch(function() {
+          searchDd.innerHTML = '<div class="ms-search-empty">Error al buscar</div>';
+        });
+    }, 300);
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.ms-search-wrap')) {
+      searchDd.style.display = 'none';
+      if (st.searchActive && !searchInput.value.trim()) {
+        st.searchActive = false;
+        renderConvs(st.convs);
+      }
+    }
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      searchDd.style.display = 'none';
+      if (st.searchActive && !searchInput.value.trim()) {
+        st.searchActive = false;
+        renderConvs(st.convs);
+      }
+    }
+  });
+
+  /* ── Back ── */
+  $('ms-back').addEventListener('click', function() {
+    if (window.innerWidth < 768) sidebar.classList.remove('hide');
+    chat.classList.remove('show');
+    placeholder.style.display = 'flex';
+    st.otro = null;
+    st.msgs = [];
+    typingEl.classList.remove('show');
+    inputTarget.classList.remove('show');
+  });
+
+  /* ── Header menu ── */
+  var menuBtn = $('ms-menu-btn');
+  var menuDd = $('ms-menu-dd');
+  menuBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    menuDd.classList.toggle('show');
+  });
+  document.addEventListener('click', function() { menuDd.classList.remove('show'); });
+  menuDd.addEventListener('click', function(e) { e.stopPropagation(); });
+
+  menuDd.querySelectorAll('button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var action = this.getAttribute('data-action');
+      var u = st.targetUsername;
+      menuDd.classList.remove('show');
+      if (action === 'perfil') {
+        if (u) window.location.href = '/jugador/perfil/' + encodeURIComponent(u);
+      } else if (action === 'bloquear') {
+        if (!st.otro) return;
+        var msg = st.bloqueado ? '\u00bfDesbloquear a este usuario?' : '\u00bfBloquear a este usuario? Ya no podr\u00e1 enviarte mensajes.';
+        if (!confirm(msg)) return;
+        fetch('/mensajes/api/bloquear/' + st.otro, {
+          method: 'POST', headers: {'X-CSRFToken': csrf()}
+        }).then(function(r) { return r.json(); }).then(function(d) {
+          if (d.accion === 'bloqueado' || d.accion === 'desbloqueado') {
+            st.bloqueado = d.accion === 'bloqueado';
+            blockedEl.style.display = st.bloqueado ? 'flex' : 'none';
+            input.disabled = st.bloqueado;
+            sendBtn.disabled = st.bloqueado;
+            input.placeholder = st.bloqueado ? 'Has bloqueado a este usuario' : 'Escribe un mensaje...';
+            if (menuBloqTxt) menuBloqTxt.textContent = st.bloqueado ? 'Desbloquear usuario' : 'Bloquear usuario';
+            toast(d.accion === 'bloqueado' ? 'Usuario bloqueado' : 'Usuario desbloqueado', 'ok');
+          } else toast('Error', 'err');
+        }).catch(function(){});
+      } else if (action === 'limpiar') {
+        if (!st.otro) return;
+        if (!confirm('\u00bfEliminar todos los mensajes? Esta acci\u00f3n no se puede deshacer.')) return;
+        fetch('/mensajes/api/eliminar/' + st.otro, {
+          method: 'DELETE', headers: {'X-CSRFToken': csrf()}
+        }).then(function(r) { return r.json(); }).then(function() {
+          st.msgs = [];
+          renderMsgs(st.msgs);
+          loadConvs(true);
+          toast('Mensajes eliminados', 'ok');
+        }).catch(function(){});
+      }
+    });
+  });
+
+  /* ── Delete conversation ── */
+  $('ms-del-conv').addEventListener('click', function() {
+    if (!st.otro) return;
+    if (!confirm('¿Eliminar toda la conversaci&oacute;n?')) return;
+    fetch('/mensajes/api/eliminar/' + st.otro, {
+      method: 'DELETE', headers: {'X-CSRFToken': csrf()}
+    }).then(function(r) { return r.json(); }).then(function() {
+      st.msgs = [];
+      st.otro = null;
+      if (window.innerWidth < 768) sidebar.classList.remove('hide');
+      chat.classList.remove('show');
+      placeholder.style.display = 'flex';
+      typingEl.classList.remove('show');
+      inputTarget.classList.remove('show');
+      loadConvs();
+      toast('Conversaci\u00f3n eliminada', 'ok');
+    }).catch(function(){});
+  });
+
+  /* ── Profile links ── */
+  $('ms-hd-name').addEventListener('click', function() {
+    var u = this.getAttribute('data-username');
+    if (u) window.location.href = '/jugador/perfil/' + encodeURIComponent(u);
+  });
+  $('ms-target-name').addEventListener('click', function() {
+    var u = this.getAttribute('data-username');
+    if (u) window.location.href = '/jugador/perfil/' + encodeURIComponent(u);
+  });
+
+  /* ── Init ── */
+  loadConvs();
+
+  var params = new URLSearchParams(window.location.search);
+  var chatParam = params.get('chat');
+  if (chatParam) {
+    var wait = setInterval(function() {
+      if (st.convs.length > 0 || convsEl.querySelector('.ms-conv-empty')) {
+        clearInterval(wait);
+        openChat(parseInt(chatParam));
+      }
+    }, 200);
+    setTimeout(function() { clearInterval(wait); }, 5000);
+  }
 })();
 </script>
 {% endblock %}

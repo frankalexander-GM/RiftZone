@@ -14,12 +14,18 @@ class Publicacion(db.Model):
     id_usuario = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), nullable=False)
     contenido = db.Column(db.Text, nullable=False)
     imagen_url = db.Column(db.String(255))
+    video_archivo = db.Column(db.String(255))
     juego = db.Column(db.String(100), nullable=False)
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     promocionada = db.Column(db.Boolean, default=False)
     fijada = db.Column(db.Boolean, default=False)
     boost_tipo = db.Column(db.String(20), nullable=True)
     boost_hasta = db.Column(db.DateTime, nullable=True)
+    repost_id = db.Column(db.Integer, db.ForeignKey('publicaciones.id_publicacion', ondelete='SET NULL'), nullable=True)
+    shares_count = db.Column(db.Integer, default=0)
+    
+    # Relación de repost (self-referential)
+    reposteado = db.relationship('Publicacion', remote_side='Publicacion.id_publicacion', backref=db.backref('reposteos', lazy='dynamic'))
     
     # Relación con el usuario (autor)
     autor = db.relationship('Usuario', backref=db.backref('publicaciones', lazy=True))
@@ -40,9 +46,29 @@ class Publicacion(db.Model):
     poll = db.relationship('Poll', backref='publicacion', uselist=False, lazy=True, cascade='all, delete-orphan')
 
     @property
+    def root_reposteado(self):
+        seen = set()
+        current = self.reposteado
+        while current and current.repost_id and current.id_publicacion not in seen:
+            seen.add(current.id_publicacion)
+            current = current.reposteado
+        return current or self.reposteado
+
+    @property
     def likes(self):
         try:
             return len(self.usuarios_likes)
+        except Exception:
+            return 0
+
+    @property
+    def likes_count(self):
+        return self.likes
+
+    @property
+    def comentarios_count(self):
+        try:
+            return len(self.comentarios)
         except Exception:
             return 0
 
@@ -59,10 +85,6 @@ class Publicacion(db.Model):
     @property
     def is_poll(self):
         return self.poll is not None
-    
-    @property
-    def is_tournament(self):
-        return self.contenido and self.contenido.startswith('[Torneo]')
     
     def __repr__(self):
         return f'<Publicacion {self.id_publicacion} por User {self.id_usuario}>'

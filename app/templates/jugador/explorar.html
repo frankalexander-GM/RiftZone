@@ -1,85 +1,325 @@
 {% extends 'base.html' %}
 {% from 'macros/usuario.html' import nombre_usuario %}
 
-{% block title %}Explorar - RiftZone{% endblock %}
+{% block title %}Explorar – RiftZone{% endblock %}
+
+{% block head %}
+<style>
+.explore-page { padding: 20px 16px 40px; max-width: 1200px; margin: 0 auto; }
+
+/* ── Hero ── */
+.explore-hero {
+  position: relative; border-radius: 24px; overflow: hidden; padding: 52px 44px; margin-bottom: 32px;
+  background: linear-gradient(135deg, rgba(139,92,246,.3) 0%, rgba(236,72,153,.2) 50%, rgba(6,182,212,.15) 100%);
+  border: 1px solid rgba(139,92,246,.3);
+}
+.explore-hero::before {
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 60% at 80% 40%, rgba(139,92,246,.2) 0%, transparent 70%),
+             radial-gradient(ellipse 50% 50% at 20% 60%, rgba(236,72,153,.12) 0%, transparent 60%);
+  pointer-events:none;
+}
+.explore-hero-content { position:relative;z-index:1; }
+.explore-hero h1 {
+  font-size:clamp(28px,5vw,44px);font-weight:800;color:white;margin:0 0 6px;
+  background:linear-gradient(135deg,#fff 30%,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.explore-hero p { color:rgba(255,255,255,.5);font-size:15px;margin:0 0 24px; }
+.explore-search-wrap { position:relative;max-width:560px; }
+.explore-search-input {
+  width:100%;padding:15px 52px 15px 22px;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.12);border-radius:100px;color:white;font-size:15px;
+  font-family:inherit;outline:none;transition:all .25s;box-sizing:border-box;
+}
+.explore-search-input::placeholder { color:rgba(255,255,255,.35); }
+.explore-search-input:focus {
+  background:rgba(255,255,255,.1);border-color:rgba(139,92,246,.5);
+  box-shadow:0 0 0 4px rgba(139,92,246,.12),0 0 40px rgba(139,92,246,.06);
+}
+.explore-search-icon { position:absolute;right:20px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.3);font-size:16px;pointer-events:none; }
+
+/* ── Section Headers ── */
+.ex-section { margin-bottom: 36px; }
+.ex-section-head {
+  display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:12px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.ex-section-head h2 {
+  font-size:18px;font-weight:700;color:white;margin:0;display:flex;align-items:center;gap:10px;
+}
+.ex-section-head h2 i { font-size:16px; }
+.ex-section-head .ex-line { flex:1;height:1px;background:linear-gradient(90deg,rgba(139,92,246,.25),transparent); }
+.ex-section-head .ex-count {
+  font-size:12px;color:var(--text-muted);background:rgba(255,255,255,.04);
+  padding:4px 12px;border-radius:100px;white-space:nowrap;
+}
+
+/* ── Live Grid ── */
+.live-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px; }
+.live-card {
+  background:var(--bg-card);border:1px solid var(--border-color);border-radius:18px;
+  overflow:hidden;transition:all .3s;cursor:pointer;
+  animation:lcIn .5s ease forwards;opacity:0;transform:translateY(12px);
+}
+.live-card:nth-child(1) { animation-delay:.05s; }
+.live-card:nth-child(2) { animation-delay:.12s; }
+.live-card:nth-child(3) { animation-delay:.19s; }
+.live-card:nth-child(4) { animation-delay:.26s; }
+@keyframes lcIn { to{opacity:1;transform:translateY(0)} }
+.live-card:hover {
+  border-color:rgba(139,92,246,.4);transform:translateY(-4px);
+  box-shadow:0 12px 40px rgba(0,0,0,.3);
+}
+.live-preview {
+  position:relative;width:100%;aspect-ratio:16/9;
+  background:linear-gradient(135deg,#1a1a3e,#0d0b1a);display:flex;
+  align-items:center;justify-content:center;overflow:hidden;
+}
+.live-preview-bg { position:absolute;inset:0;opacity:.12;object-fit:cover; }
+.live-badge {
+  position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:5px;
+  background:rgba(239,68,68,.92);color:white;padding:4px 12px;border-radius:100px;
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+.live-badge i { font-size:8px; }
+.live-viewers {
+  position:absolute;top:10px;right:10px;
+  background:rgba(0,0,0,.75);color:white;padding:4px 12px;border-radius:100px;
+  font-size:10px;font-weight:600;display:flex;align-items:center;gap:4px;
+  backdrop-filter:blur(4px);
+}
+.live-preview-icon { font-size:42px;opacity:.25;color:white;z-index:1; }
+.live-card-body { padding:14px 16px; }
+.live-card-author { display:flex;align-items:center;gap:8px;text-decoration:none;margin-bottom:6px; }
+.live-card-author div { width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:white;font-weight:700;flex-shrink:0; }
+.live-card-author strong { color:white;font-size:13px; }
+.live-card-author:hover strong { color:#c4b5fd; }
+.live-card-title { font-size:14px;font-weight:700;color:white;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden; }
+.live-card-meta { display:flex;gap:14px;font-size:11px;color:var(--text-muted); }
+.live-card-meta span { display:flex;align-items:center;gap:4px; }
+
+/* ── Category Filter Pills ── */
+.ex-cat-pills {
+  display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;
+  animation:catIn .4s ease forwards;opacity:0;
+}
+@keyframes catIn { to{opacity:1} }
+.ex-cat-pill {
+  padding:6px 16px;border-radius:100px;border:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.03);color:var(--text-muted);font-size:12px;font-weight:600;
+  cursor:pointer;transition:all .2s;font-family:inherit;
+}
+.ex-cat-pill:hover { background:rgba(139,92,246,.15);border-color:rgba(139,92,246,.35);color:#c4b5fd; }
+.ex-cat-pill.active { background:rgba(139,92,246,.2);border-color:rgba(139,92,246,.5);color:#c4b5fd; }
+
+/* ── Communities Grid ── */
+.ex-com-grid {
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;
+}
+.ex-com-card {
+  position:relative;border-radius:20px;overflow:hidden;text-decoration:none;
+  aspect-ratio:3/4;display:flex;align-items:flex-end;
+  background:var(--bg-card);border:1px solid var(--border-color);
+  transition:all .35s cubic-bezier(.16,1,.3,1);
+  animation:comIn .5s ease forwards;opacity:0;transform:translateY(20px);
+}
+.ex-com-card:nth-child(1) { animation-delay:.03s; }
+.ex-com-card:nth-child(2) { animation-delay:.08s; }
+.ex-com-card:nth-child(3) { animation-delay:.13s; }
+.ex-com-card:nth-child(4) { animation-delay:.18s; }
+.ex-com-card:nth-child(5) { animation-delay:.23s; }
+.ex-com-card:nth-child(6) { animation-delay:.28s; }
+.ex-com-card:nth-child(7) { animation-delay:.33s; }
+.ex-com-card:nth-child(8) { animation-delay:.38s; }
+.ex-com-card:nth-child(9) { animation-delay:.43s; }
+.ex-com-card:nth-child(10) { animation-delay:.48s; }
+@keyframes comIn { to{opacity:1;transform:translateY(0)} }
+.ex-com-card:hover {
+  transform:translateY(-6px) scale(1.02);
+  box-shadow:0 16px 48px rgba(0,0,0,.4);
+  border-color:color-mix(in srgb,var(--com-color) 50%,transparent);
+}
+.ex-com-bg {
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.85) 80%);
+  z-index:1;transition:all .4s;
+}
+.ex-com-card::before {
+  content:'';position:absolute;inset:0;z-index:0;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--com-color) 30%,transparent),transparent 60%);
+  opacity:.4;transition:opacity .4s;
+}
+.ex-com-card:hover::before { opacity:.7; }
+.ex-com-body { position:relative;z-index:2;padding:22px 20px;width:100%; }
+.ex-com-cat {
+  display:inline-block;padding:3px 10px;border-radius:100px;
+  background:color-mix(in srgb,var(--com-color) 25%,transparent);
+  color:var(--com-color);font-size:10px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;margin-bottom:8px;
+}
+.ex-com-body h3 {
+  font-size:17px;font-weight:800;color:white;margin:0 0 4px;
+  text-shadow:0 2px 12px rgba(0,0,0,.4);
+}
+.ex-com-stat {
+  font-size:12px;color:rgba(255,255,255,.5);
+  display:flex;align-items:center;gap:5px;
+}
+.ex-com-stat i { font-size:10px; }
+
+/* ── Game icon decorations ── */
+.ex-com-icon {
+  position:absolute;top:16px;right:16px;z-index:2;
+  width:44px;height:44px;border-radius:14px;
+  background:color-mix(in srgb,var(--com-color) 20%,rgba(0,0,0,.3));
+  backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;color:var(--com-color);border:1px solid color-mix(in srgb,var(--com-color) 30%,transparent);
+  transition:all .3s;
+}
+.ex-com-card:hover .ex-com-icon {
+  transform:scale(1.1) rotate(-5deg);
+  background:color-mix(in srgb,var(--com-color) 35%,rgba(0,0,0,.3));
+}
+
+/* ── Responsive ── */
+@media (max-width:640px) {
+  .explore-hero { padding:28px 20px; }
+  .live-grid { grid-template-columns:repeat(2,1fr); }
+  .ex-com-grid { grid-template-columns:repeat(2,1fr);gap:12px; }
+  .ex-com-card { aspect-ratio:2/3; }
+  .ex-com-body h3 { font-size:14px; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 24px;">
-    <h2 style="color: var(--text-main); font-size: 24px; margin: 0 0 4px;">
-        <i class="fas fa-compass" style="color: var(--accent-purple); margin-right: 8px;"></i>Explorar
-    </h2>
-    <p style="color: var(--text-muted); font-size: 14px; margin: 0;">Descubre nuevos jugadores, clanes y publicaciones.</p>
-</div>
-
-{% if usuarios %}
-<div style="margin-bottom: 32px;">
-    <h3 style="color: var(--text-main); font-size: 18px; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
-        <i class="fas fa-users" style="color: var(--accent-purple);"></i> Jugadores destacados
-    </h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
-        {% for u in usuarios %}
-        <a href="{{ url_for('jugador.perfil_publico', username=u.username) }}" style="display: flex; align-items: center; gap: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--accent-purple)'" onmouseout="this.style.borderColor=''">
-            <div style="width: 44px; height: 44px; border-radius: 50%; overflow: hidden; border: 2px solid var(--accent-purple); flex-shrink: 0;">
-                <img src="{{ u | user_avatar }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-            </div>
-            <div style="min-width: 0;">
-                <div style="color: var(--text-main); font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ u.nombre }}</div>
-                <div style="color: var(--text-muted); font-size: 12px;">@{{ u.username }} · Nv.{{ u.nivel }}</div>
-            </div>
-        </a>
-        {% endfor %}
+<div class="explore-page">
+  <!-- Hero -->
+  <div class="explore-hero">
+    <div class="explore-hero-content">
+      <h1><i class="fas fa-compass" style="font-size:.85em;"></i> Explorar</h1>
+      <p>Descubre comunidades gamers, conecta con jugadores y encuentra tu tribu.</p>
+      <div class="explore-search-wrap">
+        <input type="text" class="explore-search-input" id="ex-search"
+          placeholder="Buscar comunidades..." autocomplete="off"
+          oninput="filterCommunities(this.value)">
+        <i class="fas fa-search explore-search-icon"></i>
+      </div>
     </div>
-</div>
-{% endif %}
+  </div>
 
-{% if clanes %}
-<div style="margin-bottom: 32px;">
-    <h3 style="color: var(--text-main); font-size: 18px; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
-        <i class="fas fa-shield-alt" style="color: var(--accent-magenta);"></i> Clanes recientes
-    </h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
-        {% for c in clanes %}
-        <a href="{{ url_for('clanes.detalle', clan_id=c.id_clan) }}" style="display: flex; align-items: center; gap: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--accent-magenta)'" onmouseout="this.style.borderColor=''">
-            <img src="{{ c.logo_url }}" alt="" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border-color);">
-            <div style="min-width: 0;">
-                <div style="color: var(--text-main); font-weight: 600; font-size: 15px;">{{ c.nombre }}</div>
-                <div style="color: var(--text-muted); font-size: 12px;">{{ c.descripcion[:60] }}{% if c.descripcion|length > 60 %}...{% endif %}</div>
-            </div>
-        </a>
-        {% endfor %}
+  <!-- En Vivo -->
+  <div class="ex-section">
+    <div class="ex-section-head">
+      <h2><i class="fas fa-broadcast-tower" style="color:#ef4444;"></i> En Vivo</h2>
+      <div class="ex-line"></div>
+      <span class="ex-count">4 streams</span>
     </div>
-</div>
-{% endif %}
-
-{% if publicaciones %}
-<div>
-    <h3 style="color: var(--text-main); font-size: 18px; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
-        <i class="fas fa-newspaper" style="color: var(--accent-green);"></i> Publicaciones recientes
-    </h3>
-    {% for p in publicaciones %}
-    <div class="post-card" style="margin-bottom: 12px;">
-        <div class="post-header">
-            <a href="{{ url_for('jugador.perfil_publico', username=p.autor.username) }}" class="post-author">
-                <div class="post-avatar-wrap">
-                    <img src="{{ p.autor | user_avatar }}" alt="">
-                </div>
-                <div class="author-info">
-                    <h4>{{ nombre_usuario(p.autor, false) }}</h4>
-                    <div class="post-meta">
-                        <span>@{{ p.autor.username }}</span>
-                        {% if p.juego %}<span class="game-tag">{{ p.juego }}</span>{% endif %}
-                    </div>
-                </div>
-            </a>
+    <div class="live-grid">
+      {% set lives = [
+        { 'name':'NitroxGamer','user':'@nitroxgamer','game':'Valorant','title':'RANKED PUSH - Diamante 2','viewers':'1.2K','likes':892,'color':'#8b5cf6' },
+        { 'name':'LunaSpark_','user':'@lunaspark','game':'Minecraft','title':'Construyendo ciudad medieval','viewers':'856','likes':634,'color':'#ec4899' },
+        { 'name':'Z3R0X','user':'@z3r0x','game':'Fortnite','title':'Torneo en vivo - Ganando la copa','viewers':'2.1K','likes':1502,'color':'#06b6d4' },
+        { 'name':'KaiZen','user':'@kaizen','game':'LoL','title':'Nuevo parche 14.10 pruebas','viewers':'654','likes':421,'color':'#f59e0b' },
+      ] %}
+      {% for s in lives %}
+      <div class="live-card">
+        <div class="live-preview">
+          <div class="live-preview-bg" style="background:linear-gradient(135deg,{{ s.color }}22,{{ s.color }}44);"></div>
+          <span class="live-badge"><i class="fas fa-circle"></i> EN VIVO</span>
+          <span class="live-viewers"><i class="fas fa-eye"></i> {{ s.viewers }}</span>
+          <div class="live-preview-icon">🎮</div>
         </div>
-        <div class="post-content">{{ p.contenido }}</div>
+        <div class="live-card-body">
+          <a href="#" class="live-card-author" onclick="event.preventDefault();">
+            <div style="background:{{ s.color }};">{{ s.name[0] }}</div>
+            <strong>{{ s.name }}</strong>
+          </a>
+          <div class="live-card-title">{{ s.title }}</div>
+          <div class="live-card-meta">
+            <span><i class="fas fa-gamepad" style="color:{{ s.color }};"></i>{{ s.game }}</span>
+            <span><i class="fas fa-heart" style="color:#f43f5e;"></i>{{ s.likes }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
+  </div>
+
+  <!-- Comunidades -->
+  <div class="ex-section">
+    <div class="ex-section-head">
+      <h2><i class="fas fa-users" style="color:#8b5cf6;"></i> Comunidades</h2>
+      <div class="ex-line"></div>
+      <span class="ex-count">{{ todas_comunidades|length }} comunidades</span>
+    </div>
+
+    <!-- Category pills -->
+    <div class="ex-cat-pills" id="cat-pills">
+      <button class="ex-cat-pill active" onclick="filterCat(this,'all')">Todas</button>
+      {% for c in categorias %}
+      <button class="ex-cat-pill" onclick="filterCat(this,'{{ c | e }}')">{{ c }}</button>
+      {% endfor %}
+    </div>
+
+    <!-- Grid -->
+    <div class="ex-com-grid" id="com-grid">
+      {% set game_icons = {
+        'counter-strike 2': 'fas fa-crosshairs',
+        'valorant': 'fas fa-crosshairs',
+        'fortnite': 'fas fa-fort-awesome',
+        'minecraft': 'fas fa-cube',
+        'league of legends': 'fas fa-dragon',
+        'apex legends': 'fas fa-bolt',
+        'rocket league': 'fas fa-car',
+        'call of duty': 'fas fa-skull',
+        'overwatch 2': 'fas fa-shield-halved',
+        'fall guys': 'fas fa-face-laugh-beam',
+        'genshin impact': 'fas fa-star',
+        'grand theft auto v': 'fas fa-car-side',
+        'fifa 24': 'fas fa-futbol',
+        'among us': 'fas fa-user-secret',
+        'pubg': 'fas fa-gun',
+      } %}
+      {% for c in todas_comunidades %}
+      <a href="{{ url_for('jugador.comunidad_detalle', juego=c.nombre) }}" class="ex-com-card" style="--com-color: {{ c.color }};">
+        <div class="ex-com-bg"></div>
+        <span class="ex-com-icon"><i class="{{ game_icons.get(c.nombre.lower(), 'fas fa-gamepad') }}"></i></span>
+        <div class="ex-com-body" data-categoria="{{ c.categoria }}">
+          <span class="ex-com-cat">{{ c.categoria }}</span>
+          <h3>{{ c.nombre }}</h3>
+          <span class="ex-com-stat"><i class="fas fa-file-alt"></i> {{ c.posts }} publicaciones</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
 </div>
-{% else %}
-    <div style="text-align: center; padding: clamp(32px,8vw,60px) clamp(16px,4vw,24px); color: var(--text-muted);">
-    <i class="fas fa-compass" style="font-size: 48px; opacity: 0.2; margin-bottom: 16px;"></i>
-    <p style="font-size: 16px;">No hay contenido para mostrar aún.</p>
-</div>
-{% endif %}
+
+<script>
+/* ── Category Filter ── */
+function filterCat(btn, cat) {
+  document.querySelectorAll('.ex-cat-pill').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.querySelectorAll('.ex-com-card').forEach(function(card){
+    if (cat === 'all') { card.style.display = ''; return; }
+    var body = card.querySelector('.ex-com-body');
+    if (body && body.getAttribute('data-categoria') === cat) { card.style.display = ''; }
+    else { card.style.display = 'none'; }
+  });
+}
+
+/* ── Community Search ── */
+function filterCommunities(q) {
+  var ql = (q || '').toLowerCase().trim();
+  document.querySelectorAll('.ex-com-card').forEach(function(card){
+    var name = card.querySelector('h3').textContent.toLowerCase();
+    if (!ql || name.indexOf(ql) !== -1) { card.style.display = ''; }
+    else { card.style.display = 'none'; }
+  });
+}
+</script>
 {% endblock %}

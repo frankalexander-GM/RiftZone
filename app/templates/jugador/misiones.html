@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Misiones - RiftZone{% endblock %}
+
+{% block content %}
+<style>
+.mi-hero {
+    background: linear-gradient(135deg, rgba(167,139,250,0.12) 0%, rgba(255,45,149,0.06) 50%, rgba(6,182,212,0.04) 100%);
+    border-radius: var(--radius-lg);
+    padding: 32px 28px;
+    border: 1px solid rgba(167,139,250,0.15);
+    margin-bottom: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.mi-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(167,139,250,0.06) 0%, transparent 60%),
+                radial-gradient(circle at 70% 50%, rgba(255,45,149,0.04) 0%, transparent 60%);
+    pointer-events: none;
+}
+.mi-hero h1 { margin: 0 0 6px; font-size: 26px; font-weight: 900; position: relative; }
+.mi-hero p { margin: 0; font-size: 14px; color: var(--text-muted); position: relative; }
+.mi-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+@media(max-width:600px){ .mi-stats { grid-template-columns: 1fr; } }
+.mi-stat {
+    background: var(--bg-card); border-radius: var(--radius-md); padding: 18px 20px;
+    border: 1px solid var(--border-color); text-align: center;
+    transition: transform 0.2s, border-color 0.2s;
+}
+.mi-stat:hover { transform: translateY(-2px); }
+.mi-stat-value { font-size: 28px; font-weight: 900; margin: 4px 0 2px; }
+.mi-stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.mi-streak {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px 20px; background: linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.02));
+    border-radius: var(--radius-md); margin-bottom: 20px;
+    border: 1px solid rgba(251,191,36,0.15);
+}
+.mi-streak-fire { font-size: 32px; color: var(--accent-orange); animation: mi-pulse 2s ease-in-out infinite; }
+@keyframes mi-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+.mi-streak-info h3 { margin: 0; font-size: 18px; color: var(--accent-orange); }
+.mi-streak-info p { margin: 2px 0 0; font-size: 13px; color: var(--text-muted); }
+.mi-hitos { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+.mi-hito {
+    font-size: 11px; padding: 4px 12px; border-radius: 99px; font-weight: 600;
+    transition: all 0.2s;
+}
+.mi-hito.locked { background: rgba(255,255,255,0.04); color: var(--text-muted); border: 1px solid transparent; }
+.mi-hito.unlocked { background: rgba(251,191,36,0.12); color: var(--accent-orange); border: 1px solid rgba(251,191,36,0.2); }
+.mi-hito.reached { background: rgba(52,211,153,0.15); color: var(--accent-green); border: 1px solid rgba(52,211,153,0.2); }
+.mi-card {
+    background: var(--bg-card); border-radius: var(--radius-md); padding: 24px;
+    border: 1px solid var(--border-color); margin-bottom: 16px;
+}
+.mi-card-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--border-color);
+}
+.mi-card-header h2 { font-size: 16px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px; }
+.mi-mission {
+    display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+    background: rgba(255,255,255,0.02); border-radius: var(--radius-sm);
+    border: 1px solid rgba(255,255,255,0.04); margin-bottom: 8px;
+    transition: all 0.2s;
+}
+.mi-mission:hover { background: rgba(255,255,255,0.04); }
+.mi-mission.done { opacity: 0.6; }
+.mi-mission-icon {
+    width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; background: rgba(167,139,250,0.12); color: var(--accent-purple); flex-shrink: 0;
+}
+.mi-mission.done .mi-mission-icon { background: rgba(52,211,153,0.12); color: var(--accent-green); }
+.mi-mission-info { flex: 1; min-width: 0; }
+.mi-mission-info h4 { margin: 0; font-size: 14px; color: var(--text-main); font-weight: 600; }
+.mi-mission-info span { font-size: 12px; color: var(--text-muted); }
+.mi-mission-bar {
+    width: 80px; height: 6px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden;
+}
+.mi-mission-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan)); transition: width 0.5s ease; }
+.mi-mission.done .mi-mission-bar-fill { background: var(--accent-green); }
+.mi-mission-cta { padding: 6px 16px; border-radius: 99px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.mi-mission-cta.ready { background: var(--accent-green); color: #000; }
+.mi-mission-cta.ready:hover { transform: scale(1.05); filter: brightness(1.1); }
+.mi-mission-cta.done { background: rgba(52,211,153,0.12); color: var(--accent-green); cursor: default; }
+.mi-mission-cta.pending { background: rgba(255,255,255,0.06); color: var(--text-muted); cursor: default; }
+</style>
+
+<div class="mi-hero">
+    <h1><i class="fas fa-tasks" style="color:var(--accent-cyan);"></i> Centro de Misiones</h1>
+    <p>Completa misiones diarias, gana RiftCoins y desbloquea recompensas por racha</p>
+</div>
+
+{% set mis_completadas = misiones | selectattr('completada', 'equalto', true) | list %}
+<div class="mi-stats">
+    <div class="mi-stat">
+        <div class="mi-stat-value" style="color:var(--accent-cyan);">{{ mis_completadas | length }}/{{ misiones | length }}</div>
+        <div class="mi-stat-label">Misiones Completadas</div>
+    </div>
+    <div class="mi-stat">
+        <div class="mi-stat-value" style="color:var(--accent-orange);">{{ racha }}</div>
+        <div class="mi-stat-label">Dias de Racha</div>
+    </div>
+    <div class="mi-stat">
+        <div class="mi-stat-value" style="color:var(--accent-purple);">{{ prox_recompensa if not ya_reclamo_hoy else '0' }}</div>
+        <div class="mi-stat-label">RC Disponibles Hoy</div>
+    </div>
+</div>
+
+<div class="mi-streak">
+    <i class="fas fa-fire mi-streak-fire"></i>
+    <div class="mi-streak-info">
+        <h3>Racha de {{ racha }} dia{% if racha != 1 %}s{% endif %}</h3>
+        <p>+{{ 50 + racha * 5 }} RiftCoins disponibles en la recompensa diaria</p>
+    </div>
+    <div class="mi-hitos">
+        {% for dias, bonus in hitos_streak.items() %}
+        <span class="mi-hito {% if racha >= dias %}reached{% elif racha >= dias - 3 %}unlocked{% else %}locked{% endif %}">
+            <i class="fas fa-{% if racha >= dias %}check-circle{% else %}flag{% endif %}"></i> {{ dias }}d +{{ bonus }}
+        </span>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Recompensa Diaria -->
+<div class="mi-card">
+    <div class="mi-card-header">
+        <h2><i class="fas fa-gift" style="color:var(--accent-orange);"></i> Recompensa Diaria</h2>
+        {% if ya_reclamo_hoy %}
+        <span style="font-size:13px;color:var(--accent-green);font-weight:600;"><i class="fas fa-check-circle"></i> Reclamada hoy</span>
+        {% endif %}
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(251,191,36,0.05));display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-coins" style="font-size:26px;color:var(--accent-orange);"></i>
+            </div>
+            <div>
+                <div style="font-size:13px;color:var(--text-muted);">Recompensa de hoy</div>
+                <div>
+                    <strong style="font-size:32px;color:var(--accent-orange);">{{ prox_recompensa if not ya_reclamo_hoy else '0' }}</strong>
+                    <span style="font-size:14px;color:var(--text-muted);"> RiftCoins</span>
+                </div>
+                {% if not ya_reclamo_hoy and racha > 0 %}
+                <div style="font-size:12px;color:var(--text-muted);">Base {{ 50 + racha * 5 }} + bonus por racha</div>
+                {% endif %}
+            </div>
+        </div>
+        {% if ya_reclamo_hoy %}
+        <button class="gw-btn gw-btn-secondary" disabled style="padding:10px 24px;"><i class="fas fa-check-circle" style="color:var(--accent-green);"></i> Reclamado</button>
+        {% else %}
+        <form method="POST" action="{{ url_for('billetera.ganar') }}" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="gw-btn gw-btn-primary" style="padding:10px 24px;font-size:14px;"><i class="fas fa-hand"></i> Reclamar Ahora</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Misiones -->
+<div class="mi-card">
+    <div class="mi-card-header">
+        <h2><i class="fas fa-tasks" style="color:var(--accent-cyan);"></i> Misiones del Dia</h2>
+        <span style="font-size:13px;color:var(--text-muted);">{{ mis_completadas | length }}/{{ misiones | length }} completadas</span>
+    </div>
+    {% for m in misiones %}
+    <div class="mi-mission {% if m.completada %}done{% endif %}" id="mision-{{ m.id }}">
+        <div class="mi-mission-icon">
+            {% if m.reclamada %}<i class="fas fa-check-double" style="color:var(--accent-green);"></i>{% elif m.completada %}<i class="fas fa-check"></i>{% else %}<i class="{{ m.icono }}"></i>{% endif %}
+        </div>
+        <div class="mi-mission-info">
+            <h4>{{ m.nombre }}</h4>
+            <span>+{{ m.tokens }} RiftCoins</span>
+        </div>
+        <div style="text-align:right;">
+            <div class="mi-mission-bar">
+                <div class="mi-mission-bar-fill" style="width:{{ (m.actual / m.requisito * 100) if m.requisito > 0 else 0 }}%;"></div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ m.actual }}/{{ m.requisito }}</div>
+        </div>
+        {% if m.reclamada %}
+        <button class="mi-mission-cta done" disabled><i class="fas fa-check-circle"></i> Reclamado</button>
+        {% elif m.completada %}
+        <button class="mi-mission-cta done" onclick="reclamarMision('{{ m.id }}', this)"><i class="fas fa-check"></i> Reclamar</button>
+        {% else %}
+        <button class="mi-mission-cta pending" disabled>{{ m.actual }}/{{ m.requisito }}</button>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function reclamarMision(misionId, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    fetch('/jugador/reclamar-mision/' + misionId, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            btn.className = 'mi-mission-cta done';
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Listo';
+            showToast('+' + data.tokens + ' RC', 'success');
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Reclamar';
+            showToast(data.message || 'Error.', 'error');
+        }
+    })
+    .catch(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Reclamar';
+        showToast('Error de conexion.', 'error');
+    });
+}
+</script>
+{% endblock %}

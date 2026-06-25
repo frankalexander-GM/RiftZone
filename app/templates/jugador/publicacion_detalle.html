@@ -13,8 +13,15 @@
           <img src="{{ post.autor | user_avatar }}" alt="" class="post-detail-avatar">
         </a>
         <div class="post-detail-author-info">
-          <h4><a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" style="text-decoration:none;color:white;">{{ nombre_usuario(post.autor, true) }}</a>{% if post.autor.es_premium %} <i class="fas fa-crown" style="color:#FACC15;font-size:14px;margin-left:4px;"></i>{% endif %}</h4>
-          <div class="post-detail-meta">{{ post.fecha_creacion | timeago }} · <span style="color:var(--accent-purple);">{{ post.juego }}</span></div>
+          <h4><a href="{{ url_for('jugador.perfil_publico', username=post.autor.username) }}" style="text-decoration:none;color:white;">{{ nombre_usuario(post.autor, true) }}</a>{% if post.autor.es_premium %} <i class="fas fa-crown" style="color:#FACC15;font-size:14px;margin-left:4px;"></i>{% endif %}
+          </h4>
+          <div class="post-detail-meta">{{ post.fecha_creacion | timeago }}
+            {% if post.juego %}
+            <a href="{{ url_for('jugador.comunidad_detalle', juego=post.juego) }}" class="ph-game-tag">{{ post.juego }}</a>
+            {% else %}
+            <span class="ph-game-tag ph-game-tag--general">General</span>
+            {% endif %}
+          </div>
         </div>
       </div>
       <div style="display:flex;gap:8px;">
@@ -24,42 +31,75 @@
       </div>
     </div>
 
-    <div class="post-detail-content">{{ post.contenido }}</div>
-
-    {% if post.is_poll %}
-    <div class="post-poll" data-poll-post="{{ post.id_publicacion }}" data-poll-id="{{ post.poll.id_poll }}" data-multiple="{{ '1' if post.poll.multiple_choice else '0' }}" data-change="{{ '1' if post.poll.allow_change else '0' }}">
-      <p class="post-poll-question">{{ post.poll.pregunta }}</p>
-      <div class="post-poll-config-badges">
-        {% if post.poll.multiple_choice %}<span class="poll-badge multiple"><i class="fas fa-check-double"></i> Múltiple</span>{% endif %}
-        {% if post.poll.allow_change %}<span class="poll-badge changeable"><i class="fas fa-sync-alt"></i> Cambiable</span>{% endif %}
-      </div>
-      <div class="post-poll-options">
-        {% for opt in post.poll.options %}
-        <button type="button" class="post-poll-option" data-option-id="{{ opt.id_option }}" onclick="votePoll(this, {{ post.id_publicacion }})">
-          <span class="post-poll-radio"></span>
-          <span class="post-poll-text">{{ opt.texto }}</span>
-          <span class="post-poll-bar" style="width:0%"></span>
-          <span class="post-poll-pct" style="display:none;">0%</span>
-        </button>
-        {% endfor %}
-      </div>
-      <p class="post-poll-total"><i class="far fa-chart-bar"></i> <span class="post-poll-count">{{ post.poll.total_votos }}</span> voto(s)</p>
+    <div class="post-detail-content">
+      {% if post.repost_id and post.reposteado %}
+        {% if post.contenido != '[Repost]' %}<p>{{ post.contenido }}</p>{% endif %}
+        <div class="repost-embed">
+          <a href="{{ url_for('jugador.perfil_publico', username=post.reposteado.autor.username) }}" class="repost-header">
+            <img src="{{ post.reposteado.autor | user_avatar }}" alt="">
+            <span class="repost-name">{{ post.reposteado.autor.nombre or post.reposteado.autor.username }}</span>
+          </a>
+          <div class="repost-content">{{ post.reposteado.contenido[:300] }}{% if post.reposteado.contenido|length > 300 %}...{% endif %}</div>
+          {% if post.reposteado.video_archivo or (post.reposteado.imagen_url and (post.reposteado.imagen_url.endswith('.mp4') or post.reposteado.imagen_url.endswith('.mov') or post.reposteado.imagen_url.endswith('.avi'))) %}
+          <video src="{{ post.reposteado.video_archivo or post.reposteado.imagen_url }}" controls style="width:100%;border-radius:8px;margin-top:6px;max-height:400px;object-fit:cover;background:#000;" preload="metadata"></video>
+          {% elif post.reposteado.imagen_url %}
+          <img src="{{ post.reposteado.imagen_url }}" alt="" style="width:100%;border-radius:8px;margin-top:6px;max-height:400px;object-fit:cover;">
+          {% endif %}
+          {% if post.reposteado.is_poll and post.reposteado.poll %}
+          <div class="post-poll" style="margin-top:8px;" data-post-id="{{ post.reposteado.id_publicacion }}" data-change="{{ '1' if post.reposteado.poll.allow_change else '0' }}">
+            <div class="pp-q">{{ post.reposteado.poll.pregunta }}</div>
+            {% for opt in post.reposteado.poll.options %}
+            <button type="button" class="pp-opt" data-poll-vote data-option-id="{{ opt.id_option }}" data-votos="{{ opt.votos }}">
+              <span class="pp-text">{{ opt.texto }}</span>
+              <span class="pp-votes">{{ opt.votos }} votos</span>
+              <span class="pp-bar" style="display:none;"></span>
+              <span class="pp-pct" style="display:none;"></span>
+            </button>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      {% else %}
+        <p>{{ post.contenido }}</p>
+        {% if post.video_archivo %}
+        <video src="{{ post.video_archivo }}" controls style="width:100%;border-radius:12px;max-height:400px;background:#000;" preload="metadata"></video>
+        {% elif post.imagen_url and (post.imagen_url.endswith('.mp4') or post.imagen_url.endswith('.mov') or post.imagen_url.endswith('.avi')) %}
+        <video src="{{ post.imagen_url }}" controls style="width:100%;border-radius:12px;max-height:400px;background:#000;" preload="metadata"></video>
+        {% elif post.imagen_url %}
+        <img src="{{ post.imagen_url }}" alt="" loading="lazy" style="width:100%;border-radius:12px;max-height:400px;object-fit:cover;">
+        {% endif %}
+        {% if post.is_poll and post.poll %}
+        <div class="post-poll" style="margin-top:10px;" data-post-id="{{ post.id_publicacion }}" data-change="{{ '1' if post.poll.allow_change else '0' }}">
+          <div class="pp-q">{{ post.poll.pregunta }}</div>
+          {% for opt in post.poll.options %}
+          <button type="button" class="pp-opt" data-poll-vote data-option-id="{{ opt.id_option }}" data-votos="{{ opt.votos }}">
+            <span class="pp-text">{{ opt.texto }}</span>
+            <span class="pp-votes">{{ opt.votos }} votos</span>
+            <span class="pp-bar" style="display:none;"></span>
+            <span class="pp-pct" style="display:none;"></span>
+          </button>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endif %}
     </div>
-    {% endif %}
-
-    {% if post.imagen_url %}
-    <div class="post-detail-media">
-      <img src="{{ post.imagen_url }}" alt="Media">
-    </div>
-    {% endif %}
 
     <div class="post-detail-stats">
+      {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+      <button type="button" class="pf-btn{% if post.is_liked_by(current_user) %} liked{% endif %}" data-like-btn data-post-id="{{ post.id_publicacion }}" style="border:none;background:none;cursor:pointer;display:flex;align-items:center;gap:5px;color:var(--text-muted);font-size:13px;">
+        <i class="{% if post.is_liked_by(current_user) %}fas{% else %}far{% endif %} fa-heart" style="color:{% if post.is_liked_by(current_user) %}#EF4444{% endif %};"></i> <span id="like-count-{{ post.id_publicacion }}">{{ post.likes }}</span> Me gusta
+      </button>
+      {% else %}
       <span><i class="fas fa-heart" style="color:#EF4444;"></i> {{ post.likes }} Me gusta</span>
+      {% endif %}
       <span><i class="far fa-comment"></i> {{ post.comentarios|length }} Comentarios</span>
+      <button type="button" class="pf-btn" data-share-btn data-post-id="{{ post.id_publicacion }}" data-post-url="{{ url_for('jugador.ver_publicacion', post_id=post.id_publicacion) }}" style="border:none;background:none;cursor:pointer;display:flex;align-items:center;gap:5px;color:var(--text-muted);font-size:13px;margin-left:auto;">
+        <i class="fas fa-share-alt"></i> Compartir
+      </button>
     </div>
 
     {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
-    <form class="detail-comment-form" method="POST" action="{{ url_for('jugador.comentar', post_id=post.id_publicacion) }}">
+    <form class="detail-comment-form comment-form" data-post-id="{{ post.id_publicacion }}" method="POST" action="{{ url_for('jugador.comentar', post_id=post.id_publicacion) }}" novalidate>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <img src="{{ current_user | user_avatar }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
       <input type="text" name="contenido" placeholder="Escribe un comentario..." autocomplete="off" required>
@@ -88,48 +128,4 @@
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function votePoll(btn, postId) {
-    var optionId = parseInt(btn.getAttribute('data-option-id'));
-    var parent = btn.closest('.post-poll');
-    var multiple = parent.getAttribute('data-multiple') === '1';
-    var changeable = parent.getAttribute('data-change') === '1';
-    var hasVoted = parent.classList.contains('post-poll-voted');
-    if (changeable && hasVoted) {
-        var already = btn.classList.contains('post-poll-voted-opt');
-        if (already) { sendVote(postId, optionId, function(data) { applyResults(parent, data); }); return; }
-    }
-    if (hasVoted && !changeable && !multiple) return;
-    sendVote(postId, optionId, function(data) { applyResults(parent, data); });
-}
-function sendVote(postId, optionId, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', '{{ url_for("jugador.poll_vote", post_id=0) }}'.replace('0', postId), true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token() }}');
-    xhr.onload = function() { if (xhr.status === 200) callback(JSON.parse(xhr.responseText)); };
-    xhr.send(JSON.stringify({option_id: optionId}));
-}
-function applyResults(parent, data) {
-    parent.classList.add('post-poll-voted');
-    var btns = parent.querySelectorAll('.post-poll-option');
-    var voted = data.voted_options || [];
-    btns.forEach(function(b) {
-        var oid = parseInt(b.getAttribute('data-option-id'));
-        var bar = b.querySelector('.post-poll-bar');
-        var pct = b.querySelector('.post-poll-pct');
-        b.classList.toggle('post-poll-voted-opt', voted.indexOf(oid) !== -1);
-        if (data.results && data.results[oid] !== undefined) {
-            bar.style.width = data.results[oid].pct + '%';
-            pct.textContent = data.results[oid].pct + '%';
-            pct.style.display = 'inline';
-        }
-    });
-    var count = parent.querySelector('.post-poll-count');
-    if (count && data.total_votes !== undefined) count.textContent = data.total_votes;
-}
-</script>
 {% endblock %}

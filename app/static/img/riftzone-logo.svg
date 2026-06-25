@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#FF2D95"/>
+    </linearGradient>
+    <linearGradient id="rGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff"/>
+      <stop offset="100%" stop-color="#C4B5FD"/>
+    </linearGradient>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A78BFA" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.2"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Fondo redondeado -->
+  <rect x="8" y="8" width="240" height="240" rx="48" fill="url(#bgGrad)" filter="url(#glow)"/>
+  <!-- Anillo exterior -->
+  <circle cx="128" cy="128" r="80" fill="none" stroke="url(#ringGrad)" stroke-width="2.5"/>
+  <!-- Anillo interior -->
+  <circle cx="128" cy="128" r="60" fill="none" stroke="url(#ringGrad)" stroke-width="1.5"/>
+  <!-- Letra R estilizada -->
+  <path d="M98 96h30c12 0 22 3 28 10s10 15 10 26c0 12-4 21-12 28s-18 10-30 10h-14l30 38h-22l-30-38v-28zm12 10v36h16c8 0 14-2 18-7s6-11 6-19c0-7-2-12-6-16s-10-6-18-6h-16z" fill="url(#rGrad)"/>
+  <!-- Píxel de gaming decorativo -->
+  <rect x="80" y="80" width="6" height="6" rx="1" fill="#fff" opacity="0.4"/>
+  <rect x="170" y="80" width="6" height="6" rx="1" fill="#fff" opacity="0.4"/>
+  <rect x="80" y="170" width="6" height="6" rx="1" fill="#fff" opacity="0.4"/>
+  <rect x="170" y="170" width="6" height="6" rx="1" fill="#fff" opacity="0.4"/>
+  <rect x="125" y="74" width="6" height="6" rx="1" fill="#fff" opacity="0.6"/>
+  <rect x="125" y="176" width="6" height="6" rx="1" fill="#fff" opacity="0.6"/>
+</svg>

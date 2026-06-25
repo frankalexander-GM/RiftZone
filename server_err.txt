@@ -1,0 +1,119 @@
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5050
+ * Running on http://172.19.245.173:5050
+Press CTRL+C to quit
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 229-199-478
+Exception in thread Thread-7 (_handle_event_internal):
+Traceback (most recent call last):
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1073, in _bootstrap_inner
+    self.run()
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1010, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\socketio\server.py", line 597, in _handle_event_internal
+    r = server._trigger_event(data[0], namespace, sid, *data[1:])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\socketio\server.py", line 623, in _trigger_event
+    return handler(*args)
+           ^^^^^^^^^^^^^^
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask_socketio\__init__.py", line 292, in _handler
+    return self._handle_event(handler, message, real_ns, sid,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask_socketio\__init__.py", line 835, in _handle_event
+    ret = handler(*args)
+          ^^^^^^^^^^^^^^
+  File "C:\Users\PC\Documents\Proyectos\RiftZone\app\services\socketio_events.py", line 13, in handle_join
+    socketio.join_room(room)
+    ^^^^^^^^^^^^^^^^^^
+AttributeError: 'SocketIO' object has no attribute 'join_room'
+127.0.0.1 - - [07/Jun/2026 20:47:07] "GET /auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [07/Jun/2026 20:47:30] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [07/Jun/2026 20:47:30] "GET /jugador/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Jun/2026 20:47:30] "GET /static/css/games_sphere.css?v=15 HTTP/1.1" 200 -
+127.0.0.1 - - [07/Jun/2026 20:47:30] "GET /static/css/glassmorphism.css?v=13 HTTP/1.1" 304 -
+127.0.0.1 - - [07/Jun/2026 20:47:30] "GET /static/img/riftzone-logo.svg HTTP/1.1" 304 -
+127.0.0.1 - - [07/Jun/2026 20:47:30] "GET /static/js/feed-interactions.js HTTP/1.1" 304 -
+127.0.0.1 - - [07/Jun/2026 20:47:30] "GET /static/js/world-chat.js HTTP/1.1" 304 -
+127.0.0.1 - - [07/Jun/2026 20:47:30] "GET /static/js/stories.js?v=2 HTTP/1.1" 200 -
+127.0.0.1 - - [07/Jun/2026 20:47:31] "GET /jugador/dashboard HTTP/1.1" 200 -
+Exception in thread Thread-35 (_handle_event_internal):
+Traceback (most recent call last):
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1073, in _bootstrap_inner
+127.0.0.1 - - [07/Jun/2026 20:47:31] "GET /historias/feed HTTP/1.1" 200 -
+    self.run()
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1010, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\socketio\server.py", line 597, in _handle_event_internal
+    r = server._trigger_event(data[0], namespace, sid, *data[1:])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\socketio\server.py", line 623, in _trigger_event
+    return handler(*args)
+           ^^^^^^^^^^^^^^
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask_socketio\__init__.py", line 292, in _handler
+    return self._handle_event(handler, message, real_ns, sid,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask_socketio\__init__.py", line 835, in _handle_event
+    ret = handler(*args)
+          ^^^^^^^^^^^^^^
+  File "C:\Users\PC\Documents\Proyectos\RiftZone\app\services\socketio_events.py", line 13, in handle_join
+    socketio.join_room(room)
+    ^^^^^^^^^^^^^^^^^^
+AttributeError: 'SocketIO' object has no attribute 'join_room'
+127.0.0.1 - - [07/Jun/2026 20:47:31] "GET /jugador/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Jun/2026 20:47:36] "GET /static/uploads/stories/story_789204ed49474932.jpg HTTP/1.1" 304 -
+127.0.0.1 - - [07/Jun/2026 20:47:37] "GET /static/uploads/stories/story_9276032a75ca4b29.jpg HTTP/1.1" 304 -
+127.0.0.1 - - [07/Jun/2026 20:47:38] "GET /static/uploads/stories/story_4494d664751b4b39.jpg HTTP/1.1" 304 -
+ * Detected change in 'C:\\Users\\PC\\Documents\\Proyectos\\RiftZone\\app\\models\\transaccion.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 229-199-478
+Exception in thread Thread-7 (_handle_event_internal):
+Traceback (most recent call last):
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1073, in _bootstrap_inner
+    self.run()
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1010, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\socketio\server.py", line 597, in _handle_event_internal
+    r = server._trigger_event(data[0], namespace, sid, *data[1:])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\socketio\server.py", line 623, in _trigger_event
+    return handler(*args)
+           ^^^^^^^^^^^^^^
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask_socketio\__init__.py", line 292, in _handler
+    return self._handle_event(handler, message, real_ns, sid,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask_socketio\__init__.py", line 835, in _handle_event
+    ret = handler(*args)
+          ^^^^^^^^^^^^^^
+  File "C:\Users\PC\Documents\Proyectos\RiftZone\app\services\socketio_events.py", line 13, in handle_join
+    socketio.join_room(room)
+    ^^^^^^^^^^^^^^^^^^
+AttributeError: 'SocketIO' object has no attribute 'join_room'
+ * Detected change in 'C:\\Users\\PC\\Documents\\Proyectos\\RiftZone\\app\\controllers\\historias.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 229-199-478
+Exception in thread Thread-7 (_handle_event_internal):
+Traceback (most recent call last):
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1073, in _bootstrap_inner
+    self.run()
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1010, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\socketio\server.py", line 597, in _handle_event_internal
+    r = server._trigger_event(data[0], namespace, sid, *data[1:])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\socketio\server.py", line 623, in _trigger_event
+    return handler(*args)
+           ^^^^^^^^^^^^^^
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask_socketio\__init__.py", line 292, in _handler
+    return self._handle_event(handler, message, real_ns, sid,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PC\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask_socketio\__init__.py", line 835, in _handle_event
+    ret = handler(*args)
+          ^^^^^^^^^^^^^^
+  File "C:\Users\PC\Documents\Proyectos\RiftZone\app\services\socketio_events.py", line 13, in handle_join
+    socketio.join_room(room)
+    ^^^^^^^^^^^^^^^^^^
+AttributeError: 'SocketIO' object has no attribute 'join_room'

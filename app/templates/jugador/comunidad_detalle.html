@@ -1,206 +1,1330 @@
 {% extends 'base.html' %}
 {% from 'macros/usuario.html' import nombre_usuario %}
 
-{% block title %}Comunidad {{ juego }} - RiftZone{% endblock %}
+{% block title %}{{ juego }} - RiftZone{% endblock %}
 
-{% block content %}
-<!-- ENCABEZADO DE LA COMUNIDAD -->
-<div class="com-header" style="background: linear-gradient(rgba(15, 23, 42, 0.5), var(--bg-color)), url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200&auto=format&fit=crop'); background-size: cover; background-position: center; border-radius: var(--radius-lg); padding: 40px; margin-bottom: 24px; border: 1px solid var(--border-color); display: flex; align-items: flex-end; justify-content: space-between; height: 200px;">
-    <div>
-        <h1 style="color: white; font-size: 32px; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">{{ juego }}</h1>
-        <p style="color: rgba(255,255,255,0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.8);">Comunidad oficial de jugadores</p>
-    </div>
-    <a href="{{ url_for('chat.chat_sala', comunidad=juego) }}" style="background: var(--accent-purple); color: white; padding: 12px 24px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 15px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); display: flex; align-items: center; gap: 8px; transition: transform 0.2s;">
-        <i class="fas fa-comment-dots" style="font-size: 18px;"></i> Entrar al Chat
-    </a>
-</div>
-
-<!-- CREATE POST (específico para el juego) -->
-{% if current_user.is_authenticated %}
-<div class="create-post" style="margin-bottom:16px;">
-    <form id="create-post-form" method="POST" action="{{ url_for('jugador.crear_publicacion') }}" novalidate>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <div class="create-post-header" style="margin-bottom:12px;">
-            <img src="{{ current_user | user_avatar }}" alt="Avatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
-            <textarea name="contenido" class="post-input" placeholder="Comparte algo con la comunidad de {{ juego }}..." required style="height:50px; padding:12px; font-size:14px; border:none; background:transparent; border-bottom:1px solid rgba(255,255,255,0.1); border-radius:0;"></textarea>
-        </div>
-        
-        <div id="image-url-container" style="display:none; padding:0 0 12px 56px;">
-            <input type="url" name="imagen_url" placeholder="Pega la URL de tu imagen aquí..." style="width:100%; background:var(--bg-dark); border:1px solid var(--border-color); padding:10px 12px; border-radius:var(--radius-sm); color:white; font-size:13px;">
-        </div>
-
-        <div class="create-post-actions" style="padding-left:56px; display:flex; justify-content:space-between; align-items:center;">
-            <div class="post-types" style="gap:16px;">
-                <button type="button" class="post-type-btn image" onclick="document.getElementById('image-url-container').style.display = 'block';"><i class="far fa-image"></i> Imagen</button>
-                <button type="button" class="post-type-btn clip"><i class="fas fa-video"></i> Clip</button>
-            </div>
-            <div style="display:flex; gap:12px; align-items:center;">
-                <!-- Bloqueamos el juego a esta comunidad -->
-                <input type="hidden" name="juego" value="{{ juego }}">
-                <span style="font-size:13px; color:var(--text-muted);">Publicando en: <strong>{{ juego }}</strong></span>
-                <button type="submit" class="btn-primary" style="padding:8px 24px; border-radius:20px;">Publicar</button>
-            </div>
-        </div>
-    </form>
-</div>
-{% endif %}
-
-<!-- FEED DE PUBLICACIONES -->
-{% if publicaciones %}
-    {% for post in publicaciones %}
-    <div class="post-card">
-        <div class="post-header">
-            <div class="post-author">
-                <img src="{{ post.autor.foto_perfil if post.autor.foto_perfil else 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?q=80&w=100&auto=format&fit=crop' }}" alt="{{ post.autor.username }}" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
-                <div class="author-info">
-                    <h4>{{ nombre_usuario(post.autor, true) }}</h4>
-                    <div class="post-meta">
-                        {{ post.fecha_creacion | timeago }}
-                    </div>
-                </div>
-            </div>
-            <button class="icon-btn" style="background:transparent;"><i class="fas fa-ellipsis-h"></i></button>
-        </div>
-        
-        <div class="post-content">
-            {{ post.contenido }}
-        </div>
-        
-        {% if post.imagen_url %}
-        <div class="post-media">
-            <img src="{{ post.imagen_url }}" alt="Media" style="width:100%; border-radius:var(--radius-md); margin-top:12px;">
-        </div>
-        {% endif %}
-        
-        <div class="post-actions" style="margin-top:16px; margin-bottom:16px;">
-            {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
-            <button type="button" class="action-btn {% if post.is_liked_by(current_user) %}liked{% endif %}" data-like-btn data-post-id="{{ post.id_publicacion }}" id="like-btn-{{ post.id_publicacion }}">
-                <i class="{% if post.is_liked_by(current_user) %}fas{% else %}far{% endif %} fa-heart"></i> <span id="like-count-{{ post.id_publicacion }}">{{ post.likes }}</span>
-            </button>
-            {% else %}
-            <span class="action-btn" style="cursor:default; opacity:0.7;"><i class="fas fa-heart"></i> {{ post.likes }}</span>
-            {% endif %}
-            <button type="button" class="action-btn" data-toggle-comments data-post-id="{{ post.id_publicacion }}">
-                <i class="far fa-comment"></i> <span data-comment-count>{{ post.comentarios|length }}</span>
-            </button>
-            <button type="button" class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
-        </div>
-
-        <!-- COMMENTS -->
-        <div id="comments-{{ post.id_publicacion }}" class="comments-section" style="display:none; border-top:1px solid var(--border-color); padding-top:16px;">
-            <div id="comments-list-{{ post.id_publicacion }}" class="comments-list">
-            {% for comment in post.comentarios %}
-            <div class="comment" style="display:flex; gap:12px; margin-bottom:12px;">
-                <img src="{{ comment.autor | user_avatar }}" alt="" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
-                <div class="comment-content" style="background:var(--bg-dark); padding:10px 12px; border-radius:var(--radius-md); flex:1;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:4px; gap:8px;">
-                        <span style="font-size:13px; font-weight:700;">{{ comment.autor.nombre if comment.autor.nombre else comment.autor.username }}</span>
-                        <span style="font-size:11px; color:var(--text-muted);">{{ comment.fecha_creacion | timeago }}</span>
-                    </div>
-                    <p style="font-size:13px; color:white; line-height:1.4; margin:0;">{{ comment.contenido }}</p>
-                </div>
-            </div>
-            {% else %}
-            <p class="comments-empty" style="color:var(--text-muted); font-size:13px; margin:0 0 12px;">Sé el primero en comentar.</p>
-            {% endfor %}
-            </div>
-            {% if current_user.rol != 'invitado' %}
-            <form class="comment-form" method="POST" action="{{ url_for('jugador.comentar', post_id=post.id_publicacion) }}" data-post-id="{{ post.id_publicacion }}" style="display:flex; gap:12px; margin-top:16px; align-items:center;" novalidate>
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <img src="{{ current_user | user_avatar }}" alt="" style="width:32px; height:32px; border-radius:50%; object-fit:cover; flex-shrink:0;">
-                <input type="text" name="contenido" placeholder="Escribe un comentario..." autocomplete="off" style="flex:1; min-width:0; background:var(--bg-dark); border:1px solid var(--border-color); padding:8px 12px; border-radius:20px; color:white; font-size:13px;" required>
-                <button type="submit" style="background:transparent; border:none; color:var(--accent-purple); cursor:pointer; padding:8px;"><i class="fas fa-paper-plane"></i></button>
-            </form>
-            {% else %}
-            <div style="text-align:center; margin-top:16px; padding:12px; background:rgba(0,0,0,0.2); border-radius:8px; border:1px dashed var(--border-color);">
-                <span style="font-size:12px; color:var(--text-muted);"><i class="fas fa-lock"></i> <a href="{{ url_for('auth.register') }}" style="color:var(--accent-purple);">Regístrate</a> para comentar.</span>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    {% endfor %}
-{% else %}
-    <!-- DATOS DE PRUEBA VISUALES -->
-    <div style="margin-bottom: 24px; padding: 12px; background: rgba(139, 92, 246, 0.1); border-left: 4px solid var(--accent-purple); color: var(--text-muted); font-size: 13px; border-radius: 4px;">
-        <i class="fas fa-info-circle" style="color: var(--accent-purple);"></i> Estas son publicaciones de ejemplo para que puedas probar y ver el diseño de la comunidad de {{ juego }}.
-    </div>
-
-    <!-- Ejemplo 1 -->
-    <div class="post-card">
-        <div class="post-header">
-            <div class="post-author">
-                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=100&auto=format&fit=crop" alt="ProGamer" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
-                <div class="author-info">
-                    <h4><a href="#" style="color:white; text-decoration:none;">ProGamer_99</a> <i class="fas fa-check-circle verified-icon" style="font-size:14px;"></i></h4>
-                    <div class="post-meta">Hace 2 horas</div>
-                </div>
-            </div>
-            <button class="icon-btn" style="background:transparent;"><i class="fas fa-ellipsis-h"></i></button>
-        </div>
-        <div class="post-content">
-            ¡Acabo de encontrar el mejor spot en {{ juego }}! Nadie se espera que estés ahí. ¿Alguien más lo usa? 🤯🎮
-        </div>
-        <div class="post-media">
-            <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=800&auto=format&fit=crop" alt="Gameplay" style="width:100%; height:300px; object-fit:cover; border-radius:var(--radius-md); margin-top:12px;">
-        </div>
-        <div class="post-actions" style="margin-top:16px; margin-bottom:16px;">
-            <button class="action-btn" onclick="this.classList.toggle('liked'); let s=this.querySelector('span'); s.textContent = this.classList.contains('liked') ? '143' : '142';"><i class="fas fa-heart"></i> <span>142</span></button>
-            <button class="action-btn" onclick="let c = document.getElementById('fake-comments-1'); c.style.display = c.style.display === 'none' ? 'block' : 'none';"><i class="far fa-comment"></i> 24</button>
-            <button class="action-btn"><i class="fas fa-retweet"></i> 5</button>
-            <button class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
-        </div>
-        <!-- FAKE COMMENTS -->
-        <div id="fake-comments-1" class="comments-section" style="display:none; border-top:1px solid var(--border-color); padding-top:16px;">
-            <div style="display:flex; gap:12px; margin-top:16px;">
-                <input type="text" placeholder="Escribe un comentario..." style="flex:1; background:var(--bg-dark); border:1px solid var(--border-color); padding:8px 12px; border-radius:20px; color:white; font-size:13px;">
-                <button type="button" onclick="showToast('Crea un post real arriba para guardar comentarios.', 'info');" style="background:transparent; border:none; color:var(--accent-purple); cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Ejemplo 2 -->
-    <div class="post-card">
-        <div class="post-header">
-            <div class="post-author">
-                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop" alt="Luna" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
-                <div class="author-info">
-                    <h4><a href="#" style="color:white; text-decoration:none;">LunaGamer</a></h4>
-                    <div class="post-meta">Hace 5 horas</div>
-                </div>
-            </div>
-            <button class="icon-btn" style="background:transparent;"><i class="fas fa-ellipsis-h"></i></button>
-        </div>
-        <div class="post-content">
-            Buscando equipo (Dúo/Trío) para jugar rankeds en la comunidad de {{ juego }} esta noche. Requisito: usar micrófono y no ser tóxico. 🎙️🔥
-        </div>
-        <div class="post-actions" style="margin-top:16px; margin-bottom:16px;">
-            <button class="action-btn liked" onclick="this.classList.toggle('liked'); let s=this.querySelector('span'); s.textContent = this.classList.contains('liked') ? '89' : '88';"><i class="fas fa-heart"></i> <span>89</span></button>
-            <button class="action-btn" onclick="let c = document.getElementById('fake-comments-2'); c.style.display = c.style.display === 'none' ? 'block' : 'none';"><i class="far fa-comment"></i> 12</button>
-            <button class="action-btn"><i class="fas fa-retweet"></i> 1</button>
-            <button class="action-btn" style="margin-left:auto;"><i class="far fa-bookmark"></i></button>
-        </div>
-        <!-- FAKE COMMENTS -->
-        <div id="fake-comments-2" class="comments-section" style="display:none; border-top:1px solid var(--border-color); padding-top:16px;">
-            <div style="display:flex; gap:12px; margin-top:16px;">
-                <input type="text" placeholder="Escribe un comentario..." style="flex:1; background:var(--bg-dark); border:1px solid var(--border-color); padding:8px 12px; border-radius:20px; color:white; font-size:13px;">
-                <button type="button" onclick="showToast('Crea un post real arriba para guardar comentarios.', 'info');" style="background:transparent; border:none; color:var(--accent-purple); cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
-            </div>
-        </div>
-    </div>
-{% endif %}
-
+{% block head %}
 <style>
-@media (max-width: 768px) {
-    .com-header {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        height: auto !important;
-        padding: clamp(20px, 5vw, 40px) !important;
-        gap: 16px;
-    }
-    .com-header a {
-        align-self: flex-start;
-    }
+:root { --accent: {{ color or '#8b5cf6' }}; }
+.cd { padding: 20px 16px 40px; max-width: 900px; margin: 0 auto; }
+
+/* ── Header ── */
+.cd-header {
+  position: relative; border-radius: 24px; overflow: hidden; padding: 52px 40px; margin-bottom: 24px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent) 0%, rgba(15,12,35,.85) 100%);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  animation: cdPulse 4s ease-in-out infinite;
+}
+@keyframes cdPulse { 0%,100%{ border-color:color-mix(in srgb, var(--accent) 40%, transparent); } 50%{ border-color:color-mix(in srgb, var(--accent) 70%, transparent); } }
+.cd-header-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 80% at 70% 20%, color-mix(in srgb, var(--accent) 20%, transparent) 0%, transparent 70%);
+  animation: cdDrift 6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes cdDrift { 0%{ transform:scale(1) translate(0,0); } 100%{ transform:scale(1.08) translate(8px,-8px); } }
+.cd-header-content { position: relative; z-index: 1; }
+.cd-header-content h1 { font-size: clamp(26px,4vw,38px); font-weight: 800; color: white; margin: 0 0 4px; }
+.cd-header-content h1 i { color: var(--accent); }
+.cd-header-content p { color: rgba(255,255,255,.55); font-size: 14px; margin: 0 0 20px; max-width: 500px; }
+.cd-header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.cd-header-btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 10px 22px; border-radius: 100px;
+  font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; transition: all .25s;
+  text-decoration: none; border: none;
+}
+.cd-header-btn.chat { background: var(--accent); color: white; }
+.cd-header-btn.chat:hover { opacity: .9; transform: translateY(-2px); box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 40%, transparent); }
+.cd-header-btn.back { background: rgba(255,255,255,.07); color: var(--text-muted); border: 1px solid rgba(255,255,255,.1); }
+.cd-header-btn.back:hover { background: rgba(255,255,255,.12); color: white; transform: translateY(-1px); }
+.cd-header-btn.follow { background: rgba(255,255,255,.1); color: white; border: 1px solid rgba(255,255,255,.15); }
+.cd-header-btn.follow:hover { background: rgba(255,255,255,.18); transform: translateY(-2px); }
+.cd-header-btn.follow.siguiendo { background: color-mix(in srgb, var(--accent) 35%, transparent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+
+/* ── Stats ── */
+.cd-stats {
+  display: flex; gap: 20px; padding: 16px 20px; border-radius: 16px;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06); margin-bottom: 24px;
+  flex-wrap: wrap; transition: all .2s;
+}
+.cd-stats:hover { border-color: color-mix(in srgb, var(--accent) 25%, transparent); }
+.cd-stat { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+.cd-stat i { font-size: 15px; transition: transform .2s; }
+.cd-stat:hover i { transform: scale(1.2); }
+.cd-stat strong { color: white; font-weight: 700; }
+
+/* ── Tabs ── */
+.cd-tabs {
+  display: flex; gap: 4px; margin-bottom: 20px; background: rgba(255,255,255,.04);
+  border-radius: 14px; padding: 5px; border: 1px solid rgba(255,255,255,.07);
+  overflow-x: auto; scrollbar-width: none;
+}
+.cd-tabs::-webkit-scrollbar { display:none; }
+.cd-tab {
+  display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 10px;
+  border: none; background: transparent; color: var(--text-muted); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .18s; white-space: nowrap; font-family: inherit; text-decoration: none;
+}
+.cd-tab i { font-size: 13px; }
+.cd-tab:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); color: white; }
+.cd-tab.active { background: color-mix(in srgb, var(--accent) 20%, transparent); color: white; border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+
+/* ── Create post (dashboard style) ── */
+.cd-create {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px;
+  padding: 24px; margin-bottom: 20px;
+}
+.cd-create:focus-within { border-color: color-mix(in srgb, var(--accent) 50%, transparent); box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 8%, transparent); }
+.cd-create-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-color); padding-bottom:12px; }
+.cd-create-header h3 { margin:0; font-size:16px; color:white; display:flex; align-items:center; gap:8px; }
+.cd-create-header h3 i { color:var(--accent); }
+.cd-create-pills {
+  display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.cd-create-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.04); color: var(--text-muted); font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all .2s;
+}
+.cd-create-pill:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); color: white; border-color: color-mix(in srgb, var(--accent) 20%, transparent); }
+.cd-create-pill.active { background: color-mix(in srgb, var(--accent) 18%, transparent); color: white; border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.cd-create-pill i { font-size: 13px; }
+
+.cd-create-form { display: none; }
+.cd-create-form.active { display: block; animation: cdSlide .2s ease; }
+@keyframes cdSlide { from{ opacity:0; transform:translateY(-8px); } to{ opacity:1; transform:translateY(0); } }
+
+.cd-form-label { display:block; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; letter-spacing:.5px; }
+.cd-form-input, .cd-form-select {
+  width:100%; background:var(--bg-dark); color:white; border:1px solid var(--border-color); border-radius:10px;
+  padding:10px 14px; outline:none; font-family:inherit; font-size:13px; box-sizing:border-box;
+}
+.cd-form-input:focus, .cd-form-select:focus { border-color:color-mix(in srgb, var(--accent) 50%, transparent); }
+.cd-form-textarea {
+  width:100%; background:var(--bg-dark); color:white; border:1px solid var(--border-color); border-radius:12px;
+  padding:14px; box-sizing:border-box; font-family:inherit; font-size:14px; outline:none; resize:none;
+}
+.cd-form-textarea:focus { border-color:color-mix(in srgb, var(--accent) 50%, transparent); }
+.cd-form-group { margin-bottom: 16px; }
+.cd-form-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.cd-form-row label { font-size:12px; color:var(--text-muted); font-weight:600; width:20px; text-align:center; }
+.cd-form-row input { flex:1; }
+.cd-form-hint { font-size:11px; color:var(--text-muted); }
+
+.cd-upload-btn {
+  display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:8px;
+  font-size:12px; font-weight:600; background:var(--accent); color:white; border:none; cursor:pointer; font-family:inherit;
+}
+.cd-upload-btn:hover { opacity:.9; }
+.cd-upload-preview { display:none; border-radius:10px; overflow:hidden; position:relative; background:#000; margin-top:10px; }
+.cd-upload-preview.open { display:block; }
+.cd-upload-preview img, .cd-upload-preview video { width:100%; max-height:200px; object-fit:contain; display:block; }
+.cd-upload-meta { display:flex; align-items:center; gap:10px; padding:8px 12px; background:rgba(0,0,0,.3); }
+.cd-upload-meta span { font-size:11px; color:rgba(255,255,255,.6); flex:1; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; }
+.cd-upload-meta .dur { font-size:11px; color:var(--text-muted); }
+.cd-upload-remove {
+  background:none; border:none; color:#ef4444; font-size:14px; cursor:pointer;
+}
+.cd-poll-config { display:flex; gap:12px; flex-wrap:wrap; padding:10px 12px; background:var(--bg-dark); border-radius:10px; align-items:center; }
+.cd-poll-config label { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-muted); cursor:pointer; }
+.cd-poll-config select { background:none; color:var(--text-muted); border:1px solid var(--border-color); border-radius:6px; padding:4px 8px; font-size:11px; outline:none; }
+.cd-add-opt { background:none; border:none; color:var(--accent); font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; }
+
+.cd-create-actions { display:flex; justify-content:flex-end; gap:8px; border-top:1px solid var(--border-color); padding-top:16px; margin-top:20px; }
+.cd-btn {
+  padding:10px 20px; border-radius:10px; border:none; font-size:13px; font-weight:600;
+  cursor:pointer; font-family:inherit; transition:all .2s;
+}
+.cd-btn-secondary { background:rgba(255,255,255,.06); color:var(--text-muted); }
+.cd-btn-secondary:hover { background:rgba(255,255,255,.1); color:white; }
+.cd-btn-primary {
+  background:linear-gradient(135deg,var(--accent),color-mix(in srgb, var(--accent) 70%, #000)); color:white;
+  padding:10px 24px; font-weight:700; border-radius:10px;
+}
+.cd-btn-primary:hover { opacity:.9; transform:translateY(-1px); box-shadow:0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent); }
+
+/* ── Post cards ── */
+.cd-feed { display: flex; flex-direction: column; gap: 18px; }
+.cd-post {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px;
+  overflow: visible; transition: all .3s;
+  animation: cdPostIn .4s ease forwards;
+  animation-delay: calc(var(--i,0) * 0.06s);
+  opacity: 0; transform: translateY(16px);
+}
+@keyframes cdPostIn { to{ opacity:1; transform:translateY(0); } }
+.cd-post:hover { border-color: color-mix(in srgb, var(--accent) 30%, transparent); transform: translateY(-1px); box-shadow: 0 8px 30px rgba(0,0,0,.15); }
+.cd-post-head { display: flex; align-items: center; gap: 10px; padding: 16px 18px 0; }
+.cd-post-author { display: flex; align-items: center; gap: 10px; text-decoration: none; min-width: 0; flex: 1; }
+.cd-post-author img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid transparent; transition: all .2s; }
+.cd-post-author:hover img { border-color: var(--accent); transform: scale(1.05); }
+.cd-post-author div { min-width: 0; }
+.cd-post-author strong { color: white; font-size: 14px; display: block; }
+.cd-post-author span { font-size: 11px; color: var(--text-muted); }
+.cd-post-text { font-size: 14px; color: #d1d5db; line-height: 1.6; padding: 12px 18px 0; margin: 0; }
+.cd-post-media { width: 100%; margin-top: 12px; background: #0a0818; display: flex; align-items: center; justify-content: center; }
+.cd-post-media img { width: 100%; max-height: 440px; object-fit: contain; display: block; }
+.cd-post-media video { width: 100%; max-height: 440px; display: block; aspect-ratio: 16/9; object-fit: contain; }
+
+/* ── Repost Embed ── */
+.cd-repost-embed {
+  margin: 10px 18px 0; border-left: 3px solid var(--accent); padding: 14px 16px;
+  background: rgba(255,255,255,.02); border-radius: 10px;
+}
+.cd-repost-embed-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.cd-repost-embed-head img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink:0; }
+.cd-repost-embed-head a { font-size: 12px; font-weight: 700; color: white; text-decoration: none; }
+.cd-repost-embed-head a:hover { color: var(--accent); }
+.cd-repost-embed-head span { font-size: 10px; color: var(--text-muted); }
+.cd-repost-embed .re-text { font-size: 13px; color: #9ca3af; margin: 0 0 8px; line-height: 1.5; }
+.cd-repost-embed .re-media { width: 100%; border-radius: 8px; overflow: hidden; background: #0a0818; max-height: 220px; }
+.cd-repost-embed .re-media img,
+.cd-repost-embed .re-media video { width: 100%; max-height: 220px; object-fit: contain; display: block; }
+
+/* ── Post Menu (⋮) ── */
+.cd-post-head { position: relative; }
+.cd-post-menu-btn {
+  width:32px;height:32px;border-radius:8px;border:none;background:transparent;
+  color:var(--text-muted);cursor:pointer;font-size:16px;display:flex;align-items:center;
+  justify-content:center;transition:all .2s;flex-shrink:0;margin-left:auto;
+}
+.cd-post-menu-btn:hover { background:rgba(255,255,255,.08); color:white; }
+.cd-post-dropdown {
+  position:absolute;right:0;top:100%;margin-top:4px;min-width:180px;
+  background:#1c1730;border:1px solid rgba(255,255,255,.08);border-radius:12px;
+  padding:4px;z-index:50;box-shadow:0 8px 32px rgba(0,0,0,.4);
+  opacity:0;visibility:hidden;transform:translateY(-4px);transition:all .2s;
+}
+.cd-post-dropdown.open { opacity:1;visibility:visible;transform:translateY(0); }
+.cd-post-dropdown-item {
+  display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;
+  color:#d1d5db;border-radius:8px;cursor:pointer;transition:all .15s;border:none;
+  background:transparent;width:100%;text-align:left;font-family:inherit;
+}
+.cd-post-dropdown-item:hover { background:rgba(255,255,255,.06); color:white; }
+.cd-post-dropdown-item i { width:18px;text-align:center;font-size:13px; }
+.cd-post-dropdown-item.danger { color:#f87171; }
+.cd-post-dropdown-item.danger:hover { background:rgba(239,68,68,.12); color:#ef4444; }
+.cd-post-dropdown-item.danger i { color:#f87171; }
+
+/* ── Video Play Overlay ── */
+.cd-post-media, .re-media { position: relative; cursor: pointer; }
+.cd-vplay {
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.35);opacity:0;transition:opacity .25s;z-index:2;
+}
+.cd-post-media:hover .cd-vplay,
+.re-media:hover .cd-vplay { opacity: 1; }
+.cd-vplay i {
+  width:56px;height:56px;border-radius:50%;background:rgba(139,92,246,.9);
+  display:flex;align-items:center;justify-content:center;color:white;font-size:22px;
+  box-shadow:0 0 30px rgba(139,92,246,.3);transition:transform .2s;
+}
+.cd-vplay:hover i { transform: scale(1.1); }
+
+/* ── Edit Modal ── */
+.edit-modal-overlay {
+  position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;
+  display:flex;align-items:center;justify-content:center;
+  animation:emFadeIn .2s ease;
+}
+@keyframes emFadeIn { from{opacity:0}to{opacity:1} }
+.edit-modal-box {
+  background:#1c1730;border:1px solid rgba(255,255,255,.08);border-radius:18px;
+  padding:28px;width:90%;max-width:520px;max-height:80vh;overflow-y:auto;
+  animation:emSlideIn .25s ease;
+}
+@keyframes emSlideIn { from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1} }
+.edit-modal-title {
+  font-size:18px;font-weight:700;color:white;margin-bottom:18px;
+  display:flex;align-items:center;gap:10px;
+}
+.edit-modal-title i { color:var(--accent); }
+.edit-modal-textarea {
+  width:100%;min-height:120px;padding:14px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);
+  color:white;font-size:14px;font-family:inherit;resize:vertical;
+  outline:none;transition:border-color .2s;
+}
+.edit-modal-textarea:focus { border-color:var(--accent); }
+.edit-modal-actions {
+  display:flex;justify-content:flex-end;gap:10px;margin-top:18px;
+}
+.edit-modal-btn {
+  padding:10px 22px;border-radius:10px;border:none;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:inherit;transition:all .2s;
+}
+.edit-modal-btn.cancel { background:rgba(255,255,255,.06);color:var(--text-muted); }
+.edit-modal-btn.cancel:hover { background:rgba(255,255,255,.1);color:white; }
+.edit-modal-btn.save {
+  background:linear-gradient(135deg,var(--accent),color-mix(in srgb, var(--accent) 70%, #000));
+  color:white;padding:10px 28px;font-weight:700;
+}
+.edit-modal-btn.save:hover { opacity:.9;transform:translateY(-1px); }
+.edit-modal-btn.save:disabled { opacity:.5;cursor:not-allowed;transform:none; }
+
+/* ── Poll ── */
+.cd-poll {
+  margin: 10px 18px 0; padding: 14px 16px; background: rgba(255,255,255,.02); border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.06);
+}
+.cd-poll h4 { font-size: 14px; font-weight: 700; color: white; margin: 0 0 10px; }
+.cd-poll-opt {
+  display: block; width: 100%; text-align: left; padding: 10px 14px; margin-bottom: 6px;
+  border-radius: 10px; border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03); color: #d1d5db; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all .2s;
+}
+.cd-poll-opt:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.cd-poll-opt .bar-wrap { height: 6px; background: rgba(255,255,255,.06); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+.cd-poll-opt .bar-fill { height: 100%; border-radius: 4px; transition: width .5s ease; }
+
+/* ── Actions ── */
+.cd-post-actions {
+  display: flex; align-items: center; gap: 2px; padding: 10px 16px 14px;
+}
+.cd-pca-btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: 8px;
+  border: none; background: transparent; color: var(--text-muted); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all .2s; font-family: inherit; text-decoration: none;
+}
+.cd-pca-btn:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); color: white; transform: translateY(-1px); }
+.cd-pca-btn i { font-size: 14px; }
+.cd-pca-btn.liked { color: #f43f5e; }
+.cd-pca-btn.liked i { font-weight: 900; }
+.cd-pca-btn:active { transform: scale(.92); }
+
+/* ── Comments ── */
+.cd-comments { border-top: 1px solid rgba(255,255,255,.05); padding: 16px 18px; animation: cdSlide .25s ease; }
+.cd-comment-item { display: flex; gap: 10px; margin-bottom: 14px; align-items: flex-start; }
+.cd-comment-item img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.cd-comment-bubble {
+  background: rgba(255,255,255,.04); padding: 10px 14px; border-radius: 14px; flex: 1;
+  border: 1px solid rgba(255,255,255,.04); transition: all .2s;
+}
+.cd-comment-bubble:hover { background: rgba(255,255,255,.06); }
+.cd-comment-head { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.cd-comment-head a { font-size: 13px; font-weight: 700; color: white; text-decoration: none; }
+.cd-comment-head a:hover { color: var(--accent); }
+.cd-comment-head span { font-size: 10px; color: var(--text-muted); }
+.cd-comment-bubble p { font-size: 13px; color: #d1d5db; margin: 0; line-height: 1.4; }
+.cd-comment-form { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+.cd-comment-form input {
+  flex: 1; padding: 9px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.05); color: white; font-size: 13px; font-family: inherit; outline: none;
+  transition: all .2s;
+}
+.cd-comment-form input:focus { border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: rgba(255,255,255,.08); }
+.cd-comment-form button {
+  width: 38px; height: 38px; border-radius: 50%; border: none;
+  background: var(--accent); color: white; cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; transition: all .2s; flex-shrink: 0;
+}
+.cd-comment-form button:hover { opacity: .85; transform: scale(1.1); }
+
+/* ── Share Modal ── */
+.share-modal-overlay {
+  position: fixed; inset: 0; z-index: 99998;
+  background: rgba(0,0,0,.65); display: flex; align-items: center; justify-content: center;
+  padding: 20px; animation: fader .2s ease;
+}
+@keyframes fader { from{ opacity:0; } to{ opacity:1; } }
+.share-modal-box {
+  background: #1a1730; border: 1px solid rgba(139,92,246,.25); border-radius: 24px;
+  padding: 24px; max-width: 360px; width: 100%; animation: pop .25s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pop { from{ opacity:0; transform:scale(.9) translateY(10px); } to{ opacity:1; transform:scale(1) translateY(0); } }
+.share-modal-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: white; margin-bottom: 18px; }
+.share-modal-title i { color: #8b5cf6; }
+.share-options { display: flex; flex-direction: column; gap: 6px; }
+.share-opt {
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px;
+  border: none; background: rgba(255,255,255,.04); color: white; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all .2s; width: 100%; text-align: left;
+}
+.share-opt:hover { background: rgba(255,255,255,.08); transform: translateX(4px); }
+.share-opt-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.share-opt-cancel { display: block; width: 100%; text-align: center; padding: 10px; margin-top: 4px; border: none; background: transparent; color: var(--text-muted); font-size: 13px; cursor: pointer; font-family: inherit; }
+.share-opt-cancel:hover { color: white; }
+
+/* ── Repost Modal ── */
+.repost-modal-overlay {
+  position: fixed; inset: 0; z-index: 99998;
+  background: rgba(0,0,0,.65); display: flex; align-items: center; justify-content: center;
+  padding: 20px; animation: fader .2s ease;
+}
+.repost-modal-box {
+  background: #1a1730; border: 1px solid rgba(139,92,246,.25); border-radius: 24px;
+  padding: 24px; max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; animation: pop .25s cubic-bezier(.34,1.56,.64,1);
+}
+.repost-modal-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: white; margin-bottom: 16px; }
+.repost-modal-title i { color: #8b5cf6; }
+.repost-original {
+  background: rgba(255,255,255,.03); border-radius: 12px; padding: 14px; margin-bottom: 12px;
+  border: 1px solid rgba(255,255,255,.06);
+}
+.repost-original-author { display: flex; align-items: center; gap: 8px; text-decoration: none; margin-bottom: 6px; }
+.repost-original-author img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+.repost-original-author strong { font-size: 13px; font-weight: 700; color: white; }
+.repost-original-text { font-size: 13px; color: #9ca3af; line-height: 1.4; margin: 0 0 6px; }
+.repost-original-media { width: 100%; border-radius: 8px; overflow: hidden; background: #0a0818; max-height: 180px; }
+.repost-original-media img,
+.repost-original-media video { width: 100%; max-height: 180px; object-fit: contain; display: block; }
+.repost-textarea {
+  width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.05); color: white; font-size: 13px; font-family: inherit;
+  resize: none; min-height: 70px; outline: none; box-sizing: border-box; margin-bottom: 12px;
+}
+.repost-textarea:focus { border-color: rgba(139,92,246,.5); }
+
+.repost-target-wrap { margin-bottom: 12px; }
+.repost-target-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; display: block; }
+.repost-target-search { width: 100%; padding: 9px 14px 9px 36px; border-radius: 10px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); color: white; font-size: 13px; font-family: inherit; outline: none; box-sizing: border-box; }
+.repost-target-search:focus { border-color: rgba(139,92,246,.5); }
+.repost-target-search-wrap { position: relative; margin-bottom: 6px; }
+.repost-target-search-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px; pointer-events: none; }
+.repost-target-list { max-height: 140px; overflow-y: auto; border-radius: 10px; border: 1px solid rgba(255,255,255,.06); }
+.repost-target-item {
+  display: flex; align-items: center; gap: 8px; padding: 9px 12px; cursor: pointer;
+  transition: background .15s; font-size: 13px; color: #d1d5db; border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.repost-target-item:last-child { border-bottom: none; }
+.repost-target-item:hover { background: rgba(139,92,246,.1); }
+.repost-target-item.selected { background: rgba(139,92,246,.15); color: white; }
+.repost-target-item .rt-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.repost-target-item .rt-check { margin-left: auto; color: var(--accent); display: none; }
+.repost-target-item.selected .rt-check { display: block; }
+.repost-target-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+.repost-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.repost-btn {
+  padding: 9px 20px; border-radius: 100px; border: none; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: all .2s;
+}
+.repost-btn-cancel { background: rgba(255,255,255,.06); color: var(--text-muted); }
+.repost-btn-cancel:hover { background: rgba(255,255,255,.1); color: white; }
+.repost-btn-primary { background: linear-gradient(135deg,#8b5cf6,#7c3aed); color: white; }
+.repost-btn-primary:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(139,92,246,.3); }
+
+/* ── Empty / Toast ── */
+.cd-empty { text-align: center; padding: 56px 20px; color: var(--text-muted); animation: cdSlide .4s ease; }
+.cd-empty i { font-size: 52px; opacity: .12; margin-bottom: 14px; display: block; }
+.cd-empty p { font-size: 14px; margin: 0; }
+.cd-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #22c55e; color: white; padding: 12px 24px; border-radius: 100px;
+  font-size: 14px; font-weight: 700; z-index: 99999;
+  box-shadow: 0 8px 30px rgba(0,0,0,.5);
+  animation: cdToastIn .3s ease;
+}
+@keyframes cdToastIn { from{ opacity:0; transform:translateX(-50%) translateY(20px); } to{ opacity:1; transform:translateX(-50%) translateY(0); } }
+@keyframes msgIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+@media (max-width: 640px) {
+  .cd-header { padding: 28px 20px; }
+  .cd-stats { gap: 12px; }
+  .cd-create-pills { margin-left: 0; }
+  .cd-create-fields { margin-left: 0; }
 }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="cd">
+  <!-- Header -->
+  <div class="cd-header">
+    <div class="cd-header-bg"></div>
+    <div class="cd-header-content">
+      <h1><i class="fas fa-gamepad"></i> {{ juego }}</h1>
+      <p>Comunidad oficial de {{ juego }} — Comparte, comenta y conecta con otros jugadores.</p>
+      <div class="cd-header-actions">
+        <a href="{{ url_for('jugador.comunidades') }}" class="cd-header-btn back"><i class="fas fa-arrow-left"></i> Todas las comunidades</a>
+        {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+        <button class="cd-header-btn follow {% if siguiendo %}siguiendo{% endif %}" id="comunidad-follow-btn"
+                onclick="toggleComunidadFollow()">
+          <i class="fas {% if siguiendo %}fa-check{% else %}fa-plus{% endif %}"></i>
+          <span>{% if siguiendo %}Siguiendo{% else %}Seguir{% endif %}</span>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="cd-stats">
+    <span class="cd-stat"><i class="fas fa-file-alt" style="color:var(--accent);"></i> <strong>{{ publicaciones|length }}</strong> publicaciones</span>
+    <span class="cd-stat"><i class="fas fa-heart" style="color:#f43f5e;"></i> <strong>{{ publicaciones|sum(attribute='likes_count') }}</strong> likes</span>
+    <span class="cd-stat"><i class="fas fa-comment" style="color:#06b6d4;"></i> <strong>{{ publicaciones|sum(attribute='comentarios_count') }}</strong> comentarios</span>
+    <span class="cd-stat" style="margin-left:auto;"><i class="fas fa-chart-bar" style="color:var(--accent);"></i> <strong>{{ publicaciones|selectattr('is_poll')|list|length }}</strong> encuestas</span>
+    {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+    <div class="cd-header-menu-wrap" style="position:relative;margin-left:8px;">
+      <button class="cd-post-menu-btn" onclick="toggleHeaderMenu(event)" style="width:36px;height:36px;font-size:18px;">⋮</button>
+      <div class="cd-post-dropdown" id="header-menu">
+        <button class="cd-post-dropdown-item" onclick="filterMyPosts()"><i class="fas fa-user"></i> Mis publicaciones</button>
+        <button class="cd-post-dropdown-item" onclick="showAllPosts()"><i class="fas fa-globe"></i> Mostrar todo</button>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Tabs -->
+  <div class="cd-tabs">
+    <a href="{{ url_for('jugador.comunidad_detalle', juego=juego) }}"
+       class="cd-tab {% if active_tab == 'para-ti' %}active{% endif %}">
+      <i class="fas fa-rss"></i> Para ti
+    </a>
+    <a href="{{ url_for('jugador.comunidad_detalle', juego=juego, tab='siguiendo') }}"
+       class="cd-tab {% if active_tab == 'siguiendo' %}active{% endif %}">
+      <i class="fas fa-users"></i> Siguiendo
+    </a>
+    <a href="{{ url_for('jugador.comunidad_detalle', juego=juego, tab='tendencias') }}"
+       class="cd-tab {% if active_tab == 'tendencias' %}active{% endif %}">
+      <i class="fas fa-fire"></i> Tendencias
+    </a>
+    <a href="{{ url_for('jugador.comunidad_detalle', juego=juego, tab='videos') }}"
+       class="cd-tab {% if active_tab == 'videos' %}active{% endif %}">
+      <i class="fas fa-video"></i> Videos
+    </a>
+    <a href="{{ url_for('jugador.comunidad_detalle', juego=juego, tab='encuestas') }}"
+       class="cd-tab {% if active_tab == 'encuestas' %}active{% endif %}">
+      <i class="fas fa-poll"></i> Encuestas
+    </a>
+    <a href="{{ url_for('jugador.comunidad_detalle', juego=juego, tab='recientes') }}"
+       class="cd-tab {% if active_tab == 'recientes' %}active{% endif %}">
+      <i class="fas fa-clock"></i> Recientes
+    </a>
+  </div>
+
+  <!-- Create Post (dashboard style) -->
+  {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+  <div class="cd-create">
+    <div class="cd-create-header">
+      <h3><i class="fas fa-edit"></i> Crear publicaci&oacute;n</h3>
+    </div>
+
+    <!-- Type pills -->
+    <div class="cd-create-pills">
+      <button type="button" class="cd-create-pill active" data-type="texto" onclick="switchCreateType('texto',this)"><i class="fas fa-pen"></i> Texto</button>
+      <button type="button" class="cd-create-pill" data-type="imagen" onclick="switchCreateType('imagen',this)"><i class="far fa-image"></i> Imagen</button>
+      <button type="button" class="cd-create-pill" data-type="video" onclick="switchCreateType('video',this)"><i class="fas fa-video"></i> Video</button>
+      <button type="button" class="cd-create-pill" data-type="clip" onclick="switchCreateType('clip',this)"><i class="fas fa-film"></i> Clip</button>
+      <button type="button" class="cd-create-pill" data-type="encuesta" onclick="switchCreateType('encuesta',this)"><i class="fas fa-poll"></i> Encuesta</button>
+    </div>
+
+    <!-- Form: Texto -->
+    <form class="cd-create-form active" id="cform-texto" method="POST" action="{{ url_for('jugador.crear_publicacion') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_post" value="texto">
+      <input type="hidden" name="juego" value="{{ juego }}">
+      <div class="cd-form-group">
+        <label class="cd-form-label">¿Qu&eacute; quieres compartir?</label>
+        <textarea name="contenido" class="cd-form-textarea" placeholder="Escribe algo incre&iacute;ble..." style="height:120px;" required></textarea>
+      </div>
+      <div class="cd-create-actions">
+        <button type="submit" class="cd-btn cd-btn-primary"><i class="fas fa-paper-plane" style="margin-right:6px;"></i> Publicar</button>
+      </div>
+    </form>
+
+    <!-- Form: Imagen -->
+    <form class="cd-create-form" id="cform-imagen" method="POST" action="{{ url_for('jugador.crear_publicacion') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_post" value="imagen">
+      <input type="hidden" name="juego" value="{{ juego }}">
+      <div class="cd-form-group">
+        <label class="cd-form-label">Descripci&oacute;n (opcional)</label>
+        <textarea name="contenido" class="cd-form-textarea" placeholder="Escribe un pie de foto..." style="height:80px;"></textarea>
+      </div>
+      <div class="cd-form-group">
+        <div class="cd-form-row">
+          <button type="button" class="cd-upload-btn" onclick="document.getElementById('cd-img-input').click()"><i class="far fa-image"></i> Seleccionar imagen</button>
+          <span class="cd-form-hint">PNG, JPG &middot; M&aacute;x 10 MB</span>
+          <input type="file" name="imagen_archivo" id="cd-img-input" accept="image/*" style="display:none;" onchange="cdPreviewImage(this)">
+        </div>
+        <div class="cd-upload-preview" id="cd-img-preview">
+          <img id="cd-img-tag" src="#" alt="">
+          <div class="cd-upload-meta">
+            <i class="far fa-image" style="color:var(--accent);font-size:14px;"></i>
+            <span id="cd-img-name"></span>
+            <button type="button" class="cd-upload-remove" onclick="cdRemoveImage()"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+      </div>
+      <div class="cd-create-actions">
+        <button type="submit" class="cd-btn cd-btn-primary"><i class="fas fa-paper-plane" style="margin-right:6px;"></i> Publicar</button>
+      </div>
+    </form>
+
+    <!-- Form: Video -->
+    <form class="cd-create-form" id="cform-video" method="POST" action="{{ url_for('jugador.crear_publicacion') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_post" value="video">
+      <input type="hidden" name="juego" value="{{ juego }}">
+      <div class="cd-form-group">
+        <label class="cd-form-label">Descripci&oacute;n del video (opcional)</label>
+        <textarea name="contenido" class="cd-form-textarea" placeholder="Escribe una descripci&oacute;n..." style="height:80px;"></textarea>
+      </div>
+      <div class="cd-form-group">
+        <div class="cd-form-row">
+          <button type="button" class="cd-upload-btn" onclick="document.getElementById('cd-vid-input').click()"><i class="fas fa-video"></i> Seleccionar video</button>
+          <span class="cd-form-hint">MP4, MOV, AVI &middot; M&aacute;x 100 MB</span>
+          <input type="file" name="video_archivo" id="cd-vid-input" accept="video/*" style="display:none;" onchange="cdPreviewVideo(this)">
+        </div>
+        <div class="cd-upload-preview" id="cd-vid-preview">
+          <video id="cd-vid-tag" controls preload="metadata"></video>
+          <div class="cd-upload-meta">
+            <i class="fas fa-file-video" style="font-size:14px;color:var(--accent);"></i>
+            <span id="cd-vid-name"></span>
+            <button type="button" class="cd-upload-remove" onclick="cdRemoveVideo()"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+      </div>
+      <div class="cd-create-actions">
+        <button type="submit" class="cd-btn cd-btn-primary"><i class="fas fa-paper-plane" style="margin-right:6px;"></i> Publicar</button>
+      </div>
+    </form>
+
+    <!-- Form: Clip (30s max) -->
+    <form class="cd-create-form" id="cform-clip" method="POST" action="{{ url_for('jugador.crear_publicacion') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_post" value="clip">
+      <input type="hidden" name="juego" value="{{ juego }}">
+      <div class="cd-form-group">
+        <label class="cd-form-label">Descripci&oacute;n del clip (opcional)</label>
+        <textarea name="contenido" class="cd-form-textarea" placeholder="Describe tu clip..." style="height:80px;"></textarea>
+      </div>
+      <div class="cd-form-group">
+        <div class="cd-form-row">
+          <button type="button" class="cd-upload-btn" onclick="document.getElementById('cd-clip-input').click()"><i class="fas fa-film"></i> Seleccionar clip</button>
+          <span class="cd-form-hint">MP4, MOV &middot; M&aacute;x 30s &middot; M&aacute;x 30 MB</span>
+          <input type="file" name="clip_archivo" id="cd-clip-input" accept="video/*" style="display:none;" onchange="cdPreviewClip(this)">
+        </div>
+        <div class="cd-upload-preview" id="cd-clip-preview">
+          <video id="cd-clip-tag" controls preload="metadata"></video>
+          <div class="cd-upload-meta">
+            <i class="fas fa-film" style="font-size:14px;color:var(--accent);"></i>
+            <span id="cd-clip-name"></span>
+            <span class="dur" id="cd-clip-dur"></span>
+            <button type="button" class="cd-upload-remove" onclick="cdRemoveClip()"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+        <div id="cd-clip-error" style="display:none;color:#ef4444;font-size:12px;margin-top:6px;"><i class="fas fa-exclamation-circle"></i> El clip supera los 30 segundos. Selecciona uno m&aacute;s corto.</div>
+      </div>
+      <div class="cd-create-actions">
+        <button type="submit" class="cd-btn cd-btn-primary" id="cd-clip-submit"><i class="fas fa-paper-plane" style="margin-right:6px;"></i> Publicar</button>
+      </div>
+    </form>
+
+    <!-- Form: Encuesta -->
+    <form class="cd-create-form" id="cform-encuesta" method="POST" action="{{ url_for('jugador.crear_publicacion') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_post" value="poll">
+      <input type="hidden" name="juego" value="{{ juego }}">
+      <div class="cd-form-group">
+        <label class="cd-form-label">Detalles o descripci&oacute;n (opcional)</label>
+        <textarea name="contenido" class="cd-form-textarea" placeholder="Agrega contexto a tu encuesta..." style="height:60px;"></textarea>
+      </div>
+      <div class="cd-form-group">
+        <label class="cd-form-label"><i class="fas fa-poll" style="color:var(--accent);margin-right:4px;"></i> Pregunta</label>
+        <input type="text" name="poll_pregunta" class="cd-form-input" placeholder="&iquest;Qu&eacute; prefieren?" style="margin-bottom:10px;">
+        <div id="cd-poll-opts">
+          <div class="cd-form-row"><label>1</label><input type="text" name="poll_op[]" class="cd-form-input" placeholder="Escribe una opci&oacute;n..."></div>
+          <div class="cd-form-row"><label>2</label><input type="text" name="poll_op[]" class="cd-form-input" placeholder="Escribe una opci&oacute;n..."></div>
+        </div>
+        <button type="button" class="cd-add-opt" onclick="cdAddPollOpt()"><i class="fas fa-plus"></i> A&ntilde;adir opci&oacute;n</button>
+        <div class="cd-poll-config" style="margin-top:10px;">
+          <label><input type="checkbox" name="poll_multiple" value="1"> M&uacute;ltiple</label>
+          <label><input type="checkbox" name="poll_change" value="1"> Cambiar voto</label>
+          <label><input type="checkbox" name="poll_hide_results" value="1"> Ocultar resultados</label>
+          <select name="poll_duration">
+            <option value="1h">1 hora</option>
+            <option value="6h">6 horas</option>
+            <option value="12h">12 horas</option>
+            <option value="24h" selected>24 horas</option>
+            <option value="3d">3 d&iacute;as</option>
+            <option value="7d">7 d&iacute;as</option>
+          </select>
+        </div>
+      </div>
+      <div class="cd-create-actions">
+        <button type="submit" class="cd-btn cd-btn-primary"><i class="fas fa-paper-plane" style="margin-right:6px;"></i> Publicar</button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  <!-- Feed -->
+  {% if publicaciones %}
+  <div class="cd-feed">
+    {% for p in publicaciones %}
+    <div class="cd-post" id="post-{{ p.id_publicacion }}" data-author-id="{{ p.id_usuario }}" style="--i:{{ loop.index0 }};">
+      {% if p.repost_id and p.reposteado %}
+      {% set embed = p.root_reposteado %}
+      {# ═══ Repost ═══ #}
+      <div class="cd-post-head">
+        <a href="{{ url_for('jugador.perfil_publico', username=p.autor.username) }}" class="cd-post-author">
+          <img src="{{ p.autor | user_avatar }}" alt="">
+          <div>
+            <strong><i class="fas fa-retweet" style="color:var(--accent);font-size:11px;margin-right:3px;"></i> {{ nombre_usuario(p.autor, false) }}</strong>
+            <span>@{{ p.autor.username }} · {{ p.fecha_creacion | timeago }}</span>
+          </div>
+        </a>
+        <button class="cd-post-menu-btn" onclick="togglePostMenu(event,{{ p.id_publicacion }})">⋮</button>
+        <div class="cd-post-dropdown" id="pm-{{ p.id_publicacion }}">
+          {% if current_user.is_authenticated and current_user.id_usuario == p.id_usuario %}
+          <button class="cd-post-dropdown-item" onclick="editPost({{ p.id_publicacion }})"><i class="fas fa-pen"></i> Editar</button>
+          <button class="cd-post-dropdown-item danger" onclick="deletePost({{ p.id_publicacion }})"><i class="fas fa-trash"></i> Eliminar</button>
+          {% else %}
+          <button class="cd-post-dropdown-item" onclick="reportPost({{ p.id_publicacion }})"><i class="fas fa-flag"></i> Reportar</button>
+          {% endif %}
+          <button class="cd-post-dropdown-item" onclick="copyPostLink({{ p.id_publicacion }})"><i class="fas fa-link"></i> Copiar enlace</button>
+        </div>
+      </div>
+      {% if p.contenido and p.contenido != '[Repost]' %}
+      <p class="cd-post-text">{{ p.contenido }}</p>
+      {% endif %}
+      <div class="cd-repost-embed">
+        <div class="cd-repost-embed-head">
+          <img src="{{ embed.autor | user_avatar }}" alt="">
+          <a href="{{ url_for('jugador.perfil_publico', username=embed.autor.username) }}">{{ embed.autor.nombre or embed.autor.username }}</a>
+          <span>@{{ embed.autor.username }}</span>
+        </div>
+        <p class="re-text">{{ embed.contenido }}</p>
+        {% if embed.video_archivo %}
+        <div class="re-media" onclick="openVideoPlayer('{{ embed.video_archivo }}')">
+          <video src="{{ embed.video_archivo }}" playsinline muted></video>
+          <div class="cd-vplay"><i class="fas fa-play"></i></div>
+        </div>
+        {% elif embed.imagen_url %}
+        <div class="re-media"><img src="{{ embed.imagen_url }}" alt="" loading="lazy"></div>
+        {% endif %}
+      </div>
+      <div class="cd-post-actions">
+        <button class="cd-pca-btn like-btn {% if p.is_liked_by(current_user) %}liked{% endif %}" onclick="comLike({{ p.id_publicacion }}, this)">
+          <i class="{% if p.is_liked_by(current_user) %}fas{% else %}far{% endif %} fa-heart"></i> <span>{{ p.likes_count }}</span>
+        </button>
+        <button class="cd-pca-btn" onclick="toggleComments({{ p.id_publicacion }})">
+          <i class="far fa-comment"></i> <span>{{ p.comentarios_count }}</span>
+        </button>
+        {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+        <button class="cd-pca-btn" onclick="comRepost({{ p.id_publicacion }})"><i class="fas fa-retweet"></i></button>
+        {% endif %}
+        <button class="cd-pca-btn share-btn" onclick="comShare({{ p.id_publicacion }}, '{{ url_for('jugador.ver_publicacion', post_id=p.id_publicacion) }}', this)">
+          <i class="fas fa-share"></i> <span class="share-count">{{ p.shares_count or 0 }}</span>
+        </button>
+      </div>
+      <div class="cd-comments" id="comments-{{ p.id_publicacion }}" style="display:none;">
+        {% include 'jugador/_cd_comments.html' %}
+      </div>
+      {% else %}
+      {# ═══ Regular Post ═══ #}
+      <div class="cd-post-head">
+        <a href="{{ url_for('jugador.perfil_publico', username=p.autor.username) }}" class="cd-post-author">
+          <img src="{{ p.autor | user_avatar }}" alt="">
+          <div>
+            <strong>{{ nombre_usuario(p.autor, false) }}</strong>
+            <span>@{{ p.autor.username }} · {{ p.fecha_creacion | timeago }}</span>
+          </div>
+        </a>
+        <button class="cd-post-menu-btn" onclick="togglePostMenu(event,{{ p.id_publicacion }})">⋮</button>
+        <div class="cd-post-dropdown" id="pm-{{ p.id_publicacion }}">
+          {% if current_user.is_authenticated and current_user.id_usuario == p.id_usuario %}
+          <button class="cd-post-dropdown-item" onclick="editPost({{ p.id_publicacion }})"><i class="fas fa-pen"></i> Editar</button>
+          <button class="cd-post-dropdown-item danger" onclick="deletePost({{ p.id_publicacion }})"><i class="fas fa-trash"></i> Eliminar</button>
+          {% else %}
+          <button class="cd-post-dropdown-item" onclick="reportPost({{ p.id_publicacion }})"><i class="fas fa-flag"></i> Reportar</button>
+          {% endif %}
+          <button class="cd-post-dropdown-item" onclick="copyPostLink({{ p.id_publicacion }})"><i class="fas fa-link"></i> Copiar enlace</button>
+        </div>
+      </div>
+      <p class="cd-post-text">{{ p.contenido }}</p>
+      {% if p.video_archivo %}
+      <div class="cd-post-media" onclick="openVideoPlayer('{{ p.video_archivo }}')">
+        <video src="{{ p.video_archivo }}" playsinline muted></video>
+        <div class="cd-vplay"><i class="fas fa-play"></i></div>
+      </div>
+      {% elif p.imagen_url %}
+      <div class="cd-post-media"><img src="{{ p.imagen_url }}" alt="" loading="lazy"></div>
+      {% endif %}
+      {% if p.poll %}
+      <div class="cd-poll" id="poll-{{ p.id_publicacion }}">
+        <h4><i class="fas fa-poll" style="color:var(--accent);margin-right:6px;"></i> {{ p.poll.pregunta }}</h4>
+        {% for opt in p.poll.options %}
+        <button class="cd-poll-opt" onclick="votePoll({{ p.id_publicacion }}, {{ opt.id_option }}, this)" id="popt-{{ opt.id_option }}">
+          <div style="display:flex;justify-content:space-between;">
+            <span>{{ opt.texto }}</span>
+            <span style="font-size:11px;color:var(--text-muted);">{{ opt.votos }} votos</span>
+          </div>
+          <div class="bar-wrap"><div class="bar-fill" style="width:0%;background:var(--accent);" id="pbar-{{ opt.id_option }}"></div></div>
+        </button>
+        {% endfor %}
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;" id="poll-meta-{{ p.id_publicacion }}">
+          {{ p.poll.total_votos }} votos · {{ p.poll.duracion }}
+        </div>
+      </div>
+      {% endif %}
+      <div class="cd-post-actions">
+        <button class="cd-pca-btn like-btn {% if p.is_liked_by(current_user) %}liked{% endif %}" onclick="comLike({{ p.id_publicacion }}, this)">
+          <i class="{% if p.is_liked_by(current_user) %}fas{% else %}far{% endif %} fa-heart"></i> <span>{{ p.likes_count }}</span>
+        </button>
+        <button class="cd-pca-btn" onclick="toggleComments({{ p.id_publicacion }})">
+          <i class="far fa-comment"></i> <span>{{ p.comentarios_count }}</span>
+        </button>
+        {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+        <button class="cd-pca-btn" onclick="comRepost({{ p.id_publicacion }})"><i class="fas fa-retweet"></i></button>
+        {% endif %}
+        <button class="cd-pca-btn share-btn" onclick="comShare({{ p.id_publicacion }}, '{{ url_for('jugador.ver_publicacion', post_id=p.id_publicacion) }}', this)">
+          <i class="fas fa-share"></i> <span class="share-count">{{ p.shares_count or 0 }}</span>
+        </button>
+      </div>
+      <div class="cd-comments" id="comments-{{ p.id_publicacion }}" style="display:none;">
+        {% include 'jugador/_cd_comments.html' %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="cd-empty">
+    <i class="fas fa-gamepad"></i>
+    <p>Aún no hay publicaciones{% if active_tab != 'para-ti' %} en esta sección{% endif %} de {{ juego }}. ¡Sé el primero en compartir algo!</p>
+  </div>
+  {% endif %}
+</div>
+
+
+
+<script>
+var ALL_COMMUNITIES = {{ todas_comunidades | tojson | safe }};
+var IS_AUTH = {{ 'true' if current_user.is_authenticated and current_user.rol != 'invitado' else 'false' }};
+var CURRENT_JUEGO = {{ juego | tojson | safe }};
+var _shareTarget = null;
+var _repostTarget = null;
+
+function gCSRF() { var m=document.querySelector('meta[name="csrf-token"]'); return m?m.getAttribute('content'):''; }
+
+/* ── Post Menu (⋮) ── */
+function togglePostMenu(e, postId) {
+  e.stopPropagation();
+  var all = document.querySelectorAll('.cd-post-dropdown');
+  all.forEach(function(m){ if (m.id !== 'pm-' + postId) m.classList.remove('open'); });
+  var menu = document.getElementById('pm-' + postId);
+  if (menu) menu.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.cd-post-head')) {
+    document.querySelectorAll('.cd-post-dropdown').forEach(function(m){ m.classList.remove('open'); });
+  }
+});
+function deletePost(postId) {
+  if (!confirm('Eliminar esta publicaci\u00f3n?')) return;
+  fetch('/jugador/eliminar-publicacion/' + postId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':gCSRF(), 'X-Requested-With':'XMLHttpRequest' }
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.success) {
+      var el = document.getElementById('post-' + postId);
+      if (el) el.remove();
+      showToast('Publicaci\u00f3n eliminada');
+    } else { showToast(d.message || 'Error', true); }
+  }).catch(function(){ showToast('Error de conexi\u00f3n', true); });
+}
+function reportPost(postId) {
+  var motivo = prompt('Motivo del reporte (spam, contenido inapropiado, acoso, otro):', 'spam');
+  if (!motivo) return;
+  fetch('/jugador/reportar-publicacion/' + postId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':gCSRF(), 'Content-Type':'application/json', 'X-Requested-With':'XMLHttpRequest' },
+    body: JSON.stringify({ motivo: motivo })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    showToast(d.message || 'Reportado');
+  }).catch(function(){ showToast('Error de conexi\u00f3n', true); });
+}
+function copyPostLink(postId) {
+  var url = window.location.origin + '/jugador/publicacion/' + postId;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function(){ showToast('Enlace copiado'); });
+  } else {
+    var inp = document.createElement('input');
+    inp.value = url; document.body.appendChild(inp); inp.select();
+    document.execCommand('copy'); inp.remove();
+    showToast('Enlace copiado');
+  }
+}
+function editPost(postId) {
+  if (!IS_AUTH) { window.location.href = '/auth/login'; return; }
+  fetch('/jugador/api/post/' + postId, { credentials:'same-origin' })
+    .then(function(r){ return r.json(); }).then(function(d){
+      if (!d.success) { showToast('Error al cargar', true); return; }
+      var p = d.post;
+      var o = document.createElement('div');
+      o.className = 'edit-modal-overlay'; o.id = 'edit-modal';
+      o.onclick = function(e) { if (e.target === o) o.remove(); };
+      o.innerHTML =
+        '<div class="edit-modal-box" onclick="event.stopPropagation()">' +
+        '<div class="edit-modal-title"><i class="fas fa-pen"></i> Editar publicaci\u00f3n</div>' +
+        '<textarea class="edit-modal-textarea" id="edit-txt-' + postId + '">' + esc(p.contenido) + '</textarea>' +
+        '<div class="edit-modal-actions">' +
+          '<button class="edit-modal-btn cancel" onclick="closeEditModal()">Cancelar</button>' +
+          '<button class="edit-modal-btn save" id="edit-save-' + postId + '" onclick="saveEdit(' + postId + ')">Guardar <i class="fas fa-check"></i></button>' +
+        '</div></div>';
+      document.body.appendChild(o);
+      var ta = document.getElementById('edit-txt-' + postId);
+      if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+    }).catch(function(){ showToast('Error de conexi\u00f3n', true); });
+}
+function closeEditModal() {
+  var m = document.getElementById('edit-modal');
+  if (m) m.remove();
+}
+function saveEdit(postId) {
+  var txt = document.getElementById('edit-txt-' + postId);
+  if (!txt) return;
+  var val = txt.value.trim();
+  if (!val) { showToast('El contenido no puede estar vac\u00edo', true); return; }
+  var btn = document.getElementById('edit-save-' + postId);
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+  fetch('/jugador/editar-publicacion/' + postId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':gCSRF(), 'Content-Type':'application/json', 'X-Requested-With':'XMLHttpRequest' },
+    body: JSON.stringify({ contenido: val })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.success) {
+      closeEditModal();
+      showToast('Publicaci\u00f3n actualizada');
+      /* Update post text in the card */
+      var post = document.getElementById('post-' + postId);
+      if (post) {
+        var textEl = post.querySelector('.cd-post-text');
+        if (textEl) textEl.textContent = d.contenido;
+      }
+    } else {
+      showToast(d.message || 'Error', true);
+      btn.disabled = false; btn.innerHTML = 'Guardar <i class="fas fa-check"></i>';
+    }
+  }).catch(function(){
+    showToast('Error de conexi\u00f3n', true);
+    btn.disabled = false; btn.innerHTML = 'Guardar <i class="fas fa-check"></i>';
+  });
+}
+
+/* ── Header Menu ── */
+function toggleHeaderMenu(e) {
+  e.stopPropagation();
+  var m = document.getElementById('header-menu');
+  if (m) m.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.cd-header-menu-wrap')) {
+    var hm = document.getElementById('header-menu');
+    if (hm) hm.classList.remove('open');
+  }
+});
+function filterMyPosts() {
+  var m = document.getElementById('header-menu');
+  if (m) m.classList.remove('open');
+  var userId = {{ current_user.id_usuario if current_user.is_authenticated else 'null' }};
+  var cards = document.querySelectorAll('.cd-post');
+  var any = false;
+  cards.forEach(function(c){
+    if (parseInt(c.getAttribute('data-author-id')) === userId) {
+      c.style.display = ''; any = true;
+    } else {
+      c.style.display = 'none';
+    }
+  });
+  showToast(any ? 'Mostrando solo tus publicaciones' : 'No tienes publicaciones aqu\u00ed');
+}
+function showAllPosts() {
+  document.getElementById('header-menu').classList.remove('open');
+  document.querySelectorAll('.cd-post').forEach(function(c){ c.style.display = ''; });
+  showToast('Mostrando todas las publicaciones');
+}
+
+/* ── Create Post Type Switch (dashboard style) ── */
+function switchCreateType(type, btn) {
+  document.querySelectorAll('.cd-create-pill').forEach(function(p){ p.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.cd-create-form').forEach(function(f){ f.classList.remove('active'); });
+  var form = document.getElementById('cform-' + type);
+  if (form) form.classList.add('active');
+}
+function cdAddPollOpt() {
+  var c = document.getElementById('cd-poll-opts');
+  var i = c.querySelectorAll('.cd-form-row').length + 1;
+  var d = document.createElement('div'); d.className = 'cd-form-row';
+  d.innerHTML = '<label>' + i + '</label><input type="text" name="poll_op[]" class="cd-form-input" placeholder="Escribe una opci\u00f3n...">';
+  c.appendChild(d);
+}
+
+/* ── Image Preview ── */
+function cdPreviewImage(input) {
+  var preview = document.getElementById('cd-img-preview');
+  var tag = document.getElementById('cd-img-tag');
+  var name = document.getElementById('cd-img-name');
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();
+    reader.onload = function(e){ tag.src = e.target.result; };
+    reader.readAsDataURL(input.files[0]);
+    name.textContent = input.files[0].name;
+    preview.classList.add('open');
+  }
+}
+function cdRemoveImage() {
+  document.getElementById('cd-img-preview').classList.remove('open');
+  document.getElementById('cd-img-input').value = '';
+  document.getElementById('cd-img-tag').src = '#';
+}
+
+/* ── Video Preview ── */
+function cdPreviewVideo(input) {
+  var preview = document.getElementById('cd-vid-preview');
+  var tag = document.getElementById('cd-vid-tag');
+  var name = document.getElementById('cd-vid-name');
+  if (input.files && input.files[0]) {
+    tag.src = URL.createObjectURL(input.files[0]);
+    name.textContent = input.files[0].name;
+    preview.classList.add('open');
+  }
+}
+function cdRemoveVideo() {
+  var tag = document.getElementById('cd-vid-tag');
+  tag.pause(); tag.src = '';
+  document.getElementById('cd-vid-preview').classList.remove('open');
+  document.getElementById('cd-vid-input').value = '';
+}
+
+/* ── Clip Preview (30s max validation) ── */
+function cdPreviewClip(input) {
+  var preview = document.getElementById('cd-clip-preview');
+  var tag = document.getElementById('cd-clip-tag');
+  var name = document.getElementById('cd-clip-name');
+  var dur = document.getElementById('cd-clip-dur');
+  var err = document.getElementById('cd-clip-error');
+  var submit = document.getElementById('cd-clip-submit');
+  if (input.files && input.files[0]) {
+    tag.src = URL.createObjectURL(input.files[0]);
+    name.textContent = input.files[0].name;
+    preview.classList.add('open');
+    tag.onloadedmetadata = function() {
+      var secs = Math.floor(tag.duration);
+      var m = Math.floor(secs / 60);
+      var s = secs % 60;
+      dur.textContent = (m > 0 ? m + 'm ' : '') + s + 's';
+      if (secs > 30) {
+        err.style.display = 'block';
+        submit.disabled = true;
+      } else {
+        err.style.display = 'none';
+        submit.disabled = false;
+      }
+    };
+  }
+}
+function cdRemoveClip() {
+  var tag = document.getElementById('cd-clip-tag');
+  tag.pause(); tag.src = '';
+  document.getElementById('cd-clip-preview').classList.remove('open');
+  document.getElementById('cd-clip-input').value = '';
+  document.getElementById('cd-clip-error').style.display = 'none';
+  document.getElementById('cd-clip-submit').disabled = false;
+}
+
+/* ── Like ── */
+function comLike(postId, btn) {
+  if (!IS_AUTH) { window.location.href = '/auth/login'; return; }
+  var icon = btn.querySelector('i');
+  var count = btn.querySelector('span');
+  btn.disabled = true;
+  fetch('/jugador/like/' + postId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':gCSRF(), 'X-Requested-With':'XMLHttpRequest' }
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.success) {
+      btn.classList.toggle('liked', d.liked);
+      icon.className = d.liked ? 'fas fa-heart' : 'far fa-heart';
+      if (count) count.textContent = d.likes_count;
+    }
+  }).catch(function(e){ console.error(e); })
+  .finally(function(){ btn.disabled = false; });
+}
+
+/* ── Comments ── */
+function toggleComments(postId) {
+  var el = document.getElementById('comments-' + postId);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function comSubmitComment(event, postId) {
+  event.preventDefault();
+  var form = event.target;
+  var input = form.querySelector('input');
+  var text = input.value.trim();
+  if (!text) return false;
+  var list = document.getElementById('comments-list-' + postId);
+  input.disabled = true;
+  fetch('/jugador/comentar/' + postId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':gCSRF(), 'Content-Type':'application/json', 'X-Requested-With':'XMLHttpRequest' },
+    body: JSON.stringify({ contenido: text })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.success) {
+      var nc = list.querySelector('p.cd-empty-msg');
+      if (nc) nc.remove();
+      var div = document.createElement('div');
+      div.className = 'cd-comment-item';
+      div.innerHTML = '<img src="' + esc(d.comment.foto) + '" alt="">' +
+        '<div class="cd-comment-bubble"><div class="cd-comment-head"><a href="#">' + esc(d.comment.autor_nombre) + '</a><span>ahora</span></div><p>' + esc(d.comment.contenido) + '</p></div>';
+      list.appendChild(div);
+      input.value = '';
+    }
+  }).catch(function(e){ console.error(e); })
+  .finally(function(){ input.disabled = false; input.focus(); });
+  return false;
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ── Share Modal (dynamic) ── */
+function comShare(postId, url, btn) {
+  if (!IS_AUTH) { window.location.href = '/auth/login'; return; }
+  _shareTarget = { postId: postId, url: url, btn: btn };
+  var o = document.createElement('div');
+  o.className = 'share-modal-overlay'; o.id = 'share-modal';
+  o.onclick = function(e) { if (e.target === o) o.remove(); };
+  o.innerHTML = '<div class="share-modal-box" onclick="event.stopPropagation()">' +
+    '<div class="share-modal-title"><i class="fas fa-share-alt"></i> Compartir</div>' +
+    '<div class="share-options">' +
+      '<button class="share-opt" onclick="doSocialShare(\'whatsapp\')"><div class="share-opt-icon" style="background:#25D36622;color:#25D366;"><i class="fab fa-whatsapp"></i></div> WhatsApp</button>' +
+      '<button class="share-opt" onclick="doSocialShare(\'twitter\')"><div class="share-opt-icon" style="background:#1DA1F222;color:#1DA1F2;"><i class="fab fa-twitter"></i></div> Twitter</button>' +
+      '<button class="share-opt" onclick="doSocialShare(\'facebook\')"><div class="share-opt-icon" style="background:#1877F222;color:#1877F2;"><i class="fab fa-facebook-f"></i></div> Facebook</button>' +
+      '<button class="share-opt" onclick="closeShareModal();setTimeout(function(){comRepost(' + postId + ')},100)"><div class="share-opt-icon" style="background:#8b5cf622;color:#8b5cf6;"><i class="fas fa-retweet"></i></div> Repostear</button>' +
+      '<button class="share-opt-cancel" onclick="closeShareModal()">Cancelar</button>' +
+    '</div></div>';
+  document.body.appendChild(o);
+}
+function closeShareModal() { var m = document.getElementById('share-modal'); if (m) m.remove(); }
+function doSocialShare(platform) {
+  var t = _shareTarget;
+  if (!t) return;
+  var u = '';
+  if (platform === 'whatsapp') u = 'https://wa.me/?text=' + encodeURIComponent(t.url);
+  else if (platform === 'twitter') u = 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(t.url);
+  else if (platform === 'facebook') u = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(t.url);
+  window.open(u, '_blank', 'noopener,width=600,height=500');
+  fetch('/jugador/share/' + t.postId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':gCSRF(), 'X-Requested-With':'XMLHttpRequest' }
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.success && t.btn) { var ce = t.btn.querySelector('.share-count'); if (ce) ce.textContent = d.shares_count; }
+  }).catch(function(){});
+  setTimeout(function(){ closeShareModal(); }, 300);
+}
+
+/* ── Repost Modal (dynamic) ── */
+function comRepost(postId) {
+  if (!IS_AUTH) { window.location.href = '/auth/login'; return; }
+  _repostTarget = null;
+  var o = document.createElement('div');
+  o.className = 'repost-modal-overlay'; o.id = 'repost-modal';
+  o.onclick = function(e) { if (e.target === o) o.remove(); };
+  o.innerHTML =
+    '<div class="repost-modal-box" onclick="event.stopPropagation()">' +
+    '<div class="repost-modal-title"><i class="fas fa-retweet"></i> Repostear</div>' +
+    '<div class="repost-original" id="rm-orig-' + postId + '"><div style="text-align:center;padding:12px;color:var(--text-muted);font-size:13px;"><i class="fas fa-spinner fa-spin"></i> Cargando...</div></div>' +
+    '<textarea class="repost-textarea" id="rm-txt-' + postId + '" placeholder="Anade un comentario (opcional)..." maxlength="300"></textarea>' +
+    '<div class="repost-target-wrap">' +
+      '<span class="repost-target-label"><i class="fas fa-location-dot"></i> Publicar en</span>' +
+      '<div class="repost-target-search-wrap">' +
+        '<i class="fas fa-search"></i>' +
+        '<input class="repost-target-search" id="rm-src-' + postId + '" placeholder="Buscar comunidad..." oninput="renderRepostTargets(this.value,' + postId + ')">' +
+      '</div>' +
+      '<div class="repost-target-list" id="rm-list-' + postId + '"></div>' +
+      '<div class="repost-target-hint"><i class="fas fa-info-circle"></i> Se publicara en tu perfil a menos que selecciones una comunidad.</div>' +
+    '</div>' +
+    '<div class="repost-actions">' +
+      '<button class="repost-btn repost-btn-cancel" onclick="document.getElementById(\'repost-modal\').remove()">Cancelar</button>' +
+      '<button class="repost-btn repost-btn-primary" id="rm-sub-' + postId + '" onclick="doRepost(' + postId + ')">Repostear <i class="fas fa-retweet"></i></button>' +
+    '</div></div>';
+  document.body.appendChild(o);
+  renderRepostTargets('', postId);
+  /* fetch original */
+  var orig = document.getElementById('rm-orig-' + postId);
+  fetch('/jugador/api/post/' + postId, { credentials:'same-origin' })
+    .then(function(r){ return r.json(); }).then(function(d){
+      if (!d.success) { orig.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">No disponible</div>'; return; }
+      var p = d.post;
+      orig.innerHTML = '<div class="repost-original-author">' +
+        '<img src="' + esc(p.avatar) + '" alt="">' +
+        '<strong>' + esc(p.author) + '</strong>' +
+        '<span style="font-size:11px;color:var(--text-muted);">@' + esc(p.username) + '</span></div>' +
+        '<div class="repost-original-text">' + esc(p.contenido) + '</div>' +
+        (p.video ? '<div class="repost-original-media"><video src="' + esc(p.video) + '" controls playsinline muted></video></div>' : '') +
+        (p.imagen ? '<div class="repost-original-media"><img src="' + esc(p.imagen) + '" alt="" loading="lazy"></div>' : '');
+    }).catch(function(){ orig.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Error al cargar</div>'; });
+}
+
+function renderRepostTargets(q, postId) {
+  var list = document.getElementById('rm-list-' + postId);
+  if (!list) return;
+  var ql = (q || '').toLowerCase().trim();
+  var html = '';
+  var sel = !_repostTarget || _repostTarget === 'perfil';
+  html += '<div class="repost-target-item' + (sel ? ' selected' : '') + '" onclick="selectRepostTarget(\'perfil\',' + postId + ',this)">' +
+    '<span class="rt-dot" style="background:#8b5cf6;"></span> Mi Perfil' +
+    '<span class="rt-check"><i class="fas fa-check"></i></span></div>';
+  ALL_COMMUNITIES.forEach(function(c){
+    if (ql && c.nombre.toLowerCase().indexOf(ql) === -1) return;
+    var s2 = _repostTarget === c.nombre;
+    html += '<div class="repost-target-item' + (s2 ? ' selected' : '') + '" onclick="selectRepostTarget(\'' + esc(c.nombre) + '\',' + postId + ',this)">' +
+      '<span class="rt-dot" style="background:' + c.color + ';"></span> ' + esc(c.nombre) +
+      '<span class="rt-check"><i class="fas fa-check"></i></span></div>';
+  });
+  list.innerHTML = html;
+}
+function selectRepostTarget(val, postId, el) {
+  _repostTarget = val;
+  document.querySelectorAll('#rm-list-' + postId + ' .repost-target-item').forEach(function(i){ i.classList.remove('selected'); });
+  if (el) el.classList.add('selected');
+}
+function doRepost(originalId) {
+  var content = document.getElementById('rm-txt-' + originalId).value.trim();
+  var juegoDest = (!_repostTarget || _repostTarget === 'perfil') ? '' : _repostTarget;
+  var btn = document.getElementById('rm-sub-' + originalId);
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reposteando...';
+  fetch('/jugador/repost/' + originalId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':gCSRF(), 'Content-Type':'application/json', 'X-Requested-With':'XMLHttpRequest' },
+    body: JSON.stringify({ contenido: content || '[Repost]', juego_destino: juegoDest })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.success) {
+      var m = document.getElementById('repost-modal'); if (m) m.remove();
+      showToast('Reposteado' + (juegoDest ? ' en ' + juegoDest : '') + '!');
+      /* Prepend new repost card in real-time */
+      if (d.post && (!juegoDest || juegoDest === CURRENT_JUEGO)) {
+        var p = d.post;
+        var embed = p.reposteado;
+        var card = document.createElement('div');
+        card.className = 'cd-post';
+        card.id = 'post-' + p.id;
+        card.setAttribute('data-author-id', {{ current_user.id_usuario if current_user.is_authenticated else 'null' }});
+        card.style.setProperty('--i','0');
+        var esp = esc;
+        card.innerHTML =
+          '<div class="cd-post-head"><a href="/jugador/perfil/' + esp(p.autor.username) + '" class="cd-post-author">' +
+            '<img src="' + esp(p.autor.foto) + '" alt="">' +
+            '<div><strong><i class="fas fa-retweet" style="color:var(--accent);font-size:11px;margin-right:3px;"></i> ' + esp(p.autor.nombre) + '</strong>' +
+            '<span>@' + esp(p.autor.username) + ' · ahora</span></div></a>' +
+            '<button class="cd-post-menu-btn" onclick="togglePostMenu(event,' + p.id + ')">\u22ee</button>' +
+            '<div class="cd-post-dropdown" id="pm-' + p.id + '">' +
+              '<button class="cd-post-dropdown-item" onclick="editPost(' + p.id + ')"><i class="fas fa-pen"></i> Editar</button>' +
+              '<button class="cd-post-dropdown-item danger" onclick="deletePost(' + p.id + ')"><i class="fas fa-trash"></i> Eliminar</button>' +
+              '<button class="cd-post-dropdown-item" onclick="copyPostLink(' + p.id + ')"><i class="fas fa-link"></i> Copiar enlace</button>' +
+            '</div></div>' +
+          (p.contenido && p.contenido !== '[Repost]' ? '<p class="cd-post-text">' + esp(p.contenido) + '</p>' : '') +
+          (embed ? '<div class="cd-repost-embed">' +
+            '<div class="cd-repost-embed-head">' +
+              '<img src="' + esp(embed.autor.foto) + '" alt="">' +
+              '<a href="/jugador/perfil/' + esp(embed.autor.username) + '">' + esp(embed.autor.nombre) + '</a>' +
+              '<span>@' + esp(embed.autor.username) + '</span></div>' +
+            '<p class="re-text">' + esp(embed.contenido) + '</p>' +
+            (embed.video_archivo ? '<div class="re-media" onclick="openVideoPlayer(\'' + esp(embed.video_archivo) + '\')"><video src="' + esp(embed.video_archivo) + '" playsinline muted></video><div class="cd-vplay"><i class="fas fa-play"></i></div></div>' : '') +
+            (embed.imagen_url && !embed.video_archivo ? '<div class="re-media"><img src="' + esp(embed.imagen_url) + '" alt="" loading="lazy"></div>' : '') +
+          '</div>' : '') +
+          '<div class="cd-post-actions">' +
+            '<button class="cd-pca-btn like-btn" onclick="comLike(' + p.id + ',this)"><i class="far fa-heart"></i> <span>0</span></button>' +
+            '<button class="cd-pca-btn" onclick="toggleComments(' + p.id + ')"><i class="far fa-comment"></i> <span>0</span></button>' +
+            '<button class="cd-pca-btn" onclick="comRepost(' + p.id + ')"><i class="fas fa-retweet"></i></button>' +
+            '<button class="cd-pca-btn share-btn" onclick="comShare(' + p.id + ",'/jugador/publicacion/" + p.id + "',this)" + '"><i class="fas fa-share"></i> <span class="share-count">0</span></button>' +
+          '</div>' +
+          '<div class="cd-comments" id="comments-' + p.id + '" style="display:none;"></div>';
+        var feed = document.querySelector('.cd-feed');
+        if (feed) feed.insertBefore(card, feed.firstChild);
+      }
+    } else {
+      showToast('Error al repostear', true);
+    }
+  }).catch(function(){ showToast('Error de conexion', true); })
+  .finally(function(){ btn.disabled = false; btn.innerHTML = 'Repostear <i class="fas fa-retweet"></i>'; });
+}
+
+/* ── Poll Vote ── */
+function votePoll(postId, optId, btn) {
+  if (!IS_AUTH) { window.location.href = '/auth/login'; return; }
+  btn.disabled = true;
+  fetch('/jugador/poll/vote/' + postId, {
+    method:'POST', credentials:'same-origin',
+    headers:{ 'X-CSRFToken':gCSRF(), 'Content-Type':'application/json', 'X-Requested-With':'XMLHttpRequest' },
+    body: JSON.stringify({ option_id: optId })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.success) {
+      d.results.forEach(function(r){
+        var bar = document.getElementById('pbar-' + r.option_id);
+        if (bar) bar.style.width = r.percent + '%';
+        var lbl = document.getElementById('popt-' + r.option_id);
+        if (lbl) lbl.querySelector('span:last-child').textContent = r.votos + ' votos';
+      });
+      var meta = document.getElementById('poll-meta-' + postId);
+      if (meta && d.total_votes !== undefined) meta.textContent = d.total_votes + ' votos';
+    }
+  }).catch(function(e){ console.error(e); })
+  .finally(function(){ btn.disabled = false; });
+}
+
+/* ── Toast ── */
+function showToast(msg, isError) {
+  var t = document.createElement('div');
+  t.className = 'cd-toast';
+  t.style.background = isError ? '#ef4444' : '#22c55e';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 3000);
+}
+
+function toggleComunidadFollow() {
+  var btn = document.getElementById('comunidad-follow-btn');
+  if (!btn) return;
+  fetch('/jugador/api/comunidad/seguir', {
+    method: 'POST', credentials: 'same-origin',
+    headers: { 'X-CSRFToken': gCSRF(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ juego: CURRENT_JUEGO })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.success) {
+      var isOn = d.following;
+      btn.classList.toggle('siguiendo', isOn);
+      var ic = btn.querySelector('i');
+      var sp = btn.querySelector('span');
+      ic.className = 'fas ' + (isOn ? 'fa-check' : 'fa-plus');
+      sp.textContent = isOn ? 'Siguiendo' : 'Seguir';
+    }
+  }).catch(function(){});
+}
+
+/* ── AJAX create post ── */
+document.querySelectorAll('.cd-create-form').forEach(function(f) {
+  f.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = f.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publicando...';
+    fetch(f.action, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': gCSRF(), 'X-Requested-With': 'XMLHttpRequest' },
+      body: new FormData(f)
+    }).then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function(d) {
+      if (d.success) {
+        showToast('Publicación creada', false);
+        location.reload();
+      } else {
+        showToast(d.message || 'Error al publicar', true);
+      }
+    }).catch(function(e) {
+      showToast('Error de conexión', true);
+    }).finally(function() {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:6px;"></i> Publicar';
+    });
+  });
+});
+</script>
 {% endblock %}

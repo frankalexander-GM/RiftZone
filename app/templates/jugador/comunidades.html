@@ -1,61 +1,295 @@
 {% extends "base.html" %}
 
-{% block content %}
-<div class="comunidades-container" style="padding: clamp(12px, 3vw, 20px);">
-    <h2 style="font-size: 28px; color: white; margin-bottom: 12px;"><i class="fas fa-trophy" style="color: var(--accent-purple);"></i> Top 20 juegos más jugados</h2>
-    <p style="color: rgba(255,255,255,0.8); font-size: 15px; margin-bottom: 30px; max-width: 800px; line-height: 1.5;">
-        <strong>¿A qué vas a jugar hoy?</strong> Selecciona tu videojuego favorito a continuación para entrar a su comunidad exclusiva. Allí podrás encontrar compañeros de equipo, ver clips increíbles y compartir tus propias jugadas con personas que juegan lo mismo que tú. ¡Elige tu zona!
-    </p>
-    
-    {% for categoria in categorias %}
-    <div style="margin-top: 40px; margin-bottom: 24px;">
-        <h3 style="color: white; font-size: 22px; margin-bottom: 4px;">{{ categoria.titulo }}</h3>
-        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">{{ categoria.descripcion }}</p>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
-            {% for juego in categoria.juegos %}
-                <div class="game-card" style="background: var(--bg-card); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-color); transition: transform 0.2s, box-shadow 0.2s;">
-                    <a href="{{ url_for('jugador.comunidad_detalle', juego=juego.nombre) }}" style="display: block; text-decoration: none;">
-                        <div style="height: 140px; background-image: url('{{ juego.imagen }}'); background-size: cover; background-position: center; background-color: var(--bg-dark);"></div>
-                    </a>
-                    <div style="padding: 16px;">
-                        <h3 style="color: white; margin-bottom: 8px; font-size: 18px;">{{ juego.nombre }}</h3>
-                        <p style="color: var(--text-muted); font-size: 13px; line-height: 1.4; margin-bottom: 16px;">{{ juego.desc }}</p>
-                        <div style="display: flex; gap: 8px;">
-                            <a href="{{ url_for('jugador.comunidad_detalle', juego=juego.nombre) }}" style="flex: 1; text-align: center; text-decoration: none; background: rgba(139, 92, 246, 0.1); padding: 10px; border-radius: 8px; transition: 0.2s;">
-                                <span style="font-size: 13px; color: var(--accent-purple); font-weight: 700;">Comunidad</span>
-                            </a>
-                            <a href="{{ url_for('chat.chat_sala', comunidad=juego.nombre) }}" style="flex: 1; text-align: center; text-decoration: none; background: var(--accent-purple); padding: 10px; border-radius: 8px; transition: 0.2s; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);">
-                                <span style="font-size: 13px; color: white; font-weight: 700;"><i class="fas fa-comment"></i> Chat</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endfor %}
+{% block title %}Comunidades - RiftZone{% endblock %}
 
-    <!-- Buzón de sugerencias -->
-    <div style="margin-top: 60px; padding: 32px; background: linear-gradient(135deg, var(--bg-card), rgba(139,92,246,0.05)); border: 1px solid var(--border-color); border-radius: var(--radius-lg); text-align: center;">
-        <i class="fas fa-lightbulb" style="font-size: 36px; color: var(--accent-purple); margin-bottom: 12px;"></i>
-        <h3 style="color: white; font-size: 22px; margin-bottom: 8px;">¿No encuentras tu juego?</h3>
-        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px; max-width: 500px; margin-left: auto; margin-right: auto;">
-            Sugiérenos qué comunidad agregar. Lo revisaremos y la añadimos si es posible.
-        </p>
-        <form method="POST" action="{{ url_for('jugador.sugerir_juego') }}" style="display: flex; gap: 12px; max-width: 500px; margin: 0 auto;" novalidate>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="text" name="juego" placeholder="Ej. Elden Ring, FIFA, Zelda..." required maxlength="200" style="flex: 1; padding: 12px 16px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: white; font-size: 14px; outline: none;">
-            <button type="submit" class="btn-primary" style="white-space: nowrap; padding: 12px 24px;"><i class="fas fa-paper-plane"></i> Sugerir</button>
-        </form>
-    </div>
-</div>
-
+{% block head %}
 <style>
-.game-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-    border-color: var(--accent-purple);
+.cp { padding: 20px 16px 40px; max-width: 1200px; margin: 0 auto; }
+
+/* ── Hero ── */
+.cp-hero {
+  position: relative; border-radius: 24px; overflow: hidden; padding: 48px 40px; margin-bottom: 28px;
+  background: linear-gradient(135deg, rgba(139,92,246,.3) 0%, rgba(236,72,153,.18) 50%, rgba(6,182,212,.1) 100%);
+  border: 1px solid rgba(139,92,246,.3);
+}
+.cp-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 30% 20%, rgba(139,92,246,.15) 0%, transparent 60%),
+              radial-gradient(ellipse 50% 50% at 80% 80%, rgba(236,72,153,.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+.cp-hero-content { position: relative; z-index: 1; }
+.cp-hero h1 {
+  font-size: clamp(26px,5vw,40px); font-weight: 800; color: white; margin: 0 0 6px;
+  background: linear-gradient(135deg, #fff 30%, #c4b5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.cp-hero p { color: rgba(255,255,255,.55); font-size: 14px; margin: 0 0 20px; max-width: 520px; }
+.cp-hero-search { position: relative; max-width: 440px; }
+.cp-hero-search input {
+  width: 100%; padding: 13px 48px 13px 18px; border-radius: 100px; border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.08); color: white; font-size: 14px; font-family: inherit; outline: none; box-sizing: border-box;
+  transition: all .25s;
+}
+.cp-hero-search input::placeholder { color: rgba(255,255,255,.35); }
+.cp-hero-search input:focus { border-color: rgba(139,92,246,.5); background: rgba(255,255,255,.12); box-shadow: 0 0 0 3px rgba(139,92,246,.15); }
+.cp-hero-search i { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,.3); font-size: 15px; }
+
+/* ── Pills ── */
+.cp-pills {
+  display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap;
+  overflow-x: auto; scrollbar-width: none;
+}
+.cp-pills::-webkit-scrollbar { display:none; }
+.cp-pill {
+  padding: 8px 16px; border-radius: 100px; border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.04); color: var(--text-muted); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all .25s; font-family: inherit; white-space: nowrap;
+  display: flex; align-items: center; gap: 6px; user-select: none;
+}
+.cp-pill:hover { background: rgba(139,92,246,.12); color: #c4b5fd; border-color: rgba(139,92,246,.2); }
+.cp-pill.active { background: rgba(139,92,246,.2); color: white; border-color: rgba(139,92,246,.4); box-shadow: 0 0 20px rgba(139,92,246,.15); }
+.cp-pill-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink:0; }
+
+/* ── Category ── */
+.cp-cat { margin-bottom: 32px; transition: all .4s ease; }
+.cp-cat.hidden { display: none; }
+.cp-cat-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+}
+.cp-cat-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;
+}
+.cp-cat-info h2 { font-size: 16px; font-weight: 700; color: white; margin: 0; }
+.cp-cat-info p { font-size: 12px; color: var(--text-muted); margin: 1px 0 0; }
+
+/* ── Cards ── */
+.cp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 16px; }
+@media (min-width: 1100px) { .cp-grid { grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); } }
+
+.cp-card {
+  position: relative; border-radius: 16px; overflow: hidden; display: block; text-decoration: none;
+  aspect-ratio: 4 / 3;
+  animation: cpIn .45s ease forwards;
+  animation-delay: calc(var(--i,0) * 0.04s);
+  opacity: 0; transform: translateY(16px);
+  transition: all .35s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes cpIn { to{ opacity:1; transform:translateY(0); } }
+.cp-card:hover { transform: translateY(-6px) scale(1.02); z-index: 2; }
+
+.cp-card-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #1a1a3e, #0d0b1a);
+  transition: transform .5s ease;
+}
+.cp-card:hover .cp-card-bg { transform: scale(1.08); }
+.cp-card-bg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.cp-card-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(0deg, rgba(0,0,0,.88) 0%, rgba(0,0,0,.2) 50%, rgba(0,0,0,.35) 100%);
+  transition: all .35s;
+}
+.cp-card:hover .cp-card-overlay {
+  background: linear-gradient(0deg, rgba(0,0,0,.92) 0%, rgba(0,0,0,.1) 45%, rgba(0,0,0,.25) 100%);
+}
+
+.cp-card-accent {
+  position: absolute; top: 0; left: 0; right: 0; height: 3px; z-index: 2;
+  transition: all .3s;
+}
+.cp-card:hover .cp-card-accent { height: 4px; box-shadow: 0 0 24px var(--a, rgba(139,92,246,.5)); }
+
+.cp-card-body {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+  padding: 20px 18px 18px;
+}
+.cp-card-body h3 {
+  font-size: 17px; font-weight: 800; color: white; margin: 0 0 2px;
+  text-shadow: 0 2px 12px rgba(0,0,0,.5);
+}
+.cp-card-body p {
+  font-size: 12px; color: rgba(255,255,255,.7); line-height: 1.45; margin: 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  text-shadow: 0 1px 6px rgba(0,0,0,.4);
+}
+.cp-card-btn-wrap {
+  margin-top: 6px; display: flex; gap: 6px;
+}
+.cp-card-btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 14px; border-radius: 100px;
+  border: 1px solid rgba(255,255,255,.15); background: rgba(0,0,0,.35); color: white;
+  font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit;
+  backdrop-filter: blur(4px); transition: all .2s;
+}
+.cp-card-btn:hover { background: rgba(255,255,255,.12); }
+.cp-card-btn.siguiendo { background: rgba(139,92,246,.35); border-color: rgba(139,92,246,.5); }
+
+.cp-empty { display: none; flex-direction: column; align-items: center; gap: 14px; padding: 56px 20px; color: var(--text-muted); }
+.cp-empty i { font-size: 40px; opacity: .15; }
+.cp-empty.show { display: flex; }
+
+/* ── Suggest ── */
+.cp-suggest {
+  margin-top: 48px; border-radius: 24px; padding: 36px 28px; text-align: center;
+  background: linear-gradient(135deg, rgba(139,92,246,.08), rgba(236,72,153,.05));
+  border: 1px solid rgba(139,92,246,.15);
+}
+.cp-suggest h3 { font-size: 18px; font-weight: 700; color: white; margin: 0 0 6px; }
+.cp-suggest p { font-size: 13px; color: var(--text-muted); margin: 0 0 18px; }
+.cp-suggest-form { display: flex; gap: 10px; max-width: 460px; margin: 0 auto; }
+.cp-suggest-form input {
+  flex: 1; padding: 11px 16px; border-radius: 100px; border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.06); color: white; font-size: 14px; font-family: inherit; outline: none;
+  transition: border-color .2s;
+}
+.cp-suggest-form input:focus { border-color: rgba(139,92,246,.5); }
+.cp-suggest-form button {
+  padding: 11px 26px; border-radius: 100px; border: none;
+  background: linear-gradient(135deg,#8b5cf6,#7c3aed); color: white;
+  font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: all .2s; white-space: nowrap;
+}
+.cp-suggest-form button:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(139,92,246,.3); }
+
+@media (max-width: 640px) {
+  .cp-hero { padding: 28px 20px; }
+  .cp-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .cp-card { aspect-ratio: 4 / 3; }
+  .cp-card-body { padding: 14px 14px 12px; }
+  .cp-card-body h3 { font-size: 14px; }
+  .cp-card-body p { font-size: 11px; }
+  .cp-suggest-form { flex-direction: column; }
 }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="cp">
+
+  <!-- Hero -->
+  <div class="cp-hero">
+    <div class="cp-hero-content">
+      <h1>Comunidades</h1>
+      <p>Encuentra tu zona de juego, conecta con otros jugadores y vive la experiencia en comunidad.</p>
+      <div class="cp-hero-search">
+        <input type="text" id="cp-search" placeholder="Buscar comunidad..." oninput="filterSearch(this.value)">
+        <i class="fas fa-search"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pills -->
+  <div class="cp-pills">
+    <button class="cp-pill active" data-filter="all" onclick="filterCat('all',this)">
+      <i class="fas fa-th-large"></i> Todas
+    </button>
+    {% for cat in categorias %}
+    <button class="cp-pill" data-filter="{{ cat.slug }}" onclick="filterCat('{{ cat.slug }}',this)">
+      <span class="cp-pill-dot" style="background:{{ cat.color }};"></span> {{ cat.titulo }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <!-- Categories -->
+  {% for cat in categorias %}
+  <div class="cp-cat" data-cat="{{ cat.slug }}">
+    <div class="cp-cat-header">
+      <div class="cp-cat-icon" style="background:{{ cat.color }}22; color:{{ cat.color }};">
+        <i class="fas {{ cat.icono }}"></i>
+      </div>
+      <div class="cp-cat-info">
+        <h2>{{ cat.titulo }}</h2>
+        <p>{{ cat.juegos|length }} juegos</p>
+      </div>
+    </div>
+    <div class="cp-grid">
+      {% for juego in cat.juegos %}
+      {% set siguiendo = juego.nombre in siguiendo_comunidades %}
+      <div class="cp-card"
+           data-game="{{ juego.nombre | lower }}"
+           style="--a:{{ cat.color }};--i:{{ loop.index0 }};">
+        <a href="{{ url_for('jugador.comunidad_detalle', juego=juego.nombre) }}" style="text-decoration:none;display:block;position:absolute;inset:0;z-index:1;">
+          <div class="cp-card-bg">
+            <img src="{{ juego.imagen }}" alt="" loading="lazy"
+                 onerror="this.style.display='none';this.parentNode.style.background='linear-gradient(135deg, {{ cat.color }}33, {{ cat.color }}11)';">
+          </div>
+          <div class="cp-card-overlay"></div>
+          <div class="cp-card-accent" style="background:{{ cat.color }};"></div>
+        </a>
+        <div class="cp-card-body" style="position:relative;z-index:2;pointer-events:none;">
+          <h3>{{ juego.nombre }}</h3>
+          <p>{{ juego.desc }}</p>
+          <div class="cp-card-btn-wrap" style="pointer-events:auto;">
+            <button class="cp-card-btn {% if siguiendo %}siguiendo{% endif %}"
+                    data-juego="{{ juego.nombre }}"
+                    onclick="event.preventDefault(); toggleComunidadSeguir(this, '{{ juego.nombre | e }}')">
+              <i class="fas {% if siguiendo %}fa-check{% else %}fa-plus{% endif %}"></i>
+              <span>{% if siguiendo %}Siguiendo{% else %}Seguir{% endif %}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- Empty -->
+  <div class="cp-empty" id="cp-empty">
+    <i class="fas fa-search"></i>
+    <p>No se encontraron comunidades.</p>
+  </div>
+
+
+
+</div>
+
+<script>
+function gCSRF() { var m=document.querySelector('meta[name="csrf-token"]'); return m?m.getAttribute('content'):''; }
+
+function filterCat(slug, btn) {
+  document.querySelectorAll('.cp-pill').forEach(function(p){ p.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.cp-cat').forEach(function(c){
+    c.classList.toggle('hidden', slug !== 'all' && c.getAttribute('data-cat') !== slug);
+  });
+}
+
+function filterSearch(q) {
+  q = q.trim().toLowerCase();
+  document.querySelectorAll('.cp-card').forEach(function(c){
+    var name = c.getAttribute('data-game') || '';
+    c.style.display = !q || name.includes(q) ? '' : 'none';
+  });
+  var anyVisible = document.querySelectorAll('.cp-card[style*="display: none"]').length < document.querySelectorAll('.cp-card').length;
+  document.querySelectorAll('.cp-cat').forEach(function(c){
+    var hidden = c.querySelectorAll('.cp-card[style*="display: none"]').length;
+    var total = c.querySelectorAll('.cp-card').length;
+    c.style.display = (!q || hidden < total) ? '' : 'none';
+  });
+  document.getElementById('cp-empty').classList.toggle('show', !anyVisible && q.length > 0);
+  if (q) {
+    document.querySelectorAll('.cp-pill').forEach(function(p){ p.classList.remove('active'); });
+  }
+}
+
+function toggleComunidadSeguir(btn, juego) {
+  fetch('/jugador/api/comunidad/seguir', {
+    method: 'POST', credentials: 'same-origin',
+    headers: { 'X-CSRFToken': gCSRF(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ juego: juego })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.success) {
+      var isOn = d.following;
+      btn.classList.toggle('siguiendo', isOn);
+      var ic = btn.querySelector('i');
+      var sp = btn.querySelector('span');
+      ic.className = 'fas ' + (isOn ? 'fa-check' : 'fa-plus');
+      sp.textContent = isOn ? 'Siguiendo' : 'Seguir';
+    }
+  }).catch(function(){});
+}
+</script>
 {% endblock %}

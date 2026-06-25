@@ -7,26 +7,307 @@ jugador_bp = Blueprint('jugador', __name__, template_folder='../templates/jugado
 @login_required
 def dashboard():
     tab = request.args.get('tab', 'para-ti')
-    if tab not in ('para-ti', 'siguiendo', 'populares', 'recientes', 'encuestas', 'torneos'):
+    valid_tabs = ('para-ti', 'siguiendo', 'populares', 'videos', 'encuestas', 'recientes')
+    if tab not in valid_tabs:
         tab = 'para-ti'
     from app.factories.service_factory import get_service_factory
     sf = get_service_factory()
     pub_service = sf.get_publicacion_service()
     publicaciones = pub_service.obtener_feed(tab=tab, user_id=current_user.id_usuario)
-    return render_template('jugador/dashboard.html', publicaciones=publicaciones, active_tab=tab)
+    return render_template('dashboard/inicio/inicio.html', publicaciones=publicaciones, active_tab=tab)
+
+@jugador_bp.route('/api/feed')
+@login_required
+def api_feed():
+    tab = request.args.get('tab', 'para-ti')
+    valid_tabs = ('para-ti', 'siguiendo', 'populares', 'videos', 'encuestas', 'recientes')
+    if tab not in valid_tabs:
+        tab = 'para-ti'
+    from app.factories.service_factory import get_service_factory
+    sf = get_service_factory()
+    pub_service = sf.get_publicacion_service()
+    publicaciones = pub_service.obtener_feed(tab=tab, user_id=current_user.id_usuario)
+    posts_json = []
+    from app.utils.avatar import avatar_url
+    for p in publicaciones:
+        post_data = {
+            'id_publicacion': p.id_publicacion,
+            'contenido': p.contenido,
+            'juego': p.juego,
+            'imagen_url': p.imagen_url,
+            'video_archivo': p.video_archivo,
+            'fecha_creacion': p.fecha_creacion.isoformat() if p.fecha_creacion else None,
+            'likes_count': p.likes,
+            'comentarios_count': len(p.comentarios),
+            'fijada': p.fijada,
+            'promocionada': p.promocionada,
+            'boost_tipo': p.boost_tipo,
+            'is_poll': p.is_poll,
+            'autor': {
+                'username': p.autor.username,
+                'nombre': p.autor.nombre or p.autor.username,
+                'foto_perfil': avatar_url(p.autor.foto_perfil),
+                'id': p.autor.id_usuario,
+            },
+            'liked': current_user in p.usuarios_likes,
+            'repost_id': p.repost_id,
+            'reposteado': None,
+            'poll': None,
+        }
+        if p.repost_id and p.reposteado:
+            orig = p.reposteado
+            orig_poll = None
+            if orig.is_poll and orig.poll:
+                options = [{'id': o.id_option, 'texto': o.texto, 'votos': o.votos} for o in orig.poll.options]
+                orig_poll = {
+                    'pregunta': orig.poll.pregunta,
+                    'multiple_choice': orig.poll.multiple_choice,
+                    'total_votos': orig.poll.total_votos,
+                    'options': options,
+                }
+            post_data['reposteado'] = {
+                'id_publicacion': orig.id_publicacion,
+                'contenido': orig.contenido[:300] + ('...' if len(orig.contenido or '') > 300 else ''),
+                'juego': orig.juego,
+                'imagen_url': orig.imagen_url,
+                'video_archivo': orig.video_archivo,
+                'is_poll': orig.is_poll,
+                'poll': orig_poll,
+                'autor': {
+                    'username': orig.autor.username,
+                    'nombre': orig.autor.nombre or orig.autor.username,
+                    'foto_perfil': avatar_url(orig.autor.foto_perfil),
+                    'id': orig.autor.id_usuario,
+                },
+            }
+        if p.is_poll and p.poll:
+            options = [{'id': o.id_option, 'texto': o.texto, 'votos': o.votos} for o in p.poll.options]
+            post_data['poll'] = {
+                'pregunta': p.poll.pregunta,
+                'multiple_choice': p.poll.multiple_choice,
+                'total_votos': p.poll.total_votos,
+                'options': options,
+            }
+        posts_json.append(post_data)
+    return jsonify({'posts': posts_json, 'tab': tab})
+
 
 @jugador_bp.route('/explorar')
 def explorar():
-    from app.factories.service_factory import get_service_factory
+    from app.models.publicacion import Publicacion
+    from sqlalchemy import func
+    from app.data.game_categories import get_game_categories
+    juegos_top = (
+        db_session().query(Publicacion.juego, func.count(Publicacion.juego).label('cnt'))
+        .filter(Publicacion.juego != None, Publicacion.juego != '')
+        .group_by(Publicacion.juego)
+        .order_by(func.count(Publicacion.juego).desc())
+        .limit(10).all()
+    )
+    # Build full community list with colors
+    todas_comunidades = []
+    gcolor_map = {}
+    for cat in get_game_categories():
+        for g in cat['juegos']:
+            gcolor_map[g['nombre'].lower()] = {'color': cat['color'], 'categoria': cat['titulo']}
+    for j, cnt in juegos_top:
+        info = gcolor_map.get(j.lower(), {})
+        todas_comunidades.append({
+            'nombre': j,
+            'color': info.get('color', '#8b5cf6'),
+            'categoria': info.get('categoria', 'General'),
+            'posts': cnt,
+        })
+    categorias = sorted(set(c['categoria'] for c in todas_comunidades))
+    return render_template('jugador/explorar.html',
+        juegos_top=juegos_top,
+        todas_comunidades=todas_comunidades,
+        categorias=categorias)
+
+
+def db_session():
+    from app.factories.app_factory import db
+    return db.session
+
+
+@jugador_bp.route('/api/explorar/buscar')
+def api_explorar_buscar():
     from app.models.usuario import Usuario
-    from app.models.clan import Clan
-    sf = get_service_factory()
-    pub_service = sf.get_publicacion_service()
+    from app.models.publicacion import Publicacion
+    from app.utils.avatar import avatar_url
+    q = request.args.get('q', '').strip()
+    if not q or len(q) < 2:
+        return jsonify({'usuarios': [], 'publicaciones': []})
+
+    pattern = f'%{q}%'
+    usuarios = Usuario.query.filter(
+        (Usuario.username.ilike(pattern)) | (Usuario.nombre.ilike(pattern))
+    ).limit(8).all()
+
+    publicaciones = Publicacion.query.filter(
+        (Publicacion.contenido.ilike(pattern)) | (Publicacion.juego.ilike(pattern))
+    ).order_by(Publicacion.fecha_creacion.desc()).limit(6).all()
+
     user_id = current_user.id_usuario if current_user.is_authenticated else None
-    publicaciones = pub_service.obtener_feed(user_id=user_id)
-    usuarios = Usuario.query.order_by(Usuario.nivel.desc()).limit(12).all()
-    clanes = Clan.query.order_by(Clan.fecha_creacion.desc()).limit(6).all()
-    return render_template('jugador/explorar.html', publicaciones=publicaciones, usuarios=usuarios, clanes=clanes)
+    siguiendo_ids = set()
+    if current_user.is_authenticated:
+        siguiendo_ids = {u.id_usuario for u in current_user.siguiendo.all()}
+
+    def u_dict(u):
+        return {
+            'id': u.id_usuario,
+            'username': u.username,
+            'nombre': u.nombre or u.username,
+            'foto': avatar_url(u.foto_perfil),
+            'nivel': u.nivel,
+            'seguidores': u.num_seguidores,
+            'siguiendo': u.id_usuario in siguiendo_ids,
+            'url': url_for('jugador.perfil_publico', username=u.username),
+        }
+
+    def p_dict(p):
+        return {
+            'id': p.id_publicacion,
+            'contenido': (p.contenido or '')[:200],
+            'juego': p.juego,
+            'imagen_url': p.imagen_url,
+            'likes': p.likes_count,
+            'comentarios': p.comentarios_count,
+            'liked': current_user.is_authenticated and p.is_liked_by(current_user),
+            'shares': p.shares_count or 0,
+            'autor': {
+                'username': p.autor.username,
+                'nombre': p.autor.nombre or p.autor.username,
+                'foto': avatar_url(p.autor.foto_perfil),
+            },
+            'url': url_for('jugador.ver_publicacion', post_id=p.id_publicacion),
+            'autor_url': url_for('jugador.perfil_publico', username=p.autor.username),
+        }
+
+    return jsonify({
+        'usuarios': [u_dict(u) for u in usuarios],
+        'publicaciones': [p_dict(p) for p in publicaciones],
+    })
+
+
+@jugador_bp.route('/api/explorar/tab/<tab>')
+def api_explorar_tab(tab):
+    from app.models.publicacion import Publicacion
+    from app.utils.avatar import avatar_url
+    from sqlalchemy import func
+
+    offset = request.args.get('offset', 0, type=int)
+    limit = min(request.args.get('limit', 20, type=int), 50)
+
+    def p_dict(p):
+        return {
+            'id': p.id_publicacion,
+            'contenido': (p.contenido or '')[:300],
+            'juego': p.juego,
+            'imagen_url': p.imagen_url,
+            'video_archivo': p.video_archivo,
+            'likes': p.likes_count,
+            'comentarios': p.comentarios_count,
+            'liked': p.is_liked_by(current_user),
+            'shares': p.shares_count or 0,
+            'autor': {
+                'username': p.autor.username,
+                'nombre': p.autor.nombre or p.autor.username,
+                'foto': avatar_url(p.autor.foto_perfil),
+            },
+            'url': url_for('jugador.ver_publicacion', post_id=p.id_publicacion),
+            'autor_url': url_for('jugador.perfil_publico', username=p.autor.username),
+        }
+
+    def get_total(tab):
+        if tab == 'tendencias':
+            return db_session().query(Publicacion.juego).filter(
+                Publicacion.juego != None, Publicacion.juego != ''
+            ).distinct().count()
+        elif tab == 'clips':
+            return Publicacion.query.filter(Publicacion.video_archivo != None).count()
+        elif tab == 'imagenes':
+            return Publicacion.query.filter(Publicacion.imagen_url != None).count()
+        return 0
+
+    total = get_total(tab)
+    has_more = (offset + limit) < total
+
+    if tab == 'tendencias':
+        half = limit // 2
+        juegos = (
+            db_session().query(Publicacion.juego, func.count(Publicacion.juego).label('cnt'))
+            .filter(Publicacion.juego != None, Publicacion.juego != '')
+            .group_by(Publicacion.juego)
+            .order_by(func.count(Publicacion.juego).desc())
+            .all()
+        )
+        all_pubs = Publicacion.query.order_by(Publicacion.fecha_creacion.desc()).limit(50).all()
+        all_pubs.sort(key=lambda p: (p.likes_count or 0) + (p.comentarios_count or 0) + (p.shares_count or 0), reverse=True)
+        top_pubs = all_pubs[:half]
+        items = []
+        items.append({'type': 'games_section'})
+        for j, c in juegos[:half]:
+            items.append({'type': 'game', 'juego': j, 'posts': c})
+        items.append({'type': 'posts_section'})
+        for p in top_pubs[:half]:
+            pd = p_dict(p)
+            pd['type'] = 'post'
+            items.append(pd)
+        # Top 4 comunidades con sus posts destacados
+        from app.data.game_categories import get_game_categories
+        gcolor_map = {}
+        for cat in get_game_categories():
+            for g in cat['juegos']:
+                gcolor_map[g['nombre'].lower()] = cat['color']
+        top4 = juegos[:4]
+        top_comunidades = []
+        seen_ids = set()
+        for j, cnt in top4:
+            community_pubs = Publicacion.query.filter(
+                Publicacion.juego == j
+            ).order_by(Publicacion.fecha_creacion.desc()).limit(4).all()
+            community_pubs.sort(key=lambda p: (p.likes_count or 0) + (p.comentarios_count or 0) + (p.shares_count or 0), reverse=True)
+            posts = []
+            for cp in community_pubs[:3]:
+                pd = p_dict(cp)
+                seen_ids.add(cp.id_publicacion)
+                posts.append(pd)
+            if posts:
+                top_comunidades.append({
+                    'juego': j,
+                    'color': gcolor_map.get(j.lower(), '#8b5cf6'),
+                    'posts': posts,
+                    'total': cnt,
+                })
+        has_more = False
+        return jsonify({
+            'tab': tab, 'items': items, 'has_more': has_more, 'total': len(items),
+            'top_comunidades': top_comunidades,
+        })
+
+    elif tab == 'clips':
+        clips = Publicacion.query.filter(
+            Publicacion.video_archivo != None
+        ).order_by(Publicacion.fecha_creacion.desc()).offset(offset).limit(limit).all()
+        return jsonify({'tab': tab, 'items': [p_dict(p) for p in clips], 'has_more': has_more, 'total': total})
+
+    elif tab == 'imagenes':
+        imgs = Publicacion.query.filter(
+            Publicacion.imagen_url != None
+        ).order_by(Publicacion.fecha_creacion.desc()).offset(offset).limit(limit).all()
+        return jsonify({'tab': tab, 'items': [p_dict(p) for p in imgs], 'has_more': has_more, 'total': total})
+
+    elif tab == 'post':
+        post_id = request.args.get('id', type=int)
+        if post_id:
+            post = Publicacion.query.get(post_id)
+            if post:
+                return jsonify({'tab': tab, 'items': [p_dict(post)], 'has_more': False, 'total': 1})
+        return jsonify({'tab': tab, 'items': [], 'has_more': False, 'total': 0})
+
+    pubs = Publicacion.query.order_by(Publicacion.fecha_creacion.desc()).offset(offset).limit(limit).all()
+    return jsonify({'tab': tab, 'items': [p_dict(p) for p in pubs], 'has_more': has_more, 'total': total})
 
 @jugador_bp.route('/crear-publicacion', methods=['POST'])
 @login_required
@@ -38,13 +319,15 @@ def crear_publicacion():
     sf = get_service_factory()
     pub_service = sf.get_publicacion_service()
     
-    contenido = request.form.get('contenido', '').strip()
+    from app.utils.profanity import filter_profanity
+    contenido = filter_profanity(request.form.get('contenido', '').strip())
     juego = request.form.get('juego')
     tipo_post = request.form.get('tipo_post', 'texto')
     imagen_url = request.form.get('imagen_url', '').strip()
     imagen_archivo = request.files.get('imagen_archivo')
     video_archivo = request.files.get('video_archivo')
     clip_url = request.form.get('clip_url', '').strip()
+    clip_archivo = request.files.get('clip_archivo')
 
     def _save_upload(file, subdir='images'):
         import os, uuid
@@ -53,7 +336,9 @@ def crear_publicacion():
         upload_dir = os.path.join(current_app.static_folder, 'uploads', subdir)
         os.makedirs(upload_dir, exist_ok=True)
         file.save(os.path.join(upload_dir, filename))
-        return url_for('static', filename=f'uploads/{subdir}/{filename}')
+        return '/static/uploads/' + subdir + '/' + filename
+
+    video_archivo_path = None
 
     # File upload priority: video_archivo > imagen_archivo > imagen_url > clip_url
     if video_archivo and video_archivo.filename:
@@ -61,7 +346,8 @@ def crear_publicacion():
         if ext not in ('mp4', 'mov', 'avi') or not video_archivo.content_type.startswith('video/'):
             flash('El archivo no es un video válido (solo .mp4, .mov, .avi).', 'error')
             return redirect(url_for('jugador.dashboard'))
-        imagen_url = _save_upload(video_archivo, 'videos')
+        video_archivo_path = _save_upload(video_archivo, 'videos')
+        imagen_url = video_archivo_path
     elif imagen_archivo and imagen_archivo.filename:
         ext = imagen_archivo.filename.rsplit('.', 1)[-1].lower() if '.' in imagen_archivo.filename else ''
         allowed_img = current_app.config.get('ALLOWED_EXTENSIONS', {'png', 'jpg', 'jpeg'})
@@ -74,7 +360,16 @@ def crear_publicacion():
 
     # Build content based on type
     if tipo_post == 'clip':
-        if clip_url and not imagen_url:
+        # Clip as file upload
+        if clip_archivo and clip_archivo.filename:
+            ext = clip_archivo.filename.rsplit('.', 1)[-1].lower() if '.' in clip_archivo.filename else ''
+            if ext not in ('mp4', 'mov') or not clip_archivo.content_type.startswith('video/'):
+                flash('El clip debe ser un video .mp4 o .mov.', 'error')
+                return redirect(url_for('jugador.dashboard'))
+            video_archivo_path = _save_upload(clip_archivo, 'clips')
+            imagen_url = video_archivo_path
+            contenido = contenido or '[Clip]'
+        elif clip_url and not imagen_url:
             contenido = f'[Clip] {clip_url}'
             imagen_url = clip_url
         elif imagen_url:
@@ -94,34 +389,13 @@ def crear_publicacion():
         elif not contenido:
             contenido = '[Encuesta]'
     
-    elif tipo_post == 'tournament':
-        nombre = request.form.get('tour_nombre', '').strip()
-        fecha = request.form.get('tour_fecha', '').strip()
-        hora = request.form.get('tour_hora', '').strip()
-        cupos = request.form.get('tour_cupos', '').strip()
-        premio = request.form.get('tour_premio', '').strip()
-        tour_juego = request.form.get('tour_juego', '').strip()
-        formato = request.form.get('tour_formato', '').strip()
-        desc = request.form.get('tour_desc', '').strip()
-        partes = []
-        if nombre: partes.append(f'🏆 {nombre}')
-        if fecha: partes.append(f'📅 {fecha}{(" " + hora) if hora else ""}')
-        if cupos: partes.append(f'👥 {cupos} cupos')
-        if premio: partes.append(f'💰 {premio}')
-        if formato: partes.append(f'⚔ {formato}')
-        if tour_juego: partes.append(f'🎮 {tour_juego}')
-        if desc: partes.append(f'📝 {desc}')
-        if partes:
-            contenido = '[Torneo] ' + ' | '.join(partes)
-        if tour_juego and not juego:
-            juego = tour_juego
-    
     try:
         post = pub_service.crear_publicacion(
             id_usuario=current_user.id_usuario,
             contenido=contenido or 'Publicación',
             juego=juego,
-            imagen_url=imagen_url or None
+            imagen_url=imagen_url or None,
+            video_archivo=video_archivo_path or None
         )
         
         # Save poll to DB
@@ -144,7 +418,43 @@ def crear_publicacion():
         flash('Publicación creada con éxito.', 'success')
     except ValueError as e:
         flash(str(e), 'error')
-        
+        if _wants_json():
+            return jsonify({'success': False, 'message': str(e)}), 400
+    
+    if _wants_json():
+        from app.models.usuario import Usuario
+        autor = Usuario.query.get(post.id_usuario)
+        post_response = {
+            'id_publicacion': post.id_publicacion,
+            'contenido': post.contenido,
+            'juego': post.juego,
+            'imagen_url': post.imagen_url,
+            'video_archivo': post.video_archivo,
+            'fecha_creacion': post.fecha_creacion.isoformat() if post.fecha_creacion else None,
+            'autor': {
+                'id_usuario': autor.id_usuario,
+                'username': autor.username,
+                'nombre': autor.nombre,
+                'foto_perfil': url_for('static', filename=f'uploads/avatars/{autor.foto_perfil}') if autor.foto_perfil else None
+            }
+        }
+        if post.is_poll and post.poll:
+            poll_response = {
+                'is_poll': True,
+                'poll': {
+                    'pregunta': post.poll.pregunta,
+                    'multiple_choice': post.poll.multiple_choice,
+                    'allow_change': post.poll.allow_change,
+                    'hide_results': post.poll.hide_results,
+                    'options': [{'id': o.id_option, 'texto': o.texto, 'votos': o.votos} for o in post.poll.options]
+                }
+            }
+            post_response.update(poll_response)
+        return jsonify({
+            'success': True,
+            'post': post_response
+        })
+    
     return redirect(url_for('jugador.dashboard'))
 
 
@@ -176,11 +486,12 @@ def comentar(post_id):
                 ref = None
         return redirect(ref or url_for('jugador.dashboard'))
 
+    from app.utils.profanity import filter_profanity
     sf = get_service_factory()
     com_service = sf.get_comentario_service()
-    contenido = (request.form.get('contenido') or '').strip()
+    contenido = filter_profanity((request.form.get('contenido') or '').strip())
     if not contenido and request.is_json:
-        contenido = (request.get_json(silent=True) or {}).get('contenido', '').strip()
+        contenido = filter_profanity(((request.get_json(silent=True) or {}).get('contenido', '')).strip())
 
     try:
         com = com_service.crear_comentario(
@@ -189,6 +500,20 @@ def comentar(post_id):
             contenido=contenido,
         )
         comments_count = Comentario.query.filter_by(id_publicacion=post_id).count()
+
+        from app.models.publicacion import Publicacion
+        post = Publicacion.query.get(post_id)
+        if post and post.usuario_id != current_user.id_usuario:
+            try:
+                notif = sf.get_notificacion_service()
+                notif.crear_notificacion(
+                    usuario_id=post.usuario_id,
+                    tipo='comentario',
+                    mensaje=f'{current_user.nombre or current_user.username} comentó tu publicación',
+                    enlace=url_for('jugador.comunidad_detalle', juego=post.juego) + '#comments-' + str(post_id),
+                )
+            except:
+                pass
 
         if _wants_json():
             return jsonify({
@@ -316,6 +641,95 @@ def _build_poll_results(poll):
     return results
 
 
+@jugador_bp.route('/repost/<int:post_id>', methods=['POST'])
+@login_required
+def repost(post_id):
+    from flask import jsonify
+    from app.factories.service_factory import get_service_factory
+    from app.factories.app_factory import db
+
+    if current_user.rol == 'invitado':
+        return jsonify({'success': False, 'message': 'Regístrate para repostear.'}), 403
+
+    from app.models.publicacion import Publicacion
+    original = Publicacion.query.get(post_id)
+    if not original:
+        return jsonify({'success': False, 'message': 'Publicación no encontrada.'}), 404
+
+    # Walk up the repost chain to find the ROOT original
+    root = original
+    seen = set()
+    while root.repost_id and root.reposteado and root.id_publicacion not in seen:
+        seen.add(root.id_publicacion)
+        root = root.reposteado
+    root_id = root.id_publicacion
+
+    from app.utils.profanity import filter_profanity
+    data = request.get_json(silent=True) or {}
+    contenido = filter_profanity((data.get('contenido') or '').strip())
+    juego_destino = (data.get('juego_destino') or '').strip()
+
+    if juego_destino and juego_destino != 'perfil':
+        juego_final = juego_destino
+    else:
+        juego_final = original.juego or ''
+
+    sf = get_service_factory()
+    pub_service = sf.get_publicacion_service()
+    try:
+        new_post = Publicacion(
+            id_usuario=current_user.id_usuario,
+            contenido=contenido or '[Repost]',
+            juego=juego_final,
+            repost_id=root_id,
+        )
+        db.session.add(new_post)
+        db.session.commit()
+
+        # Reload with relationships for real-time response
+        from app.utils.avatar import avatar_url
+        from sqlalchemy.orm import joinedload
+        full = Publicacion.query.options(
+            joinedload(Publicacion.autor),
+            joinedload(Publicacion.reposteado).joinedload(Publicacion.autor),
+        ).get(new_post.id_publicacion)
+
+        if _wants_json():
+            return jsonify({
+                'success': True,
+                'post_id': new_post.id_publicacion,
+                'post': {
+                    'id': full.id_publicacion,
+                    'contenido': full.contenido,
+                    'juego': full.juego,
+                    'fecha': full.fecha_creacion.isoformat() if full.fecha_creacion else '',
+                    'autor': {
+                        'username': full.autor.username,
+                        'nombre': full.autor.nombre or full.autor.username,
+                        'foto': avatar_url(full.autor.foto_perfil),
+                    },
+                    'reposteado': {
+                        'id': full.reposteado.id_publicacion,
+                        'contenido': full.reposteado.contenido,
+                        'imagen_url': full.reposteado.imagen_url,
+                        'video_archivo': full.reposteado.video_archivo,
+                        'autor': {
+                            'username': full.reposteado.autor.username,
+                            'nombre': full.reposteado.autor.nombre or full.reposteado.autor.username,
+                            'foto': avatar_url(full.reposteado.autor.foto_perfil),
+                        },
+                    } if full.reposteado else None,
+                }
+            })
+        flash('¡Publicación reposteada!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        if _wants_json():
+            return jsonify({'success': False, 'message': str(e)}), 500
+        flash(str(e), 'error')
+    return redirect(url_for('jugador.dashboard'))
+
+
 @jugador_bp.route('/like/<int:post_id>', methods=['POST'])
 @login_required
 def like_post(post_id):
@@ -334,6 +748,19 @@ def like_post(post_id):
         if not post:
             return jsonify({'success': False, 'message': 'Publicación no encontrada.'}), 404
         likes_count = len(post.usuarios_likes)
+
+        if liked and post.usuario_id != current_user.id_usuario:
+            try:
+                notif = sf.get_notificacion_service()
+                notif.crear_notificacion(
+                    usuario_id=post.usuario_id,
+                    tipo='like',
+                    mensaje=f'a {current_user.nombre or current_user.username} le gusta tu publicación',
+                    enlace=url_for('jugador.comunidad_detalle', juego=post.juego) + '#post-' + str(post_id),
+                )
+            except:
+                pass
+
         return jsonify({'success': True, 'liked': liked, 'likes_count': likes_count})
     except ValueError as e:
         return jsonify({'success': False, 'message': str(e)}), 400
@@ -341,6 +768,42 @@ def like_post(post_id):
         from app.factories.app_factory import db
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Error al procesar el like.'}), 500
+
+@jugador_bp.route('/share/<int:post_id>', methods=['POST'])
+@login_required
+def share_post(post_id):
+    from app.factories.service_factory import get_service_factory
+    sf = get_service_factory()
+    pub_service = sf.get_publicacion_service()
+    post = pub_service.pub_repo.get_by_id(post_id)
+    if not post:
+        return jsonify({'success': False, 'message': 'Publicación no encontrada.'}), 404
+    post.shares_count = (post.shares_count or 0) + 1
+    from app.factories.app_factory import db
+    db.session.commit()
+    return jsonify({'success': True, 'shares_count': post.shares_count})
+
+@jugador_bp.route('/api/post/<int:post_id>')
+@login_required
+def api_post(post_id):
+    from app.factories.service_factory import get_service_factory
+    from app.utils.avatar import avatar_url
+    sf = get_service_factory()
+    pub_service = sf.get_publicacion_service()
+    post = pub_service.pub_repo.get_by_id(post_id)
+    if not post:
+        return jsonify({'success': False, 'message': 'No encontrada.'}), 404
+    return jsonify({
+        'success': True,
+        'post': {
+            'contenido': post.contenido,
+            'imagen': post.imagen_url,
+            'video': post.video_archivo,
+            'author': post.autor.nombre or post.autor.username,
+            'username': post.autor.username,
+            'avatar': avatar_url(post.autor.foto_perfil),
+        }
+    })
 
 @jugador_bp.route('/promocionar/<int:post_id>', methods=['POST'])
 @login_required
@@ -351,7 +814,9 @@ def promocionar(post_id):
 @jugador_bp.route('/boosts')
 @login_required
 def boosts():
+    from datetime import datetime
     from app.models.publicacion import Publicacion
+    from app.models.transaccion import Transaccion
     from app.services.boost_service import BOOST_PLANS
 
     post_id = request.args.get('post_id', type=int)
@@ -372,12 +837,28 @@ def boosts():
         .all()
     )
 
+    now = datetime.utcnow()
+    boosts_activos = Publicacion.query.filter(
+        Publicacion.id_usuario == current_user.id_usuario,
+        Publicacion.promocionada.is_(True),
+        Publicacion.boost_hasta.isnot(None),
+        Publicacion.boost_hasta > now,
+    ).order_by(Publicacion.boost_hasta.asc()).all()
+
+    historial = Transaccion.query.filter(
+        Transaccion.user_id == current_user.id_usuario,
+        Transaccion.tipo == 'egreso',
+        Transaccion.description.ilike('%boost%'),
+    ).order_by(Transaccion.created_at.desc()).limit(10).all()
+
     return render_template(
         'jugador/boosts.html',
         post_target=post,
         mis_posts=mis_posts,
         boost_planes=BOOST_PLANS,
         saldo=current_user.tokens or 0,
+        boosts_activos=boosts_activos,
+        historial=historial,
     )
 
 
@@ -385,15 +866,15 @@ def boosts():
 @login_required
 def comprar_boost():
     if current_user.rol == 'invitado':
-        flash('Regístrate para usar boosts.', 'error')
-        return redirect(url_for('jugador.boosts'))
+        msg = 'Regístrate para usar boosts.'
+        return jsonify({'success': False, 'message': msg}) if _wants_json() else (flash(msg, 'error') or redirect(url_for('jugador.boosts')))
 
     plan = (request.form.get('plan') or '').strip()
     post_id = request.form.get('post_id', type=int)
 
     if not post_id:
-        flash('Selecciona una publicación para boostear.', 'error')
-        return redirect(url_for('jugador.boosts'))
+        msg = 'Selecciona una publicación para boostear.'
+        return jsonify({'success': False, 'message': msg}) if _wants_json() else (flash(msg, 'error') or redirect(url_for('jugador.boosts')))
 
     try:
         from app.services.boost_service import aplicar_boost
@@ -402,23 +883,18 @@ def comprar_boost():
 
         post, plan_info = aplicar_boost(current_user, post_id, plan)
         db.session.refresh(current_user)
-        login_user(current_user)
-        etiquetas = {'rapido': 'azul', 'mega': 'morado', 'titan': 'dorado'}
-        color_txt = etiquetas.get(plan, '')
-        flash(
-            f'¡{plan_info["nombre"]} activado! Tu nombre se verá en {color_txt} en el perfil y en el chat. '
-            f'Saldo: {current_user.tokens} RC.',
-            'success',
-        )
+        if _wants_json():
+            return jsonify({'success': True, 'nuevo_saldo': current_user.tokens, 'plan': plan_info})
+        flash(f'¡{plan_info["nombre"]} activado! Saldo: {current_user.tokens} RC.', 'success')
         return redirect(url_for('jugador.dashboard'))
     except ValueError as e:
-        flash(str(e), 'error')
-        return redirect(url_for('jugador.boosts', post_id=post_id))
+        msg = str(e)
+        return jsonify({'success': False, 'message': msg}) if _wants_json() else (flash(msg, 'error') or redirect(url_for('jugador.boosts', post_id=post_id)))
     except Exception:
         from app.factories.app_factory import db
         db.session.rollback()
-        flash('Error al aplicar el boost.', 'error')
-        return redirect(url_for('jugador.boosts', post_id=post_id))
+        msg = 'Error al aplicar el boost.'
+        return jsonify({'success': False, 'message': msg}) if _wants_json() else (flash(msg, 'error') or redirect(url_for('jugador.boosts', post_id=post_id)))
 
 @jugador_bp.route('/premium')
 @login_required
@@ -489,6 +965,7 @@ def perfil():
             joinedload(Publicacion.autor),
             joinedload(Publicacion.usuarios_likes),
             joinedload(Publicacion.comentarios).joinedload(Comentario.autor),
+            joinedload(Publicacion.reposteado).joinedload(Publicacion.autor),
         )
         .filter(Publicacion.id_usuario == current_user.id_usuario)
         .order_by(Publicacion.fecha_creacion.desc())
@@ -523,6 +1000,7 @@ def perfil_publico(username):
             joinedload(Publicacion.autor),
             joinedload(Publicacion.usuarios_likes),
             joinedload(Publicacion.comentarios).joinedload(Comentario.autor),
+            joinedload(Publicacion.reposteado).joinedload(Publicacion.autor),
         )
         .filter(Publicacion.id_usuario == usuario.id_usuario)
         .order_by(Publicacion.fecha_creacion.desc())
@@ -548,6 +1026,7 @@ def ver_publicacion(post_id):
         joinedload(Publicacion.usuarios_likes),
         joinedload(Publicacion.comentarios).joinedload(Comentario.autor),
         joinedload(Publicacion.poll),
+        joinedload(Publicacion.reposteado).joinedload(Publicacion.autor),
     ).get(post_id)
 
     if not post:
@@ -696,104 +1175,48 @@ def seguir(user_id):
         'seguidores_count': objetivo.num_seguidores
     })
 
+@jugador_bp.route('/api/comunidad/seguir', methods=['POST'])
+@login_required
+def api_seguir_comunidad():
+    from app.factories.app_factory import db
+    from app.factories.service_factory import get_service_factory
+    data = request.get_json(silent=True) or {}
+    juego = data.get('juego', '').strip()
+    if not juego:
+        return jsonify({'success': False, 'message': 'Falta el nombre de la comunidad'}), 400
+    siguiendo = not current_user.esta_siguiendo_comunidad(juego)
+    if siguiendo:
+        current_user.seguir_comunidad(juego)
+        sf = get_service_factory()
+        ns = sf.get_notificacion_service()
+        ns.crear_notificacion(
+            usuario_id=current_user.id_usuario,
+            tipo='comunidad',
+            mensaje=f'Has comenzado a seguir la comunidad {juego}',
+            enlace=url_for('jugador.comunidad_detalle', juego=juego),
+            icono='fas fa-gamepad',
+        )
+    else:
+        current_user.dejar_seguir_comunidad(juego)
+    db.session.commit()
+    return jsonify({'success': True, 'following': siguiendo})
+
 @jugador_bp.route('/comunidades')
 @login_required
 def comunidades():
-    categorias = [
-        {
-            "titulo": "🔫 Fuerza Élite",
-            "descripcion": "Shooters tácticos, precisión y reflejos. La cima del combate competitivo.",
-            "juegos": [
-                {"nombre": "Counter-Strike 2", "imagen": url_for('static', filename='img/comunidades/shooters/cs2.jpg'), "desc": "Rey de Steam, rompe récords de jugadores simultáneos."},
-                {"nombre": "Valorant", "imagen": url_for('static', filename='img/comunidades/shooters/valorant.jpg'), "desc": "Shooter competitivo con comunidad enorme."},
-                {"nombre": "Rainbow Six Siege", "imagen": url_for('static', filename='img/comunidades/shooters/rainbow6.jpg'), "desc": "Competitivo táctico mantiene su comunidad."},
-                {"nombre": "Overwatch 2", "imagen": url_for('static', filename='img/comunidades/shooters/overwatch2.jpg'), "desc": "Héroes, acción rápida y comunidad global."},
-                {"nombre": "The Finals", "imagen": url_for('static', filename='img/comunidades/shooters/thefinals.jpg'), "desc": "Free-to-play que sigue creciendo."},
-                {"nombre": "Destiny 2", "imagen": url_for('static', filename='img/comunidades/shooters/destiny2.jpg'), "desc": "Expansiones constantes y modelo live service."},
-                {"nombre": "Call of Duty: Black Ops 6", "imagen": url_for('static', filename='img/comunidades/shooters/bo6.jpg'), "desc": "El shooter anual más esperado."},
-                {"nombre": "Team Fortress 2", "imagen": url_for('static', filename='img/comunidades/shooters/tf2.jpg'), "desc": "Clásico de Valve con legión de seguidores."},
-                {"nombre": "Battlefield 2042", "imagen": url_for('static', filename='img/comunidades/shooters/bf2042.jpg'), "desc": "Combate a gran escala con vehículos y destrucción."},
-                {"nombre": "Escape from Tarkov", "imagen": url_for('static', filename='img/comunidades/shooters/tarkov.jpg'), "desc": "Shooter hardcore de extracción."},
-                {"nombre": "Hunt: Showdown", "imagen": url_for('static', filename='img/comunidades/shooters/hunt.jpg'), "desc": "Caza de monstruos con ambiente western."},
-                {"nombre": "Splitgate", "imagen": url_for('static', filename='img/comunidades/shooters/splitgate.jpg'), "desc": "Halo + Portal. Acción con portales."},
-                {"nombre": "XDefiant", "imagen": url_for('static', filename='img/comunidades/shooters/xdefiant.jpg'), "desc": "Shooter arcade de Ubisoft con facciones."},
-            ]
-        },
-        {
-            "titulo": "🏆 Reyes de la Batalla",
-            "descripcion": "Battle royales masivos. Último en pie, gloria eterna.",
-            "juegos": [
-                {"nombre": "Fortnite", "imagen": url_for('static', filename='img/comunidades/shooters/fortnite.jpg'), "desc": "Eventos constantes, colaboraciones y nuevos modos."},
-                {"nombre": "Call of Duty: Warzone", "imagen": url_for('static', filename='img/comunidades/shooters/warzone.jpg'), "desc": "Battle royale masivo de Activision."},
-                {"nombre": "Apex Legends", "imagen": url_for('static', filename='img/comunidades/shooters/apex.jpg'), "desc": "Acción rápida y temporadas constantes."},
-                {"nombre": "PUBG: Battlegrounds", "imagen": url_for('static', filename='img/comunidades/shooters/pubg.jpg'), "desc": "El pionero del género battle royale."},
-                {"nombre": "Free Fire", "imagen": url_for('static', filename='img/comunidades/shooters/freefire.jpg'), "desc": "El rey de los battle royale para móviles."},
-                {"nombre": "Fall Guys", "imagen": url_for('static', filename='img/comunidades/shooters/fallguys.jpg'), "desc": "Battle royale de obstáculos y locura."},
-                {"nombre": "Call of Duty Mobile", "imagen": url_for('static', filename='img/comunidades/shooters/codm.jpg'), "desc": "La experiencia CoD en tu celular."},
-                {"nombre": "Stumble Guys", "imagen": url_for('static', filename='img/comunidades/shooters/stumble.jpg'), "desc": "Party battle royale con millones de descargas."},
-            ]
-        },
-        {
-            "titulo": "🧙‍♂️ Tripulación Legendaria",
-            "descripcion": "MOBA, RPG, MMO y acción. Leyendas que forjan su destino.",
-            "juegos": [
-                {"nombre": "League of Legends", "imagen": url_for('static', filename='img/comunidades/shooters/lol.jpg'), "desc": "El MOBA más grande del planeta."},
-                {"nombre": "Dota 2", "imagen": url_for('static', filename='img/comunidades/mobas/dota2.jpg'), "desc": "Clásico que sigue dominando Steam."},
-                {"nombre": "Mobile Legends: Bang Bang", "imagen": url_for('static', filename='img/comunidades/shooters/mlbb.jpg'), "desc": "El MOBA definitivo para dispositivos móviles."},
-                {"nombre": "Honor of Kings", "imagen": url_for('static', filename='img/comunidades/shooters/hok.jpg'), "desc": "El MOBA más jugado del mundo."},
-                {"nombre": "Genshin Impact", "imagen": url_for('static', filename='img/comunidades/shooters/genshin.jpg'), "desc": "RPG gacha de mundo abierto."},
-                {"nombre": "Warframe", "imagen": url_for('static', filename='img/comunidades/shooters/warframe.jpg'), "desc": "Una de las comunidades más fieles."},
-                {"nombre": "World of Warcraft", "imagen": url_for('static', filename='img/comunidades/shooters/wow.jpg'), "desc": "El MMO por excelencia."},
-                {"nombre": "Final Fantasy XIV", "imagen": url_for('static', filename='img/comunidades/shooters/ffxiv.jpg'), "desc": "MMORPG con historia épica."},
-                {"nombre": "Baldur's Gate 3", "imagen": url_for('static', filename='img/comunidades/shooters/bg3.jpg'), "desc": "RPG del año con comunidad gigante."},
-                {"nombre": "Diablo IV", "imagen": url_for('static', filename='img/comunidades/shooters/d4.jpg'), "desc": "Action RPG oscuro y adictivo."},
-                {"nombre": "Path of Exile", "imagen": url_for('static', filename='img/comunidades/shooters/poe.jpg'), "desc": "El ARPG más profundo y gratuito."},
-                {"nombre": "Lost Ark", "imagen": url_for('static', filename='img/comunidades/shooters/lostark.jpg'), "desc": "MMOARPG con combate espectacular."},
-                {"nombre": "Black Desert Online", "imagen": url_for('static', filename='img/comunidades/shooters/bdo.jpg'), "desc": "MMO sandbox con combate fluido."},
-                {"nombre": "Elden Ring", "imagen": url_for('static', filename='img/comunidades/shooters/eldenring.jpg'), "desc": "El fenómeno soulslike de mundo abierto."},
-            ]
-        },
-        {
-            "titulo": "🌍 Constructores de Mundos",
-            "descripcion": "Sandbox, supervivencia y libertad total. Crea tu propia historia.",
-            "juegos": [
-                {"nombre": "Minecraft", "imagen": url_for('static', filename='img/comunidades/shooters/minecraft.jpg'), "desc": "Fenómeno eterno con millones de jugadores diarios."},
-                {"nombre": "Roblox", "imagen": url_for('static', filename='img/comunidades/shooters/roblox.jpg'), "desc": "Plataforma con cifras gigantes de jugadores."},
-                {"nombre": "GTA V / GTA Online", "imagen": url_for('static', filename='img/comunidades/supervivencia/gtav.jpg'), "desc": "Impulsado por el hype de GTA VI."},
-                {"nombre": "Palworld", "imagen": url_for('static', filename='img/comunidades/shooters/palworld.jpg'), "desc": "Pokémon con armas que conquistó el mundo."},
-                {"nombre": "ARK: Survival Evolved", "imagen": url_for('static', filename='img/comunidades/shooters/ark.jpg'), "desc": "Dinosaurios, supervivencia y construcción épica."},
-                {"nombre": "Rust", "imagen": url_for('static', filename='img/comunidades/shooters/rust.jpg'), "desc": "Supervivencia hardcore con comunidad intensa."},
-                {"nombre": "Terraria", "imagen": url_for('static', filename='img/comunidades/shooters/terraria.jpg'), "desc": "Sandbox 2D con contenido infinito."},
-                {"nombre": "Valheim", "imagen": url_for('static', filename='img/comunidades/shooters/valheim.jpg'), "desc": "Supervivencia vikinga que enamoró a todos."},
-                {"nombre": "No Man's Sky", "imagen": url_for('static', filename='img/comunidades/shooters/nms.jpg'), "desc": "Exploración espacial sin límites."},
-                {"nombre": "Red Dead Redemption 2", "imagen": url_for('static', filename='img/comunidades/shooters/rdr2.jpg'), "desc": "El oeste salvaje con el mejor mundo abierto."},
-                {"nombre": "Cyberpunk 2077", "imagen": url_for('static', filename='img/comunidades/shooters/cyberpunk.jpg'), "desc": "RPG futurista con comunidad enorme."},
-                {"nombre": "Sea of Thieves", "imagen": url_for('static', filename='img/comunidades/shooters/sot.jpg'), "desc": "Aventuras pirata cooperativas."},
-                {"nombre": "The Forest", "imagen": url_for('static', filename='img/comunidades/shooters/forest.jpg'), "desc": "Supervivencia y terror en una isla."},
-            ]
-        },
-        {
-            "titulo": "🎯 Fiebre Global",
-            "descripcion": "Deportes, party games y cooperativo. Diversión para todos.",
-            "juegos": [
-                {"nombre": "EA Sports FC 26", "imagen": url_for('static', filename='img/comunidades/shooters/eafc26.jpg'), "desc": "El fútbol sigue siendo de lo más jugado."},
-                {"nombre": "Rocket League", "imagen": url_for('static', filename='img/comunidades/shooters/rocket.jpg'), "desc": "Fútbol con coches. Simple y adictivo."},
-                {"nombre": "Helldivers 2", "imagen": url_for('static', filename='img/comunidades/shooters/helldivers2.jpg'), "desc": "Cooperativo con picos masivos de jugadores."},
-                {"nombre": "Among Us", "imagen": url_for('static', filename='img/comunidades/shooters/amongus.jpg'), "desc": "El party game que nunca muere."},
-                {"nombre": "Dead by Daylight", "imagen": url_for('static', filename='img/comunidades/shooters/dbd.jpg'), "desc": "Asimétrico de terror. Comunidad enorme."},
-                {"nombre": "Phasmophobia", "imagen": url_for('static', filename='img/comunidades/shooters/phasmo.jpg'), "desc": "Caza fantasmas cooperativa."},
-                {"nombre": "Lethal Company", "imagen": url_for('static', filename='img/comunidades/shooters/lethal.jpg'), "desc": "Cooperativo de terror que explotó en Twitch."},
-                {"nombre": "Brawlhalla", "imagen": url_for('static', filename='img/comunidades/shooters/brawlhalla.jpg'), "desc": "Plataformas de lucha gratuito."},
-                {"nombre": "Street Fighter 6", "imagen": url_for('static', filename='img/comunidades/shooters/sf6.jpg'), "desc": "El rey de los fighting games."},
-                {"nombre": "Tekken 8", "imagen": url_for('static', filename='img/comunidades/shooters/tekken8.jpg'), "desc": "Peleas 3D con comunidad competitiva."},
-                {"nombre": "Mario Kart 8 Deluxe", "imagen": url_for('static', filename='img/comunidades/shooters/mk8.jpg'), "desc": "Carreras arcade multijugador."},
-                {"nombre": "Gran Turismo 7", "imagen": url_for('static', filename='img/comunidades/shooters/gt7.jpg'), "desc": "El simulador de carreras definitivo."},
-                {"nombre": "Forza Horizon 5", "imagen": url_for('static', filename='img/comunidades/shooters/fh5.jpg'), "desc": "Mundo abierto sobre ruedas."},
-            ]
-        },
-    ]
-    return render_template('jugador/comunidades.html', 
-                           categorias=categorias)
+    from app.data.game_categories import get_comunidades_categories
+    from app.factories.app_factory import db
+    from app.models.usuario import seguidores_comunidad
+    categorias = get_comunidades_categories(url_for)
+    siguiendo = set()
+    if current_user.is_authenticated:
+        rows = db.session.query(seguidores_comunidad.c.comunidad).filter(
+            seguidores_comunidad.c.usuario_id == current_user.id_usuario
+        ).all()
+        siguiendo = {r[0] for r in rows}
+    return render_template('jugador/comunidades.html',
+                           categorias=categorias,
+                           siguiendo_comunidades=siguiendo)
 
 @jugador_bp.route('/notificaciones/leer')
 @login_required
@@ -840,15 +1263,78 @@ def notificaciones():
 @jugador_bp.route('/comunidad/<juego>')
 @login_required
 def comunidad_detalle(juego):
+    from app.factories.app_factory import db
+    from app.models.publicacion import Publicacion, Poll, PollOption
+    from app.models.comentario import Comentario
+    from sqlalchemy.orm import joinedload
+    from app.factories.service_factory import get_service_factory
+    from app.data.game_categories import get_game_categories
+    
+    tab = request.args.get('tab', 'para-ti')
+    valid_tabs = ('para-ti', 'siguiendo', 'tendencias', 'videos', 'encuestas', 'recientes')
+    if tab not in valid_tabs:
+        tab = 'para-ti'
+    
+    base_query = Publicacion.query.options(
+        joinedload(Publicacion.autor),
+        joinedload(Publicacion.usuarios_likes),
+        joinedload(Publicacion.comentarios).joinedload(Comentario.autor),
+        joinedload(Publicacion.poll).joinedload(Poll.options),
+        joinedload(Publicacion.reposteado).joinedload(Publicacion.autor),
+    ).filter(Publicacion.juego == juego)
+    
+    if tab == 'videos':
+        base_query = base_query.filter(
+            db.or_(Publicacion.video_archivo.isnot(None), Publicacion.video_archivo != '')
+        ).order_by(Publicacion.promocionada.desc(), Publicacion.fecha_creacion.desc())
+    elif tab == 'encuestas':
+        base_query = base_query.filter(Publicacion.poll.has()).order_by(Publicacion.promocionada.desc(), Publicacion.fecha_creacion.desc())
+    elif tab == 'siguiendo':
+        follow_ids = [f.id_usuario_sigue for f in current_user.seguidos]
+        follow_ids.append(current_user.id_usuario)
+        base_query = base_query.filter(Publicacion.id_usuario.in_(follow_ids)).order_by(Publicacion.promocionada.desc(), Publicacion.fecha_creacion.desc())
+    elif tab == 'tendencias':
+        base_query = base_query.order_by(Publicacion.promocionada.desc(), Publicacion.shares_count.desc(), Publicacion.likes_count.desc())
+    elif tab == 'recientes':
+        base_query = base_query.order_by(Publicacion.promocionada.desc(), Publicacion.fecha_creacion.desc())
+    else:
+        base_query = base_query.order_by(Publicacion.promocionada.desc(), Publicacion.fecha_creacion.desc())
+    
+    publicaciones = base_query.limit(50).all()
+    
+    # Find category color for this game
+    color = '#8b5cf6'
+    for cat in get_game_categories():
+        for g in cat['juegos']:
+            if g['nombre'].lower() == juego.lower():
+                color = cat['color']
+                break
+        else:
+            continue
+        break
+    
+    # Build a flat list of all communities for repost target
+    todas_comunidades = []
+    for cat in get_game_categories():
+        for g in cat['juegos']:
+            todas_comunidades.append({'nombre': g['nombre'], 'color': cat['color']})
+    
+    siguiendo = current_user.esta_siguiendo_comunidad(juego) if current_user.is_authenticated else False
+
+    return render_template('jugador/comunidad_detalle.html',
+        juego=juego, publicaciones=publicaciones, color=color,
+        active_tab=tab, todas_comunidades=todas_comunidades,
+        siguiendo=siguiendo)
+
+
+@jugador_bp.route('/videos')
+@login_required
+def videos():
     from app.factories.service_factory import get_service_factory
     sf = get_service_factory()
     pub_service = sf.get_publicacion_service()
-    
-    # Obtenemos todas y filtramos por el juego seleccionado
-    todas_publicaciones = pub_service.obtener_feed(user_id=current_user.id_usuario)
-    publicaciones_juego = [p for p in todas_publicaciones if p.juego == juego]
-    
-    return render_template('jugador/comunidad_detalle.html', juego=juego, publicaciones=publicaciones_juego)
+    videos = pub_service.obtener_videos(user_id=current_user.id_usuario)
+    return render_template('dashboard/videos/videos.html', videos=videos)
 
 
 @jugador_bp.route('/subir-clip', methods=['GET', 'POST'])
@@ -901,6 +1387,26 @@ def eliminar_publicacion(post_id):
     return jsonify({'success': True})
 
 
+@jugador_bp.route('/editar-publicacion/<int:post_id>', methods=['POST'])
+@login_required
+def editar_publicacion(post_id):
+    from app.factories.app_factory import db
+    from app.models.publicacion import Publicacion
+    from app.utils.profanity import filter_profanity
+    post = Publicacion.query.get(post_id)
+    if not post:
+        return jsonify({'success': False, 'message': 'Publicación no encontrada.'}), 404
+    if post.id_usuario != current_user.id_usuario:
+        return jsonify({'success': False, 'message': 'No tienes permiso.'}), 403
+    data = request.get_json(silent=True) or {}
+    contenido = data.get('contenido', '').strip()
+    if not contenido:
+        return jsonify({'success': False, 'message': 'El contenido no puede estar vacío.'}), 400
+    post.contenido = filter_profanity(contenido)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Publicación actualizada.', 'contenido': post.contenido})
+
+
 @jugador_bp.route('/fijar-publicacion/<int:post_id>', methods=['POST'])
 @login_required
 def fijar_publicacion(post_id):
@@ -950,23 +1456,42 @@ def ocultar_publicacion(post_id):
     return jsonify({'success': True})
 
 
-@jugador_bp.route('/sugerir_juego', methods=['POST'])
+@jugador_bp.route('/api/notificaciones', methods=['GET'])
 @login_required
-def sugerir_juego():
-    from app.factories.app_factory import db
-    from app.models.usuario import Sugerencia
-    juego = request.form.get('juego', '').strip()
-    if not juego:
-        flash('Escribe el nombre del juego que quieres sugerir.', 'error')
-        return redirect(url_for('jugador.comunidades'))
-    if len(juego) > 200:
-        flash('El nombre es muy largo (máx 200 caracteres).', 'error')
-        return redirect(url_for('jugador.comunidades'))
-    sugerencia = Sugerencia(usuario_id=current_user.id_usuario, juego_nombre=juego)
-    db.session.add(sugerencia)
-    db.session.commit()
-    flash(f'Gracias por sugerir "{juego}" — lo revisaremos pronto.', 'success')
-    return redirect(url_for('jugador.comunidades'))
+def api_notificaciones():
+    from app.factories.service_factory import get_service_factory
+    sf = get_service_factory()
+    ns = sf.get_notificacion_service()
+    notifs = ns.obtener_notificaciones(current_user.id_usuario)
+    return jsonify({
+        'success': True,
+        'no_leidas': ns.no_leidas_count(current_user.id_usuario),
+        'notificaciones': [{
+            'id': n.id_notificacion,
+            'tipo': n.tipo,
+            'mensaje': n.mensaje,
+            'enlace': n.enlace,
+            'icono': n.icono,
+            'leido': n.leido,
+            'fecha': n.fecha_creacion.isoformat() if n.fecha_creacion else None,
+        } for n in notifs],
+    })
 
 
+@jugador_bp.route('/api/notificaciones/leer', methods=['POST'])
+@login_required
+def api_notificaciones_leer():
+    from app.factories.service_factory import get_service_factory
+    sf = get_service_factory()
+    ns = sf.get_notificacion_service()
+    ns.marcar_leidas(current_user.id_usuario)
+    return jsonify({'success': True})
 
+
+@jugador_bp.route('/api/notificaciones/contar', methods=['GET'])
+@login_required
+def api_notificaciones_contar():
+    from app.factories.service_factory import get_service_factory
+    sf = get_service_factory()
+    ns = sf.get_notificacion_service()
+    return jsonify({'no_leidas': ns.no_leidas_count(current_user.id_usuario)})

@@ -17,7 +17,10 @@ columns_to_add = [
     ("usuarios", "youtube", "VARCHAR(100)"),
     ("usuarios", "discord", "VARCHAR(100)"),
     ("usuarios", "steam", "VARCHAR(100)"),
-    ("usuarios", "titulo_perfil", "VARCHAR(50) DEFAULT 'Gamer'")
+    ("usuarios", "titulo_perfil", "VARCHAR(50) DEFAULT 'Gamer'"),
+    # Tabla mensajes_privados
+    ("mensajes_privados", "leido_en", "DATETIME"),
+    ("mensajes_privados", "editado", "BOOLEAN DEFAULT 0")
 ]
 
 try:

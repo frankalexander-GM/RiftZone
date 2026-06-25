@@ -8,6 +8,12 @@ seguidores = db.Table('seguidores',
     db.Column('seguido_id', db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), primary_key=True)
 )
 
+# Tabla de seguidores de comunidades
+seguidores_comunidad = db.Table('seguidores_comunidad',
+    db.Column('usuario_id', db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), primary_key=True),
+    db.Column('comunidad', db.String(100), primary_key=True)
+)
+
 class Notificacion(db.Model):
     __tablename__ = 'notificaciones'
     
@@ -44,6 +50,7 @@ class Usuario(UserMixin, db.Model):
     juegos_favoritos = db.Column(db.String(255))
     tokens = db.Column(db.Integer, default=0)
     ultima_recompensa_diaria = db.Column(db.Date, nullable=True)
+    chat_ultimo_visto = db.Column(db.Integer, default=0)
     
     # Personalización e Integraciones (Fase 1)
     pais = db.Column(db.String(50))
@@ -96,6 +103,26 @@ class Usuario(UserMixin, db.Model):
     def esta_siguiendo(self, usuario):
         try:
             return self.siguiendo.filter(seguidores.c.seguido_id == usuario.id_usuario).count() > 0
+        except:
+            return False
+
+    def seguir_comunidad(self, comunidad):
+        if not self.esta_siguiendo_comunidad(comunidad):
+            db.session.execute(seguidores_comunidad.insert().values(usuario_id=self.id_usuario, comunidad=comunidad))
+
+    def dejar_seguir_comunidad(self, comunidad):
+        if self.esta_siguiendo_comunidad(comunidad):
+            db.session.execute(seguidores_comunidad.delete().where(
+                db.and_(seguidores_comunidad.c.usuario_id == self.id_usuario,
+                        seguidores_comunidad.c.comunidad == comunidad)
+            ))
+
+    def esta_siguiendo_comunidad(self, comunidad):
+        try:
+            return db.session.query(seguidores_comunidad).filter(
+                seguidores_comunidad.c.usuario_id == self.id_usuario,
+                seguidores_comunidad.c.comunidad == comunidad
+            ).count() > 0
         except:
             return False
     

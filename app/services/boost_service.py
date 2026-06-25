@@ -39,51 +39,6 @@ BOOST_PLANS = {
 }
 
 
-def tema_boost(plan_key):
-    """Colores e iconos del plan para plantillas."""
-    plan = BOOST_PLANS.get(plan_key, BOOST_PLANS['mega'])
-    return {
-        'key': plan_key,
-        'color': plan['color'],
-        'color_rgb': plan['color_rgb'],
-        'icon': plan['icon'],
-        'etiqueta': plan['etiqueta'],
-        'nombre': plan['nombre'],
-    }
-
-
-def boost_activo_usuario(user_id):
-    """Plan de boost vigente del usuario (el de mayor nivel si tiene varios)."""
-    if not user_id:
-        return None
-    limpiar_boosts_expirados()
-    now = datetime.utcnow()
-    posts = Publicacion.query.filter(
-        Publicacion.id_usuario == user_id,
-        Publicacion.promocionada.is_(True),
-        Publicacion.boost_hasta.isnot(None),
-        Publicacion.boost_hasta > now,
-        Publicacion.boost_tipo.isnot(None),
-    ).all()
-    rank = {'rapido': 1, 'mega': 2, 'titan': 3}
-    best = None
-    best_rank = 0
-    for post in posts:
-        r = rank.get(post.boost_tipo, 0)
-        if r > best_rank:
-            best_rank = r
-            best = post.boost_tipo
-    return best
-
-
-def color_nombre_boost(user_id):
-    """Color hex del nombre cuando hay boost activo."""
-    plan_key = boost_activo_usuario(user_id)
-    if not plan_key:
-        return None
-    return tema_boost(plan_key)['color']
-
-
 def limpiar_boosts_expirados():
     """Desactiva publicaciones cuyo boost ya venció."""
     now = datetime.utcnow()

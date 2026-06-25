@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% from 'macros/usuario.html' import nombre_usuario %}
+
+{% block title %}Inicio - RiftZone{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/dashboard/inicio/inicio.css') }}?v=7" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrap">
+
+  {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+  <div class="user-bar">
+    <img src="{{ current_user | user_avatar }}" alt="" class="ub-avatar">
+    <div class="ub-info">
+      <h3>Bienvenido, {{ current_user.nombre or current_user.username }}</h3>
+      <p>Nivel {{ current_user.nivel or 1 }} · @{{ current_user.username }}</p>
+    </div>
+    <div class="ub-coins"><i class="fas fa-coins"></i> {{ current_user.tokens or 0 }}</div>
+  </div>
+  {% endif %}
+
+  <div class="hero-zone">
+    <div class="hero-icon"><i class="fas fa-gamepad"></i></div>
+    <h1>Tu <span>hub</span> gamer</h1>
+    <p>Conéctate con jugadores, comparte tus mejores momentos y descubre comunidades de tus juegos favoritos.</p>
+    <div class="hero-stats">
+      <div class="hs-item"><i class="fas fa-users" style="color:var(--accent-purple);"></i> <span class="hs-num">+2K</span> <span>Jugadores</span></div>
+      <div class="hs-item"><i class="fas fa-gamepad" style="color:#60A5FA;"></i> <span class="hs-num">12</span> <span>Comunidades</span></div>
+      <div class="hs-item"><i class="fas fa-comment" style="color:#34D399;"></i> <span class="hs-num">+450</span> <span>Posts hoy</span></div>
+    </div>
+  </div>
+
+  <div class="feed-tabs" role="tablist">
+    {% set tabs = [('para-ti','fire','Para ti'),('siguiendo','user-friends','Siguiendo'),('populares','star','Tendencias'),('videos','video','Videos'),('encuestas','poll','Encuestas'),('recientes','clock','Recientes')] %}
+    {% for key, icon, label in tabs %}
+    <button class="feed-tab{% if active_tab == key %} active{% endif %}" data-tab="{{ key }}" role="tab" aria-selected="{% if active_tab == key %}true{% else %}false{% endif %}">
+      <i class="fas fa-{{ icon }}"></i> {{ label }}
+    </button>
+    {% endfor %}
+    <div class="feed-tab-indicator" id="tab-indicator"></div>
+  </div>
+  {% if current_user.is_authenticated and current_user.rol != 'invitado' %}
+  <div class="create-post-card" onclick="openPostModal('texto')">
+    <img src="{{ current_user | user_avatar }}" alt="">
+    <div class="cp-input">¿Qué estás jugando, {{ current_user.username }}?</div>
+    <div class="cp-actions">
+      <button onclick="event.stopPropagation();openPostModal('imagen')" title="Imagen"><i class="far fa-image"></i></button>
+      <button onclick="event.stopPropagation();openPostModal('video')" title="Video"><i class="fas fa-video"></i></button>
+      <button onclick="event.stopPropagation();openPostModal('clip')" title="Clip"><i class="fas fa-film"></i></button>
+      <button onclick="event.stopPropagation();openPostModal('encuesta')" title="Encuesta"><i class="fas fa-poll"></i></button>
+    </div>
+  </div>
+  {% endif %}
+
+  {% include 'dashboard/_post_modal.html' %}
+
+  {% if current_user.rol == 'invitado' %}
+  <div class="guest-banner">
+    <i class="fas fa-user-secret"></i>
+    <h3>Explora como invitado</h3>
+    <p>Regístrate para publicar, comentar y unirte a la comunidad.</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Crear cuenta gratis</a>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">Ya tengo cuenta</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="main-feed">
+  {% if publicaciones %}
+  {% for p in publicaciones %}
+  <div class="post-item">
+    <div class="post-head">
+      <a href="{{ url_for('jugador.perfil_publico', username=p.autor.username) }}"><img src="{{ p.autor | user_avatar }}" alt="" class="ph-avatar"></a>
+      <a href="{{ url_for('jugador.perfil_publico', username=p.autor.username) }}" class="ph-info">
+        <div class="ph-name">
+          {{ nombre_usuario(p.autor, false) }}
+        </div>
+        <div class="ph-meta">
+          <span>@{{ p.autor.username }}</span>
+          {% if p.juego %}
+            <a href="{{ url_for('jugador.comunidad_detalle', juego=p.juego) }}" class="ph-game-tag" onclick="event.stopPropagation();">{{ p.juego }}</a>
+          {% else %}
+            <span class="ph-game-tag ph-game-tag--general">General</span>
+          {% endif %}
+          <span>{{ p.fecha_creacion | timeago }}</span>
+        </div>
+      </a>
+      <div class="ph-badges">
+        {% if p.is_poll %}<span class="badge badge-blue" style="font-size:10px;"><i class="fas fa-poll"></i></span>{% endif %}
+        {% if p.promocionada or p.boost_tipo %}<span class="badge badge-yellow" style="font-size:10px;"><i class="fas fa-rocket"></i></span>{% endif %}
+        {% if current_user.is_authenticated and p.autor.id_usuario == current_user.id_usuario %}
+        <div style="position:relative;">
+          <button class="btn btn-icon btn-ghost" style="width:28px;height:28px;font-size:12px;" onclick="event.stopPropagation();var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'"><i class="fas fa-ellipsis-v"></i></button>
+          <div style="display:none;position:absolute;top:100%;right:0;z-index:20;min-width:140px;background:var(--bg-panel);border:1px solid var(--border-color);border-radius:8px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);">
+            {% if not p.fijada %}
+            <form method="POST" action="{{ url_for('jugador.fijar_publicacion', post_id=p.id_publicacion) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" style="display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;border:none;background:none;color:var(--text-muted);font-size:13px;cursor:pointer;"><i class="fas fa-thumbtack"></i> Fijar</button>
+            </form>
+            {% else %}
+            <form method="POST" action="{{ url_for('jugador.fijar_publicacion', post_id=p.id_publicacion) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" style="display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;border:none;background:none;color:var(--text-muted);font-size:13px;cursor:pointer;"><i class="fas fa-times"></i> Desfijar</button>
+            </form>
+            {% endif %}
+            <form method="POST" action="{{ url_for('jugador.eliminar_publicacion', post_id=p.id_publicacion) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" onclick="return confirm('¿Eliminar?')" style="display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;border:none;background:none;color:#ef4444;font-size:13px;cursor:pointer;"><i class="fas fa-trash-alt"></i> Eliminar</button>
+            </form>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="post-body">
+      {% if p.repost_id and p.reposteado %}
+      <p>{{ p.contenido if p.contenido != '[Repost]' else '' }}</p>
+      <div class="repost-embed">
+        <a href="{{ url_for('jugador.perfil_publico', username=p.reposteado.autor.username) }}" class="repost-header" onclick="event.stopPropagation();">
+          <img src="{{ p.reposteado.autor | user_avatar }}" alt="">
+          <span class="repost-name">{{ p.reposteado.autor.nombre or p.reposteado.autor.username }}</span>
+        </a>
+        <div class="repost-content">{{ p.reposteado.contenido[:300] }}{% if p.reposteado.contenido|length > 300 %}...{% endif %}</div>
+        {% if p.reposteado.imagen_url and (p.reposteado.imagen_url.endswith('.mp4') or p.reposteado.imagen_url.endswith('.mov') or p.reposteado.imagen_url.endswith('.avi')) %}
+        <video src="{{ p.reposteado.imagen_url }}" controls style="width:100%;border-radius:8px;margin-top:6px;max-height:200px;object-fit:cover;background:#000;" preload="metadata"></video>
+        {% elif p.reposteado.imagen_url %}
+        <img src="{{ p.reposteado.imagen_url }}" alt="" style="width:100%;border-radius:8px;margin-top:6px;max-height:200px;object-fit:cover;">
+        {% endif %}
+          {% if p.reposteado.is_poll and p.reposteado.poll %}
+        <div class="post-poll" style="margin-top:8px;" data-post-id="{{ p.reposteado.id_publicacion }}" data-change="{{ '1' if p.reposteado.poll.allow_change else '0' }}">
+          <div class="pp-q">{{ p.reposteado.poll.pregunta }}</div>
+          {% for opt in p.reposteado.poll.options %}
+          <button type="button" class="pp-opt" data-poll-vote data-option-id="{{ opt.id_option }}" data-votos="{{ opt.votos }}">
+            <span class="pp-text">{{ opt.texto }}</span>
+            <span class="pp-votes">{{ opt.votos }} votos</span>
+            <span class="pp-bar" style="display:none;"></span>
+            <span class="pp-pct" style="display:none;"></span>
+          </button>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% else %}
+      <p>{{ p.contenido }}</p>
+      {% endif %}
+      {% if p.video_archivo %}
+      <video src="{{ p.video_archivo }}" controls style="width:100%;border-radius:12px;max-height:400px;background:#000;" preload="metadata"></video>
+      {% elif p.imagen_url and (p.imagen_url.endswith('.mp4') or p.imagen_url.endswith('.mov') or p.imagen_url.endswith('.avi')) %}
+      <video src="{{ p.imagen_url }}" controls style="width:100%;border-radius:12px;max-height:400px;background:#000;" preload="metadata"></video>
+      {% elif p.imagen_url %}
+      <img src="{{ p.imagen_url }}" alt="" loading="lazy">
+      {% endif %}
+      {% if p.is_poll and p.poll %}
+      <div class="post-poll" data-post-id="{{ p.id_publicacion }}" data-change="{{ '1' if p.poll.allow_change else '0' }}">
+        <div class="pp-q">{{ p.poll.pregunta }}</div>
+        {% for opt in p.poll.options %}
+        <button type="button" class="pp-opt" data-poll-vote data-option-id="{{ opt.id_option }}" data-votos="{{ opt.votos }}">
+          <span class="pp-text">{{ opt.texto }}</span>
+          <span class="pp-votes">{{ opt.votos }} votos</span>
+          <span class="pp-bar" style="display:none;"></span>
+          <span class="pp-pct" style="display:none;"></span>
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <div class="post-foot">
+      <button type="button" class="pf-btn{% if p.is_liked_by(current_user) %} liked{% endif %}" data-like-btn data-post-id="{{ p.id_publicacion }}">
+        <i class="{% if p.is_liked_by(current_user) %}fas{% else %}far{% endif %} fa-heart"></i> <span id="like-count-{{ p.id_publicacion }}">{{ p.likes_count or 0 }}</span>
+      </button>
+      <button type="button" class="pf-btn" data-toggle-comments data-post-id="{{ p.id_publicacion }}">
+        <i class="far fa-comment"></i> <span data-comment-count>{{ p.comentarios_count or 0 }}</span>
+      </button>
+      <button type="button" class="pf-btn" data-share-btn data-post-id="{{ p.id_publicacion }}" data-post-url="{{ url_for('jugador.ver_publicacion', post_id=p.id_publicacion) }}" title="Compartir">
+        <i class="fas fa-share-alt"></i>
+      </button>
+      <div class="pf-right">
+        {% if p.juego %}<a href="{{ url_for('jugador.comunidad_detalle', juego=p.juego) }}" class="pf-btn"><i class="fas fa-tag"></i></a>{% endif %}
+        {% if p.imagen_url or p.video_archivo %}<a href="{{ url_for('jugador.ver_publicacion', post_id=p.id_publicacion) }}" class="pf-btn" title="Ver publicación"><i class="fas fa-external-link-alt"></i></a>{% endif %}
+        <a href="{{ url_for('jugador.boosts') }}" class="pf-btn" title="Boost"><i class="fas fa-rocket"></i></a>
+      </div>
+    </div>
+    <div id="comments-{{ p.id_publicacion }}" class="comments-section" style="display:none;">
+      <div id="comments-list-{{ p.id_publicacion }}"></div>
+      {% if current_user.rol != 'invitado' %}
+      <form class="comment-form" data-post-id="{{ p.id_publicacion }}" action="{{ url_for('jugador.comentar', post_id=p.id_publicacion) }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="text" name="contenido" placeholder="Escribe un comentario..." required>
+        <button type="submit"><i class="fas fa-paper-plane"></i></button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="empty-feed">
+    <i class="far fa-newspaper"></i>
+    <h3>Aún no hay publicaciones</h3>
+    <p>Sé el primero en compartir algo con la comunidad.</p>
+  </div>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard/inicio/inicio.js') }}?v=8"></script>
+{% endblock %}

@@ -45,12 +45,6 @@ class ServiceFactory:
             self._services['chat'] = ChatService()
         return self._services['chat']
         
-    def get_clan_service(self):
-        if 'clan' not in self._services:
-            from app.services.clan_service import ClanService
-            self._services['clan'] = ClanService()
-        return self._services['clan']
-
     def get_notificacion_service(self):
         if 'notificacion' not in self._services:
             from app.services.notificacion_service import NotificacionService

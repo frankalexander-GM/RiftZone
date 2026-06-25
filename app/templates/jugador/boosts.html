@@ -3,531 +3,681 @@
 {% block title %}Boosts - RiftZone{% endblock %}
 
 {% block content %}
-<div class="boosts-page">
+<div class="page">
 
-  <!-- HEADER: Saldo flotante + título -->
-  <div class="boosts-header">
-    <div class="boosts-header__left">
-      <h2 class="boosts-title"><i class="fas fa-rocket"></i> Central de Boosts</h2>
-      <p class="boosts-subtitle">Elige un plan y dispara tu publicación al top</p>
+  <!-- ========== HEADER ========== -->
+  <div class="page-header">
+    <div>
+      <h2 class="boost-title"><i class="fas fa-rocket text-gradient"></i> Central de Boosts</h2>
+      <p class="section-subtitle">Elige un plan y dispara tu publicación al top del ranking</p>
     </div>
-    <div class="boosts-saldo-badge">
+    <div class="boosts-saldo-badge" id="saldo-badge">
       <i class="fas fa-coins"></i>
       <span class="boosts-saldo-badge__label">Saldo</span>
       <span class="boosts-saldo-badge__amount">{{ saldo }} RC</span>
     </div>
   </div>
 
-  <!-- LEYENDA -->
-  <div class="boost-legend">
-    <span class="boost-legend__item boost-legend__item--rapido"><i class="fas fa-fighter-jet"></i> Rápido</span>
-    <span class="boost-legend__item boost-legend__item--mega"><i class="fas fa-space-shuttle"></i> Mega</span>
-    <span class="boost-legend__item boost-legend__item--titan"><i class="fas fa-crown"></i> Titán</span>
+  <!-- ========== RESUMEN ========== -->
+  <div class="boost-summary">
+    <div class="boost-summary-item">
+      <i class="fas fa-bolt"></i>
+      <div>
+        <span class="boost-summary-val">{{ boosts_activos|length }}</span>
+        <span class="boost-summary-label">Boosts activos</span>
+      </div>
+    </div>
+    <div class="boost-summary-item">
+      <i class="fas fa-coins"></i>
+      <div>
+        <span class="boost-summary-val">{{ saldo }}</span>
+        <span class="boost-summary-label">RiftCoins disponibles</span>
+      </div>
+    </div>
+    <div class="boost-summary-item">
+      <i class="fas fa-receipt"></i>
+      <div>
+        <span class="boost-summary-val">{{ historial|length }}</span>
+        <span class="boost-summary-label">Boosts comprados</span>
+      </div>
+    </div>
   </div>
 
-  <!-- SELECTOR DE PUBLICACIÓN (Glassmorphism) -->
-  <div class="boost-selector">
-    <label class="boost-selector__label"><i class="fas fa-newspaper"></i> Publicación a boostear</label>
+  <!-- ========== BOOSTS ACTIVOS ========== -->
+  {% if boosts_activos %}
+  <section class="boost-sec">
+    <h3 class="boost-sec-title"><i class="fas fa-bolt" style="color:var(--accent);"></i> Mis Boosts Activos</h3>
+    <div class="boost-activos-grid">
+      {% for b in boosts_activos %}
+      {% set tipo = b.boost_tipo or 'rapido' %}
+      {% set cls = {'rapido':'azul','mega':'morado','titan':'dorado'}[tipo] %}
+      {% set iconos = {'rapido':'fa-fighter-jet','mega':'fa-space-shuttle','titan':'fa-crown'} %}
+      {% set etiq = {'rapido':'RÁPIDO','mega':'MEGA','titan':'TITÁN'} %}
+      <a class="boost-activo-card boost-activo-card--{{ cls }}" href="{{ url_for('jugador.ver_publicacion', post_id=b.id_publicacion) }}" data-expira="{{ b.boost_hasta.isoformat() }}">
+        <div class="boost-activo-left">
+          <div class="boost-activo-icon boost-activo-icon--{{ cls }}">
+            <i class="fas {{ iconos[tipo] }}"></i>
+          </div>
+        </div>
+        <div class="boost-activo-body">
+          <div class="boost-activo-head">
+            <span class="boost-activo-etq boost-activo-etq--{{ cls }}">{{ etiq[tipo] }}</span>
+            <span class="boost-activo-post">"{{ b.contenido[:55] }}{% if b.contenido|length > 55 %}...{% endif %}"</span>
+          </div>
+          <div class="boost-activo-bar-wrapper">
+            <div class="boost-activo-bar-bg">
+              <div class="boost-activo-bar-fill boost-activo-bar-fill--{{ cls }}" style="width:100%"></div>
+            </div>
+            <span class="boost-activo-time"><i class="far fa-clock"></i> <span class="countdown-val">--</span></span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- ========== POST PICKER ========== -->
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <section class="boost-sec">
+    <h3 class="boost-sec-title"><i class="fas fa-newspaper"></i> Publicación a boostear</h3>
+
     {% if post_target %}
-    <div class="boost-selector__selected">
-      <i class="fas fa-check-circle" style="color:var(--accent-green);"></i>
-      <span>"{{ post_target.contenido[:80] }}{% if post_target.contenido|length > 80 %}...{% endif %}"</span>
-    </div>
-    <input type="hidden" id="post-select" value="{{ post_target.id_publicacion }}">
+      <div class="boost-post-preview">
+        <div class="boost-post-preview-head">
+          <i class="fas fa-check-circle" style="color:var(--accent-green);font-size:18px;"></i>
+          <span class="boost-post-preview-text">"{{ post_target.contenido[:100] }}{% if post_target.contenido|length > 100 %}...{% endif %}"</span>
+          {% if post_target.promocionada %}<span class="boost-badge-sm">BOOST ACTIVO</span>{% endif %}
+        </div>
+        <div class="boost-post-preview-meta">
+          <span><i class="fas fa-gamepad"></i> {{ post_target.juego }}</span>
+          <span><i class="far fa-calendar"></i> {{ post_target.fecha_creacion.strftime('%d/%m/%Y') }}</span>
+        </div>
+      </div>
+      <input type="hidden" id="post-id-input" value="{{ post_target.id_publicacion }}">
     {% elif mis_posts %}
-    <div class="boost-selector__wrapper">
-      <select id="post-select" class="boost-selector__select">
-        <option value="" disabled selected>— Selecciona una publicación —</option>
-        {% for p in mis_posts %}
-        <option value="{{ p.id_publicacion }}">
-          {% if p.is_poll %}[Encuesta] {% elif p.contenido.startswith('[Torneo]') %}[Torneo] {% endif %}
-          {{ p.contenido[:65] }}{% if p.contenido|length > 65 %}…{% endif %}
-          · {{ p.juego }}
-        </option>
-        {% endfor %}
-      </select>
-      <i class="fas fa-chevron-down boost-selector__arrow"></i>
-    </div>
+      <button type="button" class="boost-picker-btn" id="open-picker-btn" onclick="document.getElementById('picker-modal').style.display='flex'">
+        <i class="fas fa-plus-circle"></i>
+        <span id="picker-label">Seleccionar publicación</span>
+        <i class="fas fa-chevron-down" style="font-size:12px;opacity:0.6;"></i>
+      </button>
+      <input type="hidden" id="post-id-input" value="">
+      <p class="boost-picker-hint">Selecciona cuál de tus publicaciones quieres impulsar</p>
     {% else %}
-    <p class="boost-selector__empty">No tienes publicaciones. <a href="{{ url_for('jugador.dashboard') }}">Crea un post</a> y vuelve aquí.</p>
+      <div class="boost-empty">
+        <i class="fas fa-pen-fancy"></i>
+        <p>Aún no tienes publicaciones. <a href="{{ url_for('jugador.dashboard') }}" class="text-gradient">Crea tu primer post</a> y vuelve para boostearlo.</p>
+      </div>
     {% endif %}
-  </div>
+  </section>
 
-  <!-- TARJETAS DE PLANES -->
-  <div class="boost-plans-grid">
-    {% for key, plan in boost_planes.items() %}
-    <article class="boost-plan-card boost-plan-card--{{ key }}" data-plan="{{ key }}">
-      {% if key == 'mega' %}
-      <span class="boost-plan-card__popular">MÁS POPULAR</span>
-      {% endif %}
-      <span class="boost-plan-card__tag">BOOST {{ plan.etiqueta }}</span>
-      <div class="boost-plan-card__icon-wrap">
-        <i class="fas {{ plan.icon }}"></i>
-      </div>
-      <h3 class="boost-plan-card__title">{{ plan.nombre }}</h3>
-      <p class="boost-plan-card__desc">
-        {% if key == 'rapido' %}Más arriba en el feed · 24 h
-        {% elif key == 'mega' %}Borde morado fijado arriba · 3 días
-        {% else %}Fijado arriba · 7 días · avisa a seguidores{% endif %}
-      </p>
-      <div class="boost-plan-card__price">
-        {{ plan.costo }} <i class="fas fa-coins"></i>
-      </div>
-      {% if mis_posts or post_target %}
-      <form method="POST" action="{{ url_for('jugador.comprar_boost') }}" class="boost-buy-form" data-plan="{{ key }}" novalidate>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <input type="hidden" name="plan" value="{{ key }}"/>
-        <input type="hidden" name="post_id" class="boost-post-id" value="{{ post_target.id_publicacion if post_target else (mis_posts[0].id_publicacion if mis_posts else '') }}"/>
-        <button type="submit" class="boost-plan-card__btn" {% if saldo < plan.costo %}disabled title="Saldo insuficiente — te faltan {{ plan.costo - saldo }} RC"{% endif %}>
-          <i class="fas {{ plan.icon }}"></i> Aplicar {{ plan.etiqueta }}
-        </button>
-        {% if saldo < plan.costo %}
-        <span class="boost-plan-card__insufficient">Faltan {{ plan.costo - saldo }} RC</span>
+  <!-- ========== PLANES ========== -->
+  <section class="boost-sec">
+    <h3 class="boost-sec-title"><i class="fas fa-crown"></i> Elige tu plan</h3>
+    <div class="grid-3 boost-plans-grid">
+      {% for key, plan in boost_planes.items() %}
+      {% set rgb = {'rapido':'59,130,246','mega':'168,85,247','titan':'250,204,21'}[key] %}
+      {% set hex = {'rapido':'#3B82F6','mega':'#A855F7','titan':'#FACC15'}[key] %}
+      <article class="boost-card boost-card--{{ key }}" data-plan="{{ key }}" style="--boost-rgb:{{ rgb }};--boost-hex:{{ hex }};">
+        {% if key == 'mega' %}
+        <span class="boost-card__popular"><i class="fas fa-star"></i> MÁS POPULAR</span>
         {% endif %}
-      </form>
-      {% else %}
-      <button type="button" class="boost-plan-card__btn" disabled>Sin publicaciones</button>
-      {% endif %}
-    </article>
-    {% endfor %}
+        <div class="boost-card__glow"></div>
+        <div class="boost-card__inner">
+          <span class="boost-card__tag">BOOST {{ plan.etiqueta }}</span>
+          <div class="boost-card__icon">
+            <i class="fas {{ plan.icon }}"></i>
+          </div>
+          <h4 class="boost-card__title">{{ plan.nombre }}</h4>
+          <div class="boost-card__features">
+            {% if key == 'rapido' %}
+            <span><i class="fas fa-check"></i> Mayor visibilidad en el feed</span>
+            <span><i class="fas fa-check"></i> 24 horas de duración</span>
+            {% elif key == 'mega' %}
+            <span><i class="fas fa-check"></i> Borde morado destacado</span>
+            <span><i class="fas fa-check"></i> Fijado arriba del feed</span>
+            <span><i class="fas fa-check"></i> 3 días de duración</span>
+            {% else %}
+            <span><i class="fas fa-check"></i> Fijado arriba del feed</span>
+            <span><i class="fas fa-check"></i> Notificación a seguidores</span>
+            <span><i class="fas fa-check"></i> 7 días de duración</span>
+            {% endif %}
+          </div>
+          <div class="boost-card__price boost-card__price--{{ key }}">
+            <span class="boost-card__price-val">{{ plan.costo }}</span>
+            <i class="fas fa-coins"></i>
+          </div>
+          <button type="button" class="boost-card__btn boost-card__btn--{{ key }} boost-buy-btn"
+            data-plan="{{ key }}" data-costo="{{ plan.costo }}" data-nombre="{{ plan.nombre }}"
+            {% if not mis_posts and not post_target %}disabled{% endif %}>
+            <i class="fas {{ plan.icon }}"></i>
+            <span>Aplicar {{ plan.etiqueta }}</span>
+          </button>
+          <div class="boost-card__insuf" id="insuf-{{ key }}" style="display:none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span></span>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- ========== HISTORIAL ========== -->
+  {% if historial %}
+  <section class="boost-sec">
+    <h3 class="boost-sec-title"><i class="fas fa-history" style="color:var(--text-muted);"></i> Historial de Boosts</h3>
+    <div class="boost-historial-list">
+      {% for t in historial %}
+      <div class="boost-historial-item">
+        <div class="boost-historial-icon"><i class="fas fa-receipt"></i></div>
+        <div class="boost-historial-body">
+          <p>{{ t.description }}</p>
+          <span class="text-xs text-muted">{{ t.created_at | timeago }}</span>
+        </div>
+        <div class="boost-historial-amount">-{{ t.amount }} RC</div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+</div>
+
+<!-- ========== MODAL POST PICKER ========== -->
+<div class="boost-modal-overlay" id="picker-modal" style="display:none;">
+  <div class="boost-modal">
+    <div class="boost-modal-header">
+      <h4><i class="fas fa-newspaper"></i> Selecciona una publicación</h4>
+      <button type="button" class="boost-modal-close" id="close-picker-modal" onclick="document.getElementById('picker-modal').style.display='none'"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="boost-modal-body">
+      {% for p in mis_posts %}
+      <div class="boost-picker-item" data-id="{{ p.id_publicacion }}" data-contenido="{{ p.contenido[:100]|e }}" data-juego="{{ p.juego }}" data-fecha="{{ p.fecha_creacion.strftime('%d/%m/%Y') }}" data-boosted="{{ 'true' if p.promocionada else 'false' }}">
+        <div class="boost-picker-item-left">
+          {% if p.is_poll %}<span class="boost-picker-item-tag">Encuesta</span>{% endif %}
+          <p class="boost-picker-item-text">"{{ p.contenido[:80] }}{% if p.contenido|length > 80 %}...{% endif %}"</p>
+          <div class="boost-picker-item-meta">
+            <span><i class="fas fa-gamepad"></i> {{ p.juego }}</span>
+            <span><i class="far fa-calendar"></i> {{ p.fecha_creacion.strftime('%d/%m/%Y') }}</span>
+          </div>
+        </div>
+        <div class="boost-picker-item-right">
+          {% if p.promocionada %}
+          <span class="boost-picker-item-boosted">Boost activo</span>
+          {% else %}
+          <span class="boost-picker-item-select">Seleccionar</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL CONFIRMACIÓN ========== -->
+<div class="boost-modal-overlay" id="confirm-modal" style="display:none;">
+  <div class="boost-modal boost-modal--confirm">
+    <div class="boost-modal-header">
+      <h4><i class="fas fa-rocket"></i> Confirmar Boost</h4>
+      <button type="button" class="boost-modal-close" id="close-confirm-modal" onclick="document.getElementById('confirm-modal').style.display='none'"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="boost-modal-body">
+      <div class="boost-confirm-preview" id="confirm-post-preview">
+        <div class="boost-confirm-plan-badge" id="confirm-plan-badge">RÁPIDO</div>
+        <p class="boost-confirm-text" id="confirm-post-text">"..."</p>
+        <div class="boost-confirm-meta" id="confirm-post-meta">
+          <span><i class="fas fa-gamepad"></i> <span id="confirm-post-game">-</span></span>
+          <span><i class="far fa-calendar"></i> <span id="confirm-post-date">-</span></span>
+        </div>
+      </div>
+      <div class="boost-confirm-details">
+        <div class="boost-confirm-detail">
+          <span class="boost-confirm-detail-label">Plan</span>
+          <span class="boost-confirm-detail-val" id="confirm-plan-name">-</span>
+        </div>
+        <div class="boost-confirm-detail">
+          <span class="boost-confirm-detail-label">Costo</span>
+          <span class="boost-confirm-detail-val" id="confirm-plan-cost">-</span>
+        </div>
+        <div class="boost-confirm-detail">
+          <span class="boost-confirm-detail-label">Saldo actual</span>
+          <span class="boost-confirm-detail-val" id="confirm-current-balance">-</span>
+        </div>
+        <div class="boost-confirm-detail boost-confirm-detail--result">
+          <span class="boost-confirm-detail-label">Saldo final</span>
+          <span class="boost-confirm-detail-val" id="confirm-final-balance">-</span>
+        </div>
+      </div>
+    </div>
+    <div class="boost-modal-footer">
+      <button type="button" class="boost-card__btn boost-card__btn--mega" id="confirm-buy-btn" style="flex:1;">
+        <i class="fas fa-rocket"></i> ¡Boostear ahora!
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SUCCESS OVERLAY ========== -->
+<div class="boost-modal-overlay" id="success-overlay" style="display:none;">
+  <div class="boost-modal boost-modal--success">
+    <div class="boost-success-anim">
+      <div class="boost-success-circle">
+        <i class="fas fa-check"></i>
+      </div>
+    </div>
+    <h3 class="boost-success-title">¡Boost activado!</h3>
+    <p class="boost-success-desc" id="success-desc">Tu publicación ahora tiene mayor visibilidad.</p>
+    <div class="boost-success-preview" id="success-boosted-preview">
+      <div class="boost-confirm-plan-badge" id="success-plan-badge">RÁPIDO</div>
+      <p class="boost-confirm-text" id="success-post-text">"..."</p>
+    </div>
+    <button type="button" class="boost-card__btn boost-card__btn--mega" id="success-ok-btn">
+      <i class="fas fa-check"></i> Entendido
+    </button>
   </div>
 </div>
 
 <style>
-/* ── Layout general ── */
-.boosts-page {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: clamp(16px, 4vw, 32px);
-}
+/* ======== LAYOUT ======== */
+.boost-title { font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 10px; margin: 0; }
+.boost-title i { font-size: 22px; }
+.boost-sec { margin-bottom: 32px; }
+.boost-sec-title { font-size: 15px; font-weight: 700; color: #f0f0ff; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; letter-spacing: 0.01em; }
 
-/* ── HEADER con saldo flotante ── */
-.boosts-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.boosts-header__left {
-  flex: 1;
-  min-width: 200px;
-}
-
-.boosts-title {
-  font-size: clamp(22px, 4vw, 30px);
-  color: #f0f0ff;
-  margin: 0 0 4px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.boosts-title .fa-rocket {
-  color: var(--accent-purple);
-  font-size: 0.85em;
-}
-
-.boosts-subtitle {
-  color: var(--text-muted);
-  font-size: 14px;
-  margin: 0;
-}
-
-/* ── Badge de saldo ── */
+/* ======== SALDO BADGE ======== */
 .boosts-saldo-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(22, 18, 38, 0.75);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(167, 139, 250, 0.18);
-  border-radius: 40px;
-  padding: 10px 20px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 30px rgba(167,139,250,0.06);
-  flex-shrink: 0;
-  white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 10px;
+  background: rgba(22,18,38,0.7); backdrop-filter: blur(16px);
+  border: 1px solid rgba(167,139,250,0.15); border-radius: 40px;
+  padding: 10px 22px; box-shadow: 0 4px 28px rgba(0,0,0,0.35);
+  flex-shrink: 0; white-space: nowrap; transition: transform .25s, box-shadow .25s;
 }
-.boosts-saldo-badge .fa-coins {
-  font-size: 18px;
-  color: #facc15;
-  filter: drop-shadow(0 0 6px rgba(250,204,21,0.4));
+.boosts-saldo-badge:hover { transform: scale(1.03); box-shadow: 0 6px 36px rgba(0,0,0,0.45); }
+.boosts-saldo-badge .fa-coins { font-size: 19px; color: #facc15; filter: drop-shadow(0 0 8px rgba(250,204,21,0.45)); }
+.boosts-saldo-badge__label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+.boosts-saldo-badge__amount { font-size: 17px; font-weight: 800; color: #facc15; text-shadow: 0 0 16px rgba(250,204,21,0.3); }
+
+/* ======== SUMMARY ======== */
+.boost-summary {
+  display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap;
 }
-.boosts-saldo-badge__label {
-  font-size: 13px;
-  color: var(--text-muted);
-  font-weight: 500;
+.boost-summary-item {
+  flex: 1; min-width: 140px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px; border-radius: 14px;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
 }
-.boosts-saldo-badge__amount {
-  font-size: 16px;
-  font-weight: 800;
-  color: #facc15;
-  text-shadow: 0 0 12px rgba(250,204,21,0.35);
+.boost-summary-item i { font-size: 22px; color: var(--accent); opacity: 0.7; }
+.boost-summary-val { display: block; font-size: 20px; font-weight: 800; color: #f0f0ff; line-height: 1.2; }
+.boost-summary-label { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ======== ACTIVE BOOSTS ======== */
+.boost-activos-grid { display: flex; flex-direction: column; gap: 8px; }
+a.boost-activo-card { text-decoration: none; color: inherit; display: flex; align-items: center; gap: 14px;
+  padding: 10px 16px; border-radius: 12px;
+  background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.05);
+  transition: background .2s; }
+.boost-activo-card:hover { background: rgba(255,255,255,.045); }
+.boost-activo-card--azul { border-left: 3px solid #3B82F6; }
+.boost-activo-card--morado { border-left: 3px solid #A855F7; }
+.boost-activo-card--dorado { border-left: 3px solid #FACC15; }
+.boost-activo-left { flex-shrink: 0; }
+.boost-activo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.06);
+}
+.boost-activo-icon--azul i { color: #60A5FA; }
+.boost-activo-icon--morado i { color: #C084FC; }
+.boost-activo-icon--dorado i { color: #FDE047; }
+.boost-activo-body { flex: 1; min-width: 0; }
+.boost-activo-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.boost-activo-etq {
+  font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 6px;
+  letter-spacing: 0.04em; flex-shrink: 0;
+}
+.boost-activo-etq--azul { background: rgba(59,130,246,.15); color: #93BBFC; }
+.boost-activo-etq--morado { background: rgba(168,85,247,.15); color: #C084FC; }
+.boost-activo-etq--dorado { background: rgba(250,204,21,.15); color: #FDE047; }
+.boost-activo-post { font-size: 13px; color: #d1d5db; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.boost-activo-bar-wrapper { display: flex; align-items: center; gap: 10px; }
+.boost-activo-bar-bg { flex: 1; height: 4px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; }
+.boost-activo-bar-fill { height: 100%; border-radius: 4px; transition: width 1s linear; }
+.boost-activo-bar-fill--azul { background: linear-gradient(90deg,#3B82F6,#60A5FA); }
+.boost-activo-bar-fill--morado { background: linear-gradient(90deg,#A855F7,#C084FC); }
+.boost-activo-bar-fill--dorado { background: linear-gradient(90deg,#FACC15,#FDE047); }
+.boost-activo-time { font-size: 12px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: 4px; }
+.boost-activo-time .countdown-val { font-weight: 700; color: #e0e0f0; }
+
+/* ======== POST PICKER ======== */
+.boost-picker-btn {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 14px 18px;
+  background: rgba(255,255,255,.04); border: 1px dashed rgba(255,255,255,.15);
+  border-radius: 12px; cursor: pointer; font-size: 15px; color: #d1d5db; font-family: inherit;
+  transition: all .2s;
+}
+.boost-picker-btn:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.25); }
+.boost-picker-btn i:first-child { font-size: 20px; color: var(--accent); }
+.boost-picker-btn #picker-label { flex: 1; text-align: left; }
+.boost-picker-hint { font-size: 12px; color: var(--text-muted); margin: 6px 0 0; }
+
+.boost-post-preview {
+  background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px; padding: 14px 16px;
+}
+.boost-post-preview-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.boost-post-preview-text { font-size: 14px; color: #f0f0ff; flex: 1; }
+.boost-post-preview-meta { display: flex; gap: 16px; font-size: 12px; color: var(--text-muted); margin-left: 28px; }
+.boost-post-preview-meta i { margin-right: 4px; }
+.boost-badge-sm { font-size: 9px; font-weight: 800; padding: 3px 10px; border-radius: 6px; background: rgba(250,204,21,0.15); color: #FDE047; border: 1px solid rgba(250,204,21,0.3); white-space: nowrap; }
+.boost-empty {
+  text-align: center; padding: 40px 20px; border-radius: 12px;
+  background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.04);
+}
+.boost-empty i { font-size: 36px; color: var(--text-muted); opacity: 0.4; margin-bottom: 12px; }
+
+/* ======== PLANS GRID ======== */
+.boost-plans-grid { gap: 24px; }
+
+.boost-card {
+  position: relative; border-radius: 20px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.04) 0%, transparent 60%);
+  border: 2px solid rgba(var(--boost-rgb), 0.35);
+  box-shadow: 0 0 30px rgba(var(--boost-rgb), 0.08);
+  transition: transform .3s cubic-bezier(.17,.67,.24,1), box-shadow .4s, border-color .3s;
+}
+.boost-card:hover { transform: translateY(-6px); }
+.boost-card--rapido:hover { box-shadow: 0 20px 60px rgba(59,130,246,.2); border-color: rgba(59,130,246,.6); }
+.boost-card--mega:hover { box-shadow: 0 20px 60px rgba(168,85,247,.2); border-color: rgba(168,85,247,.6); }
+.boost-card--titan:hover { box-shadow: 0 20px 60px rgba(250,204,21,.2); border-color: rgba(250,204,21,.6); }
+.boost-card__glow {
+  position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+  background: radial-gradient(circle at 50% 50%, rgba(var(--boost-rgb),.06) 0%, transparent 60%);
+  pointer-events: none; transition: opacity .5s; opacity: 0;
+}
+.boost-card:hover .boost-card__glow { opacity: 1; }
+.boost-card__inner { position: relative; padding: 28px 22px 22px; z-index: 1; text-align: center; }
+.boost-card__popular {
+  position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(135deg,#A855F7,#ec4899); color: #fff;
+  font-size: 9px; font-weight: 800; letter-spacing: 0.06em;
+  padding: 5px 20px; border-radius: 0 0 14px 14px; white-space: nowrap; z-index: 2;
+  box-shadow: 0 4px 20px rgba(168,85,247,0.4); text-transform: uppercase;
+  display: flex; align-items: center; gap: 5px;
+}
+.boost-card__popular i { font-size: 8px; }
+.boost-card__tag {
+  display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  color: rgba(var(--boost-rgb),1); background: rgba(var(--boost-rgb),.12);
+  border: 1px solid rgba(var(--boost-rgb),.3); padding: 4px 12px; border-radius: 8px; margin-bottom: 16px;
+}
+.boost-card__icon {
+  width: 72px; height: 72px; margin: 0 auto 14px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(var(--boost-rgb),.12); border: 2px solid rgba(var(--boost-rgb),.35);
+  box-shadow: 0 0 24px rgba(var(--boost-rgb),.15), inset 0 0 16px rgba(var(--boost-rgb),.05);
+  transition: box-shadow .3s;
+}
+.boost-card:hover .boost-card__icon { box-shadow: 0 0 44px rgba(var(--boost-rgb),.25), inset 0 0 20px rgba(var(--boost-rgb),.06); }
+.boost-card__icon i { font-size: 28px; color: var(--boost-hex); filter: drop-shadow(0 0 6px rgba(var(--boost-rgb),.5)); }
+.boost-card__title { color: #f0f0ff; margin: 0 0 14px; font-size: 20px; font-weight: 700; }
+.boost-card__features { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; min-height: 64px; }
+.boost-card__features span { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; justify-content: center; }
+.boost-card__features i { font-size: 10px; color: var(--boost-hex); }
+.boost-card__price { margin-bottom: 16px; display: flex; align-items: baseline; justify-content: center; gap: 4px; }
+.boost-card__price-val { font-size: 30px; font-weight: 800; color: var(--boost-hex); text-shadow: 0 0 20px rgba(var(--boost-rgb),.3); }
+.boost-card__price .fa-coins { font-size: 18px; color: var(--boost-hex); opacity: .75; }
+.boost-card__btn {
+  width: 100%; padding: 14px 16px; border-radius: 30px; border: none;
+  font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all .2s; position: relative; overflow: hidden;
+}
+.boost-card__btn:disabled { opacity: .3; cursor: not-allowed; filter: grayscale(.8); }
+.boost-card__btn--rapido { background: linear-gradient(135deg,#2563EB,#3B82F6); color: #fff; box-shadow: 0 4px 20px rgba(37,99,235,.35); }
+.boost-card__btn--rapido:hover:not(:disabled) { box-shadow: 0 6px 28px rgba(37,99,235,.5); filter: brightness(1.08); }
+.boost-card__btn--mega { background: linear-gradient(135deg,rgba(168,85,247,.12),rgba(168,85,247,.06)); color: #C084FC; border: 2px solid #A855F7; box-shadow: 0 4px 20px rgba(168,85,247,.15); }
+.boost-card__btn--mega:hover:not(:disabled) { box-shadow: 0 6px 28px rgba(168,85,247,.3); background: linear-gradient(135deg,rgba(168,85,247,.18),rgba(168,85,247,.10)); }
+.boost-card__btn--titan { background: linear-gradient(135deg,rgba(250,204,21,.12),rgba(250,204,21,.06)); color: #FDE047; border: 2px solid #FACC15; box-shadow: 0 4px 20px rgba(250,204,21,.15); }
+.boost-card__btn--titan:hover:not(:disabled) { box-shadow: 0 6px 28px rgba(250,204,21,.3); background: linear-gradient(135deg,rgba(250,204,21,.18),rgba(250,204,21,.10)); }
+.boost-card__insuf { margin-top: 10px; font-size: 12px; font-weight: 600; color: #f87171; display: flex; align-items: center; justify-content: center; gap: 5px; }
+
+/* ======== MODALS ======== */
+.boost-modal-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,.65); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  animation: bmFadeIn .2s ease;
+}
+.boost-modal {
+  background: #1c1730; border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px; width: 100%; max-width: 480px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.6); overflow: hidden;
+  animation: bmSlideIn .25s ease;
+}
+.boost-modal--confirm { max-width: 420px; }
+.boost-modal--success { max-width: 380px; text-align: center; padding: 28px 24px; }
+.boost-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.boost-modal-header h4 { margin: 0; font-size: 16px; font-weight: 700; color: #f0f0ff; display: flex; align-items: center; gap: 8px; }
+.boost-modal-close { background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 4px; border-radius: 8px; display: flex; transition: all .2s; }
+.boost-modal-close:hover { background: rgba(255,255,255,.08); color: #fff; }
+.boost-modal-body { padding: 16px 20px; max-height: 60vh; overflow-y: auto; }
+.boost-modal-footer { padding: 12px 20px 16px; display: flex; gap: 10px; }
+
+/* Picker items */
+.boost-picker-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 12px; cursor: pointer;
+  background: rgba(255,255,255,.02); border: 1px solid transparent;
+  transition: all .2s; margin-bottom: 6px;
+}
+.boost-picker-item:last-child { margin-bottom: 0; }
+.boost-picker-item:hover { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.08); }
+.boost-picker-item.is-selected { background: rgba(167,139,250,.08); border-color: var(--accent); }
+.boost-picker-item-left { flex: 1; min-width: 0; }
+.boost-picker-item-text { margin: 0 0 4px; font-size: 13px; color: #d1d5db; }
+.boost-picker-item-meta { display: flex; gap: 12px; font-size: 11px; color: var(--text-muted); }
+.boost-picker-item-meta i { margin-right: 3px; }
+.boost-picker-item-tag { font-size: 9px; font-weight: 700; padding: 1px 8px; border-radius: 6px; background: rgba(167,139,250,.15); color: var(--accent); display: inline-block; margin-bottom: 3px; }
+.boost-picker-item-right { flex-shrink: 0; }
+.boost-picker-item-boosted { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 8px; background: rgba(250,204,21,.12); color: #FDE047; display: inline-block; }
+.boost-picker-item-select { font-size: 11px; font-weight: 700; padding: 6px 14px; border-radius: 20px; background: rgba(167,139,250,.12); color: var(--accent); display: inline-block; transition: all .2s; }
+.boost-picker-item:hover .boost-picker-item-select { background: var(--accent); color: #fff; }
+
+/* Confirm modal */
+.boost-confirm-preview {
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+  border-radius: 12px; padding: 14px; margin-bottom: 14px;
+}
+.boost-confirm-plan-badge {
+  display: inline-block; font-size: 9px; font-weight: 800; padding: 3px 10px; border-radius: 8px;
+  background: rgba(168,85,247,.15); color: #C084FC; border: 1px solid rgba(168,85,247,.3);
+  letter-spacing: 0.04em; margin-bottom: 8px;
+}
+.boost-confirm-text { font-size: 14px; color: #f0f0ff; margin: 0 0 8px; line-height: 1.4; }
+.boost-confirm-meta { display: flex; gap: 12px; font-size: 11px; color: var(--text-muted); }
+.boost-confirm-meta i { margin-right: 4px; }
+.boost-confirm-details { display: flex; flex-direction: column; gap: 6px; }
+.boost-confirm-detail { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,.04); }
+.boost-confirm-detail-label { color: var(--text-muted); }
+.boost-confirm-detail-val { color: #f0f0ff; font-weight: 600; }
+.boost-confirm-detail--result { border-bottom: none; padding-top: 8px; }
+.boost-confirm-detail--result .boost-confirm-detail-label { font-weight: 700; color: #f0f0ff; }
+.boost-confirm-detail--result .boost-confirm-detail-val { font-size: 18px; color: #22c55e; }
+
+/* Success overlay */
+.boost-modal--success { border: 1px solid rgba(34,197,94,.2); }
+.boost-success-anim { margin-bottom: 16px; }
+.boost-success-circle {
+  width: 60px; height: 60px; border-radius: 50%; margin: 0 auto;
+  background: rgba(34,197,94,.15); border: 3px solid #22c55e;
+  display: flex; align-items: center; justify-content: center;
+  animation: bmPulse .6s ease;
+}
+.boost-success-circle i { font-size: 24px; color: #22c55e; }
+.boost-success-title { color: #f0f0ff; font-size: 20px; font-weight: 800; margin: 0 0 6px; }
+.boost-success-desc { color: var(--text-muted); font-size: 14px; margin: 0 0 18px; }
+.boost-success-preview {
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+  border-radius: 12px; padding: 12px; margin-bottom: 20px; text-align: left;
 }
 
-/* ── Leyenda ── */
-.boost-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 24px;
+/* ======== HISTORIAL ======== */
+.boost-historial-list { display: flex; flex-direction: column; gap: 4px; }
+.boost-historial-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 10px;
+  background: rgba(255,255,255,.015); border: 1px solid rgba(255,255,255,.035);
 }
+.boost-historial-icon { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,.04); display: flex; align-items: center; justify-content: center; color: var(--text-muted); flex-shrink: 0; }
+.boost-historial-body { flex: 1; min-width: 0; }
+.boost-historial-body p { margin: 0; font-size: 13px; color: #d1d5db; }
+.boost-historial-amount { font-size: 14px; font-weight: 700; color: #f87171; white-space: nowrap; flex-shrink: 0; }
 
-.boost-legend__item {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid transparent;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.boost-legend__item--rapido {
-  color: #60A5FA;
-  background: rgba(59, 130, 246, 0.10);
-  border-color: rgba(59, 130, 246, 0.30);
-}
-.boost-legend__item--mega {
-  color: #C084FC;
-  background: rgba(168, 85, 247, 0.10);
-  border-color: rgba(168, 85, 247, 0.30);
-}
-.boost-legend__item--titan {
-  color: #FDE047;
-  background: rgba(250, 204, 21, 0.10);
-  border-color: rgba(250, 204, 21, 0.30);
-}
+/* ======== ANIMS ======== */
+@keyframes bmFadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes bmSlideIn { from { opacity:0; transform:translateY(20px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes bmPulse { 0% { transform:scale(0); opacity:0; } 50% { transform:scale(1.1); } 100% { transform:scale(1); opacity:1; } }
 
-/* ── Selector Glassmorphism ── */
-.boost-selector {
-  background: rgba(22, 18, 38, 0.55);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(167, 139, 250, 0.15);
-  border-radius: 14px;
-  padding: 18px 20px;
-  margin-bottom: 28px;
-  transition: border-color 0.25s;
-}
-.boost-selector:hover {
-  border-color: rgba(167, 139, 250, 0.30);
-}
-
-.boost-selector__label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 10px;
-}
-.boost-selector__label .fa-newspaper {
-  color: var(--accent-purple);
-}
-
-.boost-selector__selected {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #f0f0ff;
-  font-size: 14px;
-  padding: 6px 0;
-}
-
-.boost-selector__empty {
-  color: var(--text-muted);
-  font-size: 14px;
-  margin: 0;
-}
-.boost-selector__empty a {
-  color: var(--accent-purple);
-  font-weight: 600;
-}
-
-.boost-selector__wrapper {
-  position: relative;
-}
-
-.boost-selector__select {
-  width: 100%;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid rgba(167, 139, 250, 0.15);
-  border-radius: 10px;
-  padding: 14px 18px;
-  font-size: 14px;
-  color: #f0f0ff;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-  transition: border-color 0.25s;
-  box-sizing: border-box;
-  font-family: inherit;
-}
-.boost-selector__select:focus {
-  border-color: rgba(167, 139, 250, 0.45);
-}
-.boost-selector__select option {
-  background: #1a162e;
-  color: #f0f0ff;
-  padding: 8px;
-}
-
-.boost-selector__arrow {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  pointer-events: none;
-  font-size: 12px;
-}
-
-/* ── Grid de planes ── */
-.boost-plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-  gap: 28px;
-}
-
-/* ── Tarjeta de plan ── */
-.boost-plan-card {
-  --boost-color: #8B5CF6;
-  --boost-rgb: 139, 92, 246;
-  position: relative;
-  text-align: center;
-  padding: 32px 24px 24px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(var(--boost-rgb), 0.08) 0%, var(--bg-card) 55%);
-  border: 2px solid rgba(var(--boost-rgb), 0.45);
-  box-shadow: 0 0 30px rgba(var(--boost-rgb), 0.10);
-  transition: transform 0.25s, box-shadow 0.3s;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.boost-plan-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 16px 40px rgba(var(--boost-rgb), 0.20);
-}
-
-.boost-plan-card--rapido {
-  --boost-color: #3B82F6;
-  --boost-rgb: 59, 130, 246;
-}
-.boost-plan-card--mega {
-  --boost-color: #A855F7;
-  --boost-rgb: 168, 85, 247;
-}
-.boost-plan-card--titan {
-  --boost-color: #FACC15;
-  --boost-rgb: 250, 204, 21;
-}
-
-/* ── Badge "MÁS POPULAR" ── */
-.boost-plan-card__popular {
-  position: absolute;
-  top: -1px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, #A855F7, #ec4899);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 5px 18px;
-  border-radius: 0 0 12px 12px;
-  white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.35);
-  text-transform: uppercase;
-}
-
-/* ── Tag del plan ── */
-.boost-plan-card__tag {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: var(--boost-color);
-  background: rgba(var(--boost-rgb), 0.12);
-  border: 1px solid rgba(var(--boost-rgb), 0.30);
-  padding: 4px 12px;
-  border-radius: 8px;
-  margin-bottom: 18px;
-  align-self: center;
-}
-
-/* ── Icono grande con neón ── */
-.boost-plan-card__icon-wrap {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 16px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(var(--boost-rgb), 0.15);
-  border: 2px solid rgba(var(--boost-rgb), 0.45);
-  box-shadow: 0 0 30px rgba(var(--boost-rgb), 0.30), inset 0 0 20px rgba(var(--boost-rgb), 0.08);
-  transition: box-shadow 0.3s;
-}
-.boost-plan-card:hover .boost-plan-card__icon-wrap {
-  box-shadow: 0 0 50px rgba(var(--boost-rgb), 0.45), inset 0 0 20px rgba(var(--boost-rgb), 0.08);
-}
-.boost-plan-card__icon-wrap i {
-  font-size: 32px;
-  color: var(--boost-color);
-  filter: drop-shadow(0 0 8px rgba(var(--boost-rgb), 0.5));
-}
-
-/* ── Título ── */
-.boost-plan-card__title {
-  color: #f0f0ff;
-  margin: 0 0 8px;
-  font-size: 21px;
-  font-weight: 700;
-}
-
-/* ── Descripción ── */
-.boost-plan-card__desc {
-  color: var(--text-muted);
-  font-size: 13px;
-  margin: 0 0 18px;
-  line-height: 1.5;
-  min-height: 40px;
-}
-
-/* ── Precio ── */
-.boost-plan-card__price {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--boost-color);
-  margin-bottom: 20px;
-  text-shadow: 0 0 14px rgba(var(--boost-rgb), 0.35);
-}
-.boost-plan-card__price .fa-coins {
-  font-size: 20px;
-  opacity: 0.85;
-}
-
-/* ── Botón ── */
-.boost-plan-card__btn {
-  width: 100%;
-  padding: 14px 16px;
-  border-radius: 30px;
-  border: none;
-  font-size: 15px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: opacity 0.2s, transform 0.15s, filter 0.2s, box-shadow 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-family: inherit;
-}
-
-.boost-plan-card--rapido .boost-plan-card__btn {
-  background: linear-gradient(135deg, #3B82F6, #60A5FA);
-  color: #fff;
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.45);
-}
-
-.boost-plan-card--mega .boost-plan-card__btn {
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.08));
-  color: #C084FC;
-  border: 2px solid #A855F7;
-  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.25);
-}
-
-.boost-plan-card--titan .boost-plan-card__btn {
-  background: linear-gradient(135deg, rgba(250, 204, 21, 0.15), rgba(250, 204, 21, 0.08));
-  color: #FDE047;
-  border: 2px solid #FACC15;
-  box-shadow: 0 4px 20px rgba(250, 204, 21, 0.25);
-}
-
-.boost-plan-card__btn:hover:not(:disabled) {
-  transform: scale(1.03);
-  filter: brightness(1.10);
-}
-
-/* ── Botón DESHABILITADO ── */
-.boost-plan-card__btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-  transform: none !important;
-  filter: grayscale(0.8) !important;
-  box-shadow: none !important;
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  color: var(--text-muted) !important;
-}
-
-/* ── Texto "Faltan X RC" ── */
-.boost-plan-card__insufficient {
-  display: block;
-  margin-top: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #f87171;
-}
-
-/* ── Responsive ── */
-@media (max-width: 600px) {
-  .boost-plans-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  .boosts-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .boosts-saldo-badge {
-    align-self: flex-start;
-  }
-  .boost-plan-card {
-    padding: 26px 18px 20px;
-  }
-  .boost-plan-card__icon-wrap {
-    width: 68px;
-    height: 68px;
-  }
-  .boost-plan-card__icon-wrap i {
-    font-size: 26px;
-  }
+/* ======== RESPONSIVE ======== */
+@media (max-width: 640px) {
+  .boost-plans-grid { grid-template-columns: 1fr; gap: 16px; }
+  .boost-summary { flex-direction: column; }
 }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const postSelect = document.getElementById('post-select');
-  if (postSelect && postSelect.tagName === 'SELECT') {
-    postSelect.addEventListener('change', function() {
-      document.querySelectorAll('.boost-post-id').forEach(function(input) {
-        input.value = postSelect.value;
-      });
-    });
-  }
-  document.querySelectorAll('.boost-buy-form').forEach(function(form) {
-    form.addEventListener('submit', function(e) {
-      const pid = form.querySelector('.boost-post-id').value;
-      const plan = form.dataset.plan;
-      if (!pid) {
-        e.preventDefault();
-        showToast('Selecciona una publicación primero.', 'error');
-        return;
-      }
-      const labels = { rapido: 'Boost Rápido', mega: 'Mega Boost', titan: 'Boost Titán' };
-      if (!confirm('¿Aplicar ' + (labels[plan] || plan) + ' a esta publicación?')) {
-        e.preventDefault();
-      }
-    });
+(function(){
+var pid='',ptxt='',pgame='',pdate='';
+var pi=document.getElementById('post-id-input');
+if(pi) pid=pi.value;
+
+function toast(m,e){
+  var t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99999;background:'+(e?'#ef4444':'#22c55e')+';border-radius:12px;padding:12px 24px;font-size:14px;color:white;box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;align-items:center;gap:8px;animation:btFade 3s ease forwards;font-family:inherit;';
+  t.textContent=m;document.body.appendChild(t);
+  setTimeout(function(){t.remove()},2900);
+}
+(function(){var s=document.createElement('style');s.textContent='@keyframes btFade{0%{opacity:0;transform:translateX(-50%) translateY(10px)}10%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(10px)}}';document.head.appendChild(s)})();
+
+function up(){
+  var p=document.getElementById('post-id-input');var id=p?p.value:'';
+  var s=parseInt((document.querySelector('.boosts-saldo-badge__amount')||{}).textContent)||0;
+  document.querySelectorAll('.boost-buy-btn').forEach(function(b){
+    var c=parseInt(b.dataset.costo);
+    if(!id){b.disabled=true;return}
+    b.disabled=s<c;
+    var ins=document.getElementById('insuf-'+b.dataset.plan);
+    if(ins){
+      if(s<c){ins.innerHTML='<i class="fas fa-exclamation-triangle"></i> <span>Te faltan '+(c-s)+' RC</span>';ins.style.display='flex'}
+      else ins.style.display='none'
+    }
+  });
+}
+
+document.querySelectorAll('.boost-picker-item').forEach(function(el){
+  if(el.dataset.boosted==='true')return;
+  el.addEventListener('click',function(){
+    pid=el.dataset.id;ptxt=el.dataset.contenido;pgame=el.dataset.juego;pdate=el.dataset.fecha;
+    var inp=document.getElementById('post-id-input');if(inp)inp.value=pid;
+    var lbl=document.getElementById('picker-label');if(lbl)lbl.textContent='"'+ptxt.substring(0,50)+(ptxt.length>50?'...':'')+'"';
+    document.querySelectorAll('.boost-picker-item').forEach(function(x){x.classList.remove('is-selected')});
+    el.classList.add('is-selected');
+    document.getElementById('picker-modal').style.display='none';
+    document.querySelectorAll('.boost-buy-btn').forEach(function(b){b.disabled=false});
+    up();
   });
 });
+
+document.querySelectorAll('.boost-buy-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var p=document.getElementById('post-id-input');var id=p?p.value:'';
+    if(!id){toast('Selecciona una publicación primero.',true);return}
+    var plan=btn.dataset.plan,nombre=btn.dataset.nombre,costo=parseInt(btn.dataset.costo);
+    var s=parseInt((document.querySelector('.boosts-saldo-badge__amount')||{}).textContent)||0;
+    if(s<costo){toast('Saldo insuficiente. Te faltan '+(costo-s)+' RC.',true);return}
+    if(ptxt){
+      document.getElementById('confirm-post-text').textContent='"'+ptxt+'"';
+      document.getElementById('confirm-post-game').textContent=pgame;
+      document.getElementById('confirm-post-date').textContent=pdate;
+    }else{
+      var t=document.querySelector('.boost-post-preview-text');
+      document.getElementById('confirm-post-text').textContent=t?t.textContent:'Post seleccionado';
+    }
+    var pn={rapido:'RÁPIDO',mega:'MEGA',titan:'TITÁN'};
+    document.getElementById('confirm-plan-badge').textContent=pn[plan]||plan.toUpperCase();
+    document.getElementById('confirm-plan-name').textContent=nombre;
+    document.getElementById('confirm-plan-cost').innerHTML=costo+' <i class="fas fa-coins" style="font-size:12px;"></i>';
+    document.getElementById('confirm-current-balance').innerHTML=s+' <i class="fas fa-coins" style="font-size:12px;"></i>';
+    document.getElementById('confirm-final-balance').innerHTML=(s-costo)+' <i class="fas fa-coins" style="font-size:12px;"></i>';
+    document.getElementById('confirm-buy-btn').dataset.plan=plan;
+    document.getElementById('confirm-buy-btn').dataset.costo=costo;
+    document.getElementById('confirm-buy-btn').dataset.nombre=nombre;
+    document.getElementById('confirm-modal').style.display='flex';
+  });
+});
+
+document.getElementById('confirm-buy-btn').addEventListener('click',function(){
+  var btn=this,plan=btn.dataset.plan,nombre=btn.dataset.nombre;
+  var p=document.getElementById('post-id-input');var id=p?p.value:'';
+  if(!id){document.getElementById('confirm-modal').style.display='none';location.reload();return}
+  btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Procesando...';
+  document.getElementById('confirm-modal').style.display='none';
+  var fd=new FormData();
+  fd.append('csrf_token',(document.querySelector('input[name="csrf_token"]')||{}).value||'');
+  fd.append('plan',plan);fd.append('post_id',id);
+  function _csrf(){var m=document.querySelector('meta[name="csrf-token"]');return m?m.getAttribute('content'):''}
+  fetch('/jugador/comprar-boost',{method:'POST',credentials:'same-origin',headers:{'X-CSRFToken':_csrf(),'X-Requested-With':'XMLHttpRequest'},body:fd})
+  .then(function(r){
+    if(!r.ok)throw new Error();
+    return r.json();
+  }).then(function(d){
+    if(d.success){
+      var se=document.querySelector('.boosts-saldo-badge__amount');
+      if(se)se.textContent=d.nuevo_saldo+' RC';
+      var pn={rapido:'RÁPIDO',mega:'MEGA',titan:'TITÁN'};
+      document.getElementById('success-plan-badge').textContent=pn[plan]||plan.toUpperCase();
+      var ct=document.getElementById('confirm-post-text');
+      document.getElementById('success-post-text').textContent=ct?ct.textContent:'Post boosteado';
+      document.getElementById('success-desc').textContent=nombre+' activado';
+      document.getElementById('success-overlay').style.display='flex';
+      document.querySelectorAll('.boost-buy-btn').forEach(function(b){b.disabled=true;b.innerHTML='<i class="fas fa-check"></i> Aplicado'});
+      setTimeout(function(){location.reload()},2000);
+    }else location.reload();
+  }).catch(function(){location.reload()});
+});
+
+document.getElementById('success-ok-btn').addEventListener('click',function(){
+  document.getElementById('success-overlay').style.display='none';location.reload();
+});
+
+document.querySelectorAll('[data-expira]').forEach(function(el){
+  var cd=el.querySelector('.countdown-val'),bar=el.querySelector('.boost-activo-bar-fill');
+  if(!cd)return;
+  var t=new Date(el.dataset.expira).getTime();
+  function tick(){
+    var d=t-Date.now();
+    if(d<=0){cd.textContent='Expirado';if(bar)bar.style.width='0%';return}
+    var h=Math.floor(d/3600000),m=Math.floor((d%3600000)/60000),s=Math.floor((d%60000)/1000);
+    cd.textContent=h+'h '+m+'m '+s+'s';
+    var total=el.classList.contains('boost-activo-card--dorado')?168*3600000:el.classList.contains('boost-activo-card--morado')?72*3600000:24*3600000;
+    if(bar)bar.style.width=Math.max(0,Math.min(100,(d/total)*100))+'%';
+  }
+  tick();setInterval(tick,1000);
+});
+
+document.querySelectorAll('.boost-modal-overlay').forEach(function(ov){
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.style.display='none'});
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')document.querySelectorAll('.boost-modal-overlay').forEach(function(ov){ov.style.display='none'})});
+
+up();
+if(pid)document.querySelectorAll('.boost-buy-btn').forEach(function(b){b.disabled=false});
+})();
 </script>
 {% endblock %}

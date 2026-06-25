@@ -11,8 +11,8 @@
     <style>html,body{background:#0d0b1a!important;margin:0;}</style>
     
     <!-- CSS -->
-    <link href="{{ url_for('static', filename='css/games_sphere.css') }}?v=6" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/glassmorphism.css') }}?v=7" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/games_sphere.css') }}?v=15" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/glassmorphism.css') }}?v=9" rel="stylesheet">
     
     <!-- Fonts & Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -20,6 +20,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {% block head %}{% endblock %}
     <!-- Socket.IO client -->
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
 </head>
@@ -97,7 +98,7 @@
                             {% for n in notifs %}
                             <div class="notif-dropdown-item {% if not n.leido %}notif-unread{% endif %}" data-href="{{ n.enlace or '' }}" style="padding: 12px; border-radius: 8px; margin-bottom: 6px; background: {% if not n.leido %}rgba(139, 92, 246, 0.1){% else %}transparent{% endif %}; border-left: 3px solid {% if not n.leido %}var(--accent-purple){% else %}transparent{% endif %}; display: flex; gap: 12px; align-items: flex-start; cursor: {% if n.enlace %}pointer{% else %}default{% endif %};">
                                 <div style="background: var(--bg-dark); width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 1px solid var(--border-color); flex-shrink: 0;">
-                                    <i class="{{ n.icono }}" style="color: {% if n.tipo == 'clan' %}var(--accent-purple){% elif n.tipo == 'social' %}var(--accent-magenta){% else %}var(--accent-green){% endif %}; font-size: 14px;"></i>
+                                    <i class="{{ n.icono }}" style="color: {% if n.tipo == 'clan' %}var(--accent-purple){% elif n.tipo == 'social' %}var(--accent-magenta){% elif n.tipo == 'comunidad' %}var(--accent-cyan){% else %}var(--accent-green){% endif %}; font-size: 14px;"></i>
                                 </div>
                                 <div style="flex: 1; min-width: 0;">
                                     <p style="margin: 0; color: white; font-size: 13px; line-height: 1.4;">{{ n.mensaje }}</p>
@@ -180,7 +181,7 @@
     <!-- MOBILE SEARCH ROW (visible solo en < 1024px) -->
     <div class="mobile-search-row">
         <form action="{{ url_for('public.buscar') }}" method="GET" class="mobile-search-form" id="mobile-search-form" data-no-validate>
-            <input type="text" name="q" placeholder="Buscar jugadores, clanes, comunidades..." required>
+            <input type="text" name="q" placeholder="Buscar jugadores, comunidades..." required>
         </form>
     </div>
 
@@ -206,28 +207,22 @@
                 </button>
             </div>
             <div class="menu-group">
-                <a href="{{ url_for('jugador.dashboard') }}" class="menu-item active"><i class="fas fa-home"></i> Inicio</a>
-                <a href="{{ url_for('chat.chat_global') }}" class="menu-item"><i class="fas fa-comment-dots"></i> Chat Global</a>
+                <a href="{{ url_for('jugador.dashboard') }}" class="menu-item"><i class="fas fa-home"></i> Inicio</a>
+                <a href="{{ url_for('chat.chat_global') }}" class="menu-item" id="chat-global-link"><i class="fas fa-comment-dots"></i> Chat Global <span class="chat-msg-badge" id="chat-msg-badge" style="display:none;margin-left:auto;color:var(--accent-purple);font-size:13px;font-weight:700;line-height:18px;">0</span></a>
                 <a href="{{ url_for('jugador.explorar') }}" class="menu-item"><i class="fas fa-compass"></i> Explorar</a>
                 <a href="{{ url_for('jugador.comunidades') }}" class="menu-item"><i class="fas fa-users"></i> Comunidades</a>
-                <a href="{{ url_for('clanes.index') }}" class="menu-item"><i class="fas fa-shield-alt"></i> Clanes</a>
+                
                 <a href="{{ url_for('mensajes.index') }}" class="menu-item"><i class="fas fa-envelope"></i> Mensajes</a>
                 <a href="{{ url_for('jugador.notificaciones') }}" class="menu-item"><i class="fas fa-bell"></i> Notificaciones {% if current_user.is_authenticated %}{% set no_leidas = current_user.notificaciones.filter_by(leido=False).count() %}{% if no_leidas > 0 %}<span class="menu-badge">{{ no_leidas }}</span>{% endif %}{% endif %}</a>
-                <a href="{{ url_for('jugador.explorar') }}" class="menu-item"><i class="fas fa-user-friends"></i> Amigos</a>
-                <a href="{{ url_for('jugador.boosts') }}" class="menu-item"><i class="fas fa-trophy"></i> Torneos</a>
+
                 <a href="{{ url_for('jugador.boosts') }}" class="menu-item"><i class="fas fa-rocket"></i> Boosts</a>
-                <a href="{{ url_for('jugador.subir_clip') }}" class="menu-item"><i class="fas fa-video"></i> Subir Clip</a>
+                <a href="{{ url_for('jugador.videos') }}" class="menu-item"><i class="fas fa-video"></i> Videos</a>
+                <a href="{{ url_for('jugador.subir_clip') }}" class="menu-item"><i class="fas fa-upload"></i> Subir Clip</a>
                 <a href="{{ url_for('tienda.index') }}" class="menu-item"><i class="fas fa-store"></i> Tienda</a>
                 <a href="{{ url_for('billetera.index') }}" class="menu-item"><i class="fas fa-wallet"></i> Billetera</a>
                 <a href="{{ url_for('jugador.premium') }}" class="menu-item premium"><i class="fas fa-crown"></i> Premium</a>
             </div>
             
-            <div class="menu-group">
-                <a href="{{ url_for('chat.chat_global') }}" class="menu-item">
-                    <i class="fas fa-globe" style="color: var(--accent-purple);"></i> Acceder al Chat Mundial
-                </a>
-            </div>
-
             <!-- Anuncio en sidebar (visible en desktop) -->
             {{ ad_square() }}
 
@@ -293,7 +288,7 @@
     {% endif %}
 </nav>
 
-<script src="{{ url_for('static', filename='js/feed-interactions.js') }}"></script>
+<script src="{{ url_for('static', filename='js/feed-interactions.js') }}?v=4"></script>
 {% if current_user.is_authenticated %}
 <script>
 window.RIFTZONE_CHAT = Object.assign(window.RIFTZONE_CHAT || {}, {
@@ -331,6 +326,17 @@ document.addEventListener("DOMContentLoaded", function() {
     sidebarToggle?.addEventListener('click', openSidebar);
     sidebarClose?.addEventListener('click', closeSidebar);
     sidebarOverlay?.addEventListener('click', closeSidebar);
+
+    /* ── Active sidebar item ── */
+    var currentPath = window.location.pathname.replace(/\/+$/, '');
+    document.querySelectorAll('.menu-item').forEach(function(item) {
+      var href = item.getAttribute('href');
+      if (!href) return;
+      var itemPath = href.replace(/\/+$/, '');
+      if (currentPath === itemPath || (itemPath !== '/' && currentPath.startsWith(itemPath + '/'))) {
+        item.classList.add('active');
+      }
+    });
 
     /* Panel derecho en móvil / tablet */
     const panelToggle = document.getElementById('nav-panel-toggle');
@@ -505,6 +511,37 @@ document.addEventListener("DOMContentLoaded", function() {
     <img class="lightbox-img" id="lightbox-img" src="" alt="Imagen completa">
 </div>
 
+<!-- Video Lightbox -->
+<div id="videobox" class="videobox-overlay" style="display:none;" onclick="closeVideobox(event)">
+    <span class="videobox-close" onclick="closeVideobox()">&times;</span>
+    <div class="videobox-content" onclick="event.stopPropagation()">
+        <video class="videobox-video" id="videobox-video" controls playsinline></video>
+    </div>
+</div>
+
+<style>
+.videobox-overlay {
+    position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.88);
+    display:none;align-items:center;justify-content:center;
+    animation:vbFadeIn .2s ease;
+}
+@keyframes vbFadeIn { from{opacity:0}to{opacity:1} }
+.videobox-content {
+    width:90%;max-width:960px;max-height:85vh;border-radius:16px;overflow:hidden;
+    background:#000;box-shadow:0 0 60px rgba(139,92,246,.15);
+    animation:vbSlideIn .25s ease;
+}
+@keyframes vbSlideIn { from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1} }
+.videobox-video {
+    width:100%;height:100%;max-height:85vh;display:block;outline:none;
+}
+.videobox-close {
+    position:fixed;top:20px;right:28px;font-size:36px;color:rgba(255,255,255,.5);
+    cursor:pointer;transition:all .2s;z-index:100000;line-height:1;
+}
+.videobox-close:hover { color:white;transform:scale(1.1); }
+</style>
+
 <script>
 // Lightbox - click any post image to view full size
 document.addEventListener('click', function(e) {
@@ -522,10 +559,40 @@ function closeLightbox(e) {
     document.getElementById('lightbox').style.display = 'none';
 }
 
+// Video lightbox
+document.addEventListener('click', function(e) {
+    var target = e.target.closest('[data-video-src]');
+    if (!target) return;
+    e.preventDefault();
+    var src = target.getAttribute('data-video-src');
+    if (!src) return;
+    openVideoPlayer(src);
+});
+
+var _currentVideoSrc = null;
+function openVideoPlayer(src) {
+    var vb = document.getElementById('videobox');
+    var vv = document.getElementById('videobox-video');
+    _currentVideoSrc = src;
+    vv.src = src;
+    vb.style.display = 'flex';
+    vv.play().catch(function(){});
+}
+function closeVideobox(e) {
+    if (e && e.target !== document.getElementById('videobox')) return;
+    var vb = document.getElementById('videobox');
+    var vv = document.getElementById('videobox-video');
+    vv.pause();
+    vv.src = '';
+    vb.style.display = 'none';
+}
+
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         var lb = document.getElementById('lightbox');
-        if (lb.style.display === 'flex') lb.style.display = 'none';
+        if (lb.style.display === 'flex') { lb.style.display = 'none'; return; }
+        var vb = document.getElementById('videobox');
+        if (vb.style.display === 'flex') closeVideobox();
     }
 });
 </script>
@@ -620,13 +687,43 @@ document.addEventListener('keydown', function(e) {
 
     socket.on('notificacion', function(data) {
         renderNotificacionToast(data);
-        // Actualizar badge del navbar si existe
         var badge = document.querySelector('.nav-right .badge');
         if (badge) {
             var count = parseInt(badge.textContent) || 0;
             badge.textContent = count + 1;
         }
     });
+
+    /* ── Chat global badge ── */
+    var chatBadge = document.getElementById('chat-msg-badge');
+    var _noLeidosChat = 0;
+    function actualizarBadgeChat() {
+        if (!chatBadge) return;
+        var enChat = window.location.pathname.indexOf('/global') !== -1;
+        if (enChat) { chatBadge.style.display = 'none'; return; }
+        if (_noLeidosChat > 0) {
+            chatBadge.style.display = 'inline';
+            chatBadge.textContent = _noLeidosChat > 99 ? '+99' : _noLeidosChat;
+        } else {
+            chatBadge.style.display = 'none';
+        }
+    }
+    function syncBadgeFromServer() {
+        fetch('/chat/api/total-msgs')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                _noLeidosChat = d.no_leidos || 0;
+                actualizarBadgeChat();
+            }).catch(function() {});
+    }
+    socket.on('chat_message', function(data) {
+        if (window.location.pathname.indexOf('/global') === -1) {
+            _noLeidosChat++;
+            actualizarBadgeChat();
+        }
+    });
+    syncBadgeFromServer();
+    setInterval(syncBadgeFromServer, 15000);
 
     function renderNotificacionToast(data) {
         var container = document.getElementById('notif-toast-container');

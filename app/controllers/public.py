@@ -13,17 +13,14 @@ def home():
 def buscar():
     from flask import request, render_template
     from app.factories.service_factory import get_service_factory
-    from app.models.clan import Clan
     
     query = request.args.get('q', '').strip()
     if not query:
-        return render_template('public/buscar.html', query='', usuarios=[], clanes=[], juegos=[])
+        return render_template('public/buscar.html', query='', usuarios=[], juegos=[])
     
     sf = get_service_factory()
     user_service = sf.get_usuario_service()
     usuarios = user_service.search_users(query)
-    
-    clanes = Clan.query.filter(Clan.nombre.ilike(f'%{query}%')).all()
     
     # Buscar en juegos/comunidades (case-insensitive)
     from app.factories.app_factory import db
@@ -55,4 +52,4 @@ def buscar():
                 "categoria": "Juegos"
             })
     
-    return render_template('public/buscar.html', query=query, usuarios=usuarios, clanes=clanes, juegos=juegos_encontrados)
+    return render_template('public/buscar.html', query=query, usuarios=usuarios, juegos=juegos_encontrados)
