@@ -384,22 +384,189 @@ def api_get_comunidades():
 
 @api_bp.route('/seed', methods=['POST'])
 def api_seed():
-    from app.services.boost_service import BOOST_PLANS
     from werkzeug.security import generate_password_hash
-    SEED_USERS = [
-        {'username': 'alicegamer', 'nombre': 'Alice Gamer', 'email': 'alice@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 15000, 'nivel': 42},
-        {'username': 'bobstream', 'nombre': 'Bob Stream', 'email': 'bob@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 22000, 'nivel': 55},
-        {'username': 'carlagames', 'nombre': 'Carla Games', 'email': 'carla@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 8900, 'nivel': 28},
-        {'username': 'elenanight', 'nombre': 'Elena Night', 'email': 'elena@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 32000, 'nivel': 70},
-        {'username': 'admin', 'nombre': 'Admin', 'email': 'admin@riftzone.com', 'password': 'admin123', 'rol': 'admin', 'tokens': 999999, 'nivel': 99},
+    from datetime import datetime, timedelta
+    import random
+
+    USERS_DATA = [
+        {'username': 'alicegamer', 'nombre': 'Alice Gamer', 'email': 'alice@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 15000, 'nivel': 42, 'xp': 3200, 'xp_max': 5000, 'pais': 'MX', 'biografia': 'Gamer de corazon. Streamer en mis ratos libres.'},
+        {'username': 'bobstream', 'nombre': 'Bob Stream', 'email': 'bob@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 22000, 'nivel': 55, 'xp': 4100, 'xp_max': 6000, 'pais': 'ES', 'biografia': 'Streamer profesional. 10k en Twitch.'},
+        {'username': 'carlagames', 'nombre': 'Carla Games', 'email': 'carla@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 8900, 'nivel': 28, 'xp': 1500, 'xp_max': 3000, 'pais': 'AR', 'biografia': 'Jugadora competitiva de Valorant y CS2.'},
+        {'username': 'davidpixel', 'nombre': 'David Pixel', 'email': 'david@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 5100, 'nivel': 19, 'xp': 800, 'xp_max': 2000, 'pais': 'CO', 'biografia': 'Indie lover y creador de contenido.'},
+        {'username': 'elenanight', 'nombre': 'Elena Night', 'email': 'elena@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 32000, 'nivel': 70, 'xp': 5500, 'xp_max': 7000, 'pais': 'CL', 'biografia': 'Gamer nocturna. Platino en todo lo que juego.'},
+        {'username': 'frank', 'nombre': 'Frank Gamer', 'email': 'frank@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 10075, 'nivel': 35, 'xp': 2800, 'xp_max': 4500, 'pais': 'US', 'biografia': 'Tryhard de League y Valorant.'},
+        {'username': 'fryuk', 'nombre': 'Fry Uk', 'email': 'fryuk@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 7800, 'nivel': 22, 'xp': 1100, 'xp_max': 2500, 'pais': 'GB', 'biografia': 'Minecraft builder y redstone engineer.'},
+        {'username': 'nexo000', 'nombre': 'Nexo', 'email': 'nexo@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 14500, 'nivel': 48, 'xp': 3900, 'xp_max': 5500, 'pais': 'BR', 'biografia': 'Rocket League champion. Casado con el boost.'},
+        {'username': 'testuser', 'nombre': 'Test User', 'email': 'testuser@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 3000, 'nivel': 10, 'xp': 400, 'xp_max': 1000, 'pais': 'JP', 'biografia': 'Probando cosas nuevas cada dia.'},
+        {'username': 'RiftBot', 'nombre': 'RiftZone Bot', 'email': 'bot@riftzone.com', 'password': 'bot123', 'rol': 'admin', 'tokens': 999999, 'nivel': 99, 'xp': 0, 'xp_max': 1, 'pais': None, 'biografia': 'Bot oficial de RiftZone.'},
     ]
-    created = 0
-    for ud in SEED_USERS:
-        if not Usuario.query.filter_by(email=ud['email']).first():
+    POSTS_DATA = [
+        ('alicegamer', 'Acabo de ganar mi primera partida competitiva en Valorant! Alguien para jugar ranked?', 'Valorant', True, 'rapido', 12, None, None),
+        ('alicegamer', 'Nuevo record personal en aim training: 98% precision!', 'Valorant', False, None, 0, None, None),
+        ('alicegamer', 'Alguien mas jugo el nuevo evento de Fortnite? Esta increible!', 'Fortnite', True, 'mega', 48, None, None),
+        ('bobstream', 'EN VIVO: Jugando League of Legends rankeds. Vengan a ver!', 'League of Legends', True, 'titan', 120, None, None),
+        ('bobstream', 'Nueva build de Minecraft 1.21 lista! Alguien quiere explorar el nuevo bioma?', 'Minecraft', False, None, 0, None, None),
+        ('bobstream', 'Review: El nuevo parche de CS2 mejoro el netcode notablemente.', 'Counter-Strike 2', False, None, 0, None, None),
+        ('carlagames', 'Hice un clutch 1v5 en Valorant. Mejor partida de mi vida!', 'Valorant', True, 'mega', 72, None, None),
+        ('carlagames', 'Alguien para ranked en Apex? Soy main Wraith con 4k kills.', 'Apex Legends', False, None, 0, None, None),
+        ('carlagames', 'Mi setup gamer 2025: RTX 5090 + monitor OLED 240Hz.', 'Valorant', False, None, 0, 'https://picsum.photos/seed/setup/800/400', None),
+        ('davidpixel', 'Hice un juego en 48 horas para la game jam! Descarguenlo gratis.', 'Minecraft', False, None, 0, 'https://picsum.photos/seed/jam/800/400', None),
+        ('davidpixel', 'Pixel art tutorial: Como hacer sprites para tu juego.', 'Minecraft', False, None, 0, None, 'https://www.w3schools.com/html/mov_bbb.mp4'),
+        ('elenanight', 'Platino conseguido en Elden Ring! Despues de 200 horas.', 'Minecraft', True, 'rapido', 24, None, None),
+        ('elenanight', 'Recomienden juegos de terror psicologico. Ya juge todos los clasicos.', 'Fortnite', False, None, 0, None, None),
+        ('elenanight', 'Mi coleccion de juegos fisicos: 500+ titulos en estante.', 'Minecraft', True, 'mega', 48, 'https://picsum.photos/seed/coleccion/800/400', None),
+        ('frank', 'Alguien juega League? Busco duo para ranked flex.', 'League of Legends', True, 'rapido', 12, None, None),
+        ('frank', 'Mi mejor jugada en Rocket League!', 'Rocket League', False, None, 0, None, 'https://www.w3schools.com/html/mov_bbb.mp4'),
+        ('fryuk', 'Construi una ciudad medieval en Minecraft. 300 horas de trabajo!', 'Minecraft', True, 'titan', 168, 'https://picsum.photos/seed/ciudad/800/400', None),
+        ('fryuk', 'Tutorial: Como hacer una granja automatica de XP en 1.21.', 'Minecraft', False, None, 0, None, None),
+        ('nexo000', 'Campeon del torneo de Rocket League! 3-0 en la final.', 'Rocket League', True, 'mega', 72, None, 'https://www.w3schools.com/html/mov_bbb.mp4'),
+        ('nexo000', 'Tips para mejorar tu mecanica en Rocket League: Rotaciones.', 'Rocket League', False, None, 0, None, None),
+        ('testuser', 'Cual es el mejor battle royale del momento?', 'Fortnite', False, None, 0, None, None),
+        ('testuser', 'Probando el nuevo mapa de Valorant. Opiniones?', 'Valorant', False, None, 0, None, None),
+        ('RiftBot', 'Bienvenidos a RiftZone! La comunidad gamer mas grande.', 'Valorant', False, None, 0, None, None),
+        ('RiftBot', 'Recuerden reclamar su recompensa diaria en la billetera!', 'Fortnite', False, None, 0, None, None),
+    ]
+    COMMENTS_DATA = [
+        (1, 'bobstream', 'Felicidades! A que rango llegaste?'),
+        (1, 'carlagames', 'Yo tambien estoy subiendo, agregame!'),
+        (2, 'elenanight', '98%? Pasas el aim train diario?'),
+        (4, 'alicegamer', 'Ya voy para tu stream!'),
+        (4, 'frank', 'Te sigo desde hace meses, eres crack.'),
+        (7, 'alicegamer', 'Ese clutch fue una locura!'),
+        (9, 'bobstream', 'Que monitor recomiendas?'),
+        (12, 'nexo000', 'Elden Ring es una obra maestra.'),
+        (15, 'bobstream', 'Yo juego support, agregame: BobStream#LAS'),
+        (17, 'alicegamer', '300 horas! Comparte fotos!'),
+        (19, 'fryuk', 'Esa final fue increible. Bien jugado!'),
+        (23, 'alicegamer', 'Gracias RiftBot!'),
+    ]
+    CHAT_MESSAGES_DATA = [
+        'Alguien para jugar algo?', 'En vivo en 10 minutos!', 'Alguien tiene el nuevo parche de Valorant?',
+        'Subi un nuevo video a YouTube', 'Buenas noches gamers!', 'Que juegos estan viciando esta semana?',
+        'Minecraft 1.21 es lo mejor que ha pasado', 'Alguien para Rocket League rankeds?',
+        'Probando juegos nuevos, recomienden algo', 'Recuerden seguir las reglas del chat!',
+    ]
+    GAMES = ['Valorant', 'Minecraft', 'League of Legends', 'Rocket League', 'Fortnite', 'Apex Legends', 'Counter-Strike 2']
+
+    created = {'usuarios': 0, 'posts': 0, 'comentarios': 0, 'chat': 0, 'comunidad_mensajes': 0, 'privados': 0, 'notificaciones': 0, 'transacciones': 0}
+
+    users = {}
+    for ud in USERS_DATA:
+        u = Usuario.query.filter_by(email=ud['email']).first()
+        if not u:
             u = Usuario(username=ud['username'], nombre=ud['nombre'], email=ud['email'],
                         password=generate_password_hash(ud['password']), rol=ud['rol'],
-                        tokens=ud['tokens'], nivel=ud['nivel'])
+                        tokens=ud['tokens'], nivel=ud['nivel'], xp=ud['xp'], xp_max=ud['xp_max'],
+                        pais=ud['pais'], biografia=ud['biografia'])
             db.session.add(u)
-            created += 1
+            db.session.flush()
+            created['usuarios'] += 1
+        users[ud['username']] = u
+
+    non_bot = [u for u in users.values() if u.username != 'RiftBot']
+
+    for u in non_bot:
+        followers = random.sample([x for x in non_bot if x.id_usuario != u.id_usuario], min(random.randint(1, 4), len(non_bot)-1))
+        for f in followers:
+            exists = db.session.execute(db.text("SELECT 1 FROM seguidores WHERE seguidor_id=:sid AND seguido_id=:sid2"),
+                                        {'sid': f.id_usuario, 'sid2': u.id_usuario}).first()
+            if not exists:
+                db.session.execute(db.text("INSERT INTO seguidores (seguidor_id, seguido_id) VALUES (:sid, :sid2)"),
+                                   {'sid': f.id_usuario, 'sid2': u.id_usuario})
+
+    for u in non_bot:
+        coms = random.sample(GAMES, random.randint(1, 3))
+        for c in coms:
+            exists = db.session.execute(db.text("SELECT 1 FROM seguidores_comunidad WHERE usuario_id=:uid AND comunidad=:c"),
+                                        {'uid': u.id_usuario, 'c': c}).first()
+            if not exists:
+                db.session.execute(db.text("INSERT INTO seguidores_comunidad (usuario_id, comunidad) VALUES (:uid, :c)"),
+                                   {'uid': u.id_usuario, 'c': c})
+
+    now = datetime.utcnow()
+    for i, (uname, content, juego, promocionada, boost_tipo, boost_hours, img, vid) in enumerate(POSTS_DATA):
+        u = users[uname]
+        p = Publicacion.query.filter_by(id_usuario=u.id_usuario, contenido=content).first()
+        if not p:
+            p = Publicacion(
+                id_usuario=u.id_usuario, contenido=content, juego=juego,
+                promocionada=promocionada,
+                boost_tipo=boost_tipo,
+                boost_hasta=(now + timedelta(hours=boost_hours)) if promocionada else None,
+                imagen_url=img, video_archivo=vid,
+                fecha_creacion=now - timedelta(hours=len(POSTS_DATA)-i),
+            )
+            db.session.add(p)
+            db.session.flush()
+            created['posts'] += 1
+            all_except = [x for x in non_bot if x.id_usuario != u.id_usuario]
+            if all_except:
+                for lu in random.sample(all_except, min(random.randint(0, 5), len(all_except))):
+                    exists = db.session.execute(db.text("SELECT 1 FROM publicacion_likes WHERE id_publicacion=:pid AND id_usuario=:uid"),
+                                                {'pid': p.id_publicacion, 'uid': lu.id_usuario}).first()
+                    if not exists:
+                        db.session.execute(db.text("INSERT INTO publicacion_likes (id_publicacion, id_usuario) VALUES (:pid, :uid)"),
+                                           {'pid': p.id_publicacion, 'uid': lu.id_usuario})
+            if promocionada:
+                boost_cost = [100, 250, 600][['rapido','mega','titan'].index(boost_tipo)]
+                tx = Transaccion(user_id=u.id_usuario, amount=-boost_cost, tipo='egreso',
+                                 description=f"Boost {boost_tipo.upper()} — publicacion #{p.id_publicacion}")
+                db.session.add(tx)
+
+    posts = Publicacion.query.order_by(Publicacion.id_publicacion.asc()).all()
+    for post_idx, author_uname, text in COMMENTS_DATA:
+        if post_idx <= len(posts):
+            p = posts[post_idx-1]
+            exists = Comentario.query.filter_by(id_publicacion=p.id_publicacion, contenido=text).first()
+            if not exists:
+                c = Comentario(id_publicacion=p.id_publicacion, id_usuario=users[author_uname].id_usuario, contenido=text)
+                db.session.add(c)
+                created['comentarios'] += 1
+
+    for uname in list(users.keys())[:10]:
+        m = MensajeChat(usuario_id=users[uname].id_usuario, contenido=CHAT_MESSAGES_DATA[list(users.keys()).index(uname)])
+        db.session.add(m)
+        created['chat'] += 1
+
+    for c_idx, comunidad in enumerate(GAMES[:5]):
+        for m_idx, uname in enumerate(list(users.keys())[:3]):
+            idx = c_idx * 3 + m_idx
+            if idx < 15:
+                m = MensajeComunidad(comunidad=comunidad, usuario_id=users[uname].id_usuario,
+                                     contenido=f"Mensaje en {comunidad} de {uname}")
+                db.session.add(m)
+                created['comunidad_mensajes'] += 1
+
+    pm_pairs = [('alicegamer','bobstream'), ('bobstream','alicegamer'), ('carlagames','alicegamer'),
+                ('alicegamer','carlagames'), ('frank','nexo000'), ('nexo000','frank')]
+    pm_texts = [
+        'Hola! Vi tu stream ayer, estuvo genial!', 'Gracias! Me alegra que te haya gustado :)',
+        'Quieres hacer duo para Valorant mas tarde?', 'Claro! Te agrego en un rato.',
+        'Buena partida ayer en Rocket League!', 'Gracias! Jugamos de nuevo cuando quieras.',
+    ]
+    for (e, r), txt in zip(pm_pairs, pm_texts):
+        exists = MensajePrivado.query.filter_by(emisor_id=users[e].id_usuario, receptor_id=users[r].id_usuario, contenido=txt).first()
+        if not exists:
+            m = MensajePrivado(emisor_id=users[e].id_usuario, receptor_id=users[r].id_usuario, contenido=txt)
+            db.session.add(m)
+            created['privados'] += 1
+
+    for u in non_bot[:5]:
+        exists = Notificacion.query.filter_by(usuario_id=u.id_usuario, tipo='sistema').first()
+        if not exists:
+            n = Notificacion(usuario_id=u.id_usuario, mensaje='Bienvenido a RiftZone! Completa tu perfil para empezar.',
+                             icono='fas fa-star', tipo='sistema', enlace='/jugador/editar-perfil')
+            db.session.add(n)
+            created['notificaciones'] += 1
+
+    for u in non_bot:
+        if (u.tokens or 0) > 5000:
+            exists = Transaccion.query.filter_by(user_id=u.id_usuario, tipo='ingreso').first()
+            if not exists:
+                tx = Transaccion(user_id=u.id_usuario, amount=(u.tokens or 0) - 1000, tipo='ingreso',
+                                 description='Recompensa diaria RiftZone', created_at=datetime.utcnow() - timedelta(days=1))
+                db.session.add(tx)
+                created['transacciones'] += 1
+
     db.session.commit()
     return jsonify({'success': True, 'created': created})
