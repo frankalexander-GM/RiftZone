@@ -240,6 +240,9 @@ def register_blueprints(app):
     from app.controllers.mensajes import mensajes_bp
     app.register_blueprint(mensajes_bp, url_prefix='')  # /mensajes
 
+    from app.controllers.api import api_bp
+    app.register_blueprint(api_bp)
+
 def register_error_handlers(app):
     """Registrar manejadores de errores personalizados"""
     @app.errorhandler(CSRFError)
