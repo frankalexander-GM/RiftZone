@@ -63,10 +63,13 @@ def _require_auth():
         return jsonify({'success': False, 'error': 'No autenticado'}), 401
     return None
 
-def _model_to_dict(obj):
+def _model_to_dict(obj, excludes=None):
     if obj is None: return None
+    excludes = set(excludes or [])
     d = {}
     for col in obj.__table__.columns:
+        if col.name in excludes:
+            continue
         v = getattr(obj, col.name)
         if isinstance(v, datetime):
             v = v.isoformat()
@@ -342,6 +345,18 @@ def api_create_chat():
     m = MensajeChat(usuario_id=_get_user().id_usuario, contenido=data['contenido'])
     db.session.add(m); db.session.commit()
     return jsonify(_model_to_dict(m)), 201
+
+@api_bp.route('/chat/<int:id_mensaje>', methods=['DELETE'])
+def api_delete_chat(id_mensaje):
+    auth_err = _require_auth()
+    if auth_err: return auth_err
+    m = MensajeChat.query.get(id_mensaje)
+    if not m: return jsonify({'error': 'No encontrado'}), 404
+    current = _get_user()
+    if m.usuario_id != current.id_usuario and current.rol != 'admin':
+        return jsonify({'error': 'Sin permisos'}), 403
+    db.session.delete(m); db.session.commit()
+    return jsonify({'success': True})
 
 # ─────────────────────────────────────────
 # ESTADISTICAS
