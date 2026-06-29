@@ -242,6 +242,7 @@ def register_blueprints(app):
 
     from app.controllers.api import api_bp
     app.register_blueprint(api_bp)
+    csrf.exempt(api_bp)
 
 def register_error_handlers(app):
     """Registrar manejadores de errores personalizados"""
