@@ -381,3 +381,25 @@ def api_get_comunidades():
                 ).scalar(),
             })
     return jsonify(result)
+
+@api_bp.route('/seed', methods=['POST'])
+def api_seed():
+    from app.services.boost_service import BOOST_PLANS
+    from werkzeug.security import generate_password_hash
+    SEED_USERS = [
+        {'username': 'alicegamer', 'nombre': 'Alice Gamer', 'email': 'alice@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 15000, 'nivel': 42},
+        {'username': 'bobstream', 'nombre': 'Bob Stream', 'email': 'bob@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 22000, 'nivel': 55},
+        {'username': 'carlagames', 'nombre': 'Carla Games', 'email': 'carla@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 8900, 'nivel': 28},
+        {'username': 'elenanight', 'nombre': 'Elena Night', 'email': 'elena@test.com', 'password': 'Password1', 'rol': 'jugador', 'tokens': 32000, 'nivel': 70},
+        {'username': 'admin', 'nombre': 'Admin', 'email': 'admin@riftzone.com', 'password': 'admin123', 'rol': 'admin', 'tokens': 999999, 'nivel': 99},
+    ]
+    created = 0
+    for ud in SEED_USERS:
+        if not Usuario.query.filter_by(email=ud['email']).first():
+            u = Usuario(username=ud['username'], nombre=ud['nombre'], email=ud['email'],
+                        password=generate_password_hash(ud['password']), rol=ud['rol'],
+                        tokens=ud['tokens'], nivel=ud['nivel'])
+            db.session.add(u)
+            created += 1
+    db.session.commit()
+    return jsonify({'success': True, 'created': created})
