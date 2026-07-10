@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from flask_login import UserMixin
 from app.factories.app_factory import db
 
@@ -137,6 +137,20 @@ class Usuario(UserMixin, db.Model):
 
     def is_invitado(self):
         return self.rol == 'invitado'
+
+class PasswordResetCode(db.Model):
+    """Códigos de verificación para recuperación de contraseña"""
+    __tablename__ = 'password_reset_codes'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), nullable=False)
+    codigo = db.Column(db.String(10), nullable=False)
+    usado = db.Column(db.Boolean, default=False)
+    expira_en = db.Column(db.DateTime, nullable=False)
+    creado_en = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    usuario = db.relationship('Usuario', backref=db.backref('reset_codes', lazy='dynamic'))
+
 
 class Sugerencia(db.Model):
     __tablename__ = 'sugerencias'

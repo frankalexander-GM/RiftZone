@@ -5,6 +5,7 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from flask_socketio import SocketIO
+from flask_mail import Mail
 
 # Inicializar extensiones
 db = SQLAlchemy()
@@ -13,6 +14,7 @@ login_manager = LoginManager()
 migrate = Migrate()
 csrf = CSRFProtect()
 socketio = SocketIO()
+mail = Mail()
 
 def create_app(config_name='default'):
     import os
@@ -29,6 +31,7 @@ def create_app(config_name='default'):
     migrate.init_app(flask_app, db)
     csrf.init_app(flask_app)
     socketio.init_app(flask_app, cors_allowed_origins="*")
+    mail.init_app(flask_app)
     
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Inicia sesión para acceder a GamesSphere.'

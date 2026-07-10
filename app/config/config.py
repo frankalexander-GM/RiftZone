@@ -31,6 +31,14 @@ class Config:
     
     ITEMS_PER_PAGE = 12
     
+    # Flask-Mail — configurar con variables de entorno en producción
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME', '')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'RiftZone <noreply@riftzone.com>')
+
     # Google AdSense - cambiar ADSENSE_PUBLISHER_ID cuando tengas la cuenta aprobada
     ADSENSE_ENABLED = os.environ.get('ADSENSE_ENABLED', 'true').lower() == 'true'
     ADSENSE_PUBLISHER_ID = os.environ.get('ADSENSE_PUBLISHER_ID', 'ca-pub-0000000000000000')
@@ -57,6 +65,8 @@ class ProductionConfig(Config):
     """Configuración para producción"""
     DEBUG = False
     SESSION_COOKIE_SECURE = True
+    # En producción estas variables DEBEN estar configuradas en el entorno
+    # MAIL_SERVER, MAIL_PORT, MAIL_USE_TLS, MAIL_USERNAME, MAIL_PASSWORD
 
 config = {
     'development': DevelopmentConfig,
