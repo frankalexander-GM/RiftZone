@@ -4,674 +4,165 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login — RiftZone</title>
-    
-    <link href="{{ url_for('static', filename='css/games_sphere.css') }}?v=3" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/glassmorphism.css') }}?v=3" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background: #0d0b1a;
-            padding: 24px;
-            font-family: 'Inter', system-ui, sans-serif;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* ——— Animated gradient background ——— */
-        .bg-anim {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            background: linear-gradient(135deg, #0d0b1a 0%, #1a0a2e 25%, #0d1520 50%, #1a0a2e 75%, #0d0b1a 100%);
-            background-size: 400% 400%;
-            animation: bgShift 12s ease infinite;
-        }
-        @keyframes bgShift {
-            0% { background-position: 0% 50%; }
-            25% { background-position: 50% 0%; }
-            50% { background-position: 100% 50%; }
-            75% { background-position: 50% 100%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* ——— Floating game icons ——— */
-        .floating-icon {
-            position: fixed;
-            font-size: 24px;
-            z-index: 1;
-            opacity: 0.15;
-            pointer-events: none;
-            animation: floatIcon 8s ease-in-out infinite;
-        }
-        .floating-icon:nth-child(1) { top: 10%; left: 8%; animation-delay: 0s; color: #A78BFA; }
-        .floating-icon:nth-child(2) { top: 20%; right: 12%; animation-delay: -1.5s; color: #FF2D95; font-size: 30px; }
-        .floating-icon:nth-child(3) { bottom: 15%; left: 15%; animation-delay: -3s; color: #22D3EE; }
-        .floating-icon:nth-child(4) { bottom: 25%; right: 8%; animation-delay: -4.5s; color: #34D399; font-size: 20px; }
-        .floating-icon:nth-child(5) { top: 50%; left: 5%; animation-delay: -6s; color: #FACC15; font-size: 18px; }
-        .floating-icon:nth-child(6) { top: 60%; right: 5%; animation-delay: -2s; color: #F87171; font-size: 22px; }
-
-        @keyframes floatIcon {
-            0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
-            25% { transform: translateY(-20px) rotate(5deg) scale(1.1); }
-            50% { transform: translateY(-10px) rotate(-3deg) scale(0.95); }
-            75% { transform: translateY(-25px) rotate(3deg) scale(1.05); }
-        }
-
-        /* ——— Canvas particles ——— */
-        #particles-canvas {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        /* ——— Glow orbs (bright) ——— */
-        .glow-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(100px);
-            pointer-events: none;
-            z-index: 0;
-            animation: orbFloat 10s ease-in-out infinite alternate;
-        }
-        .glow-orb--purple {
-            width: 450px; height: 450px;
-            background: radial-gradient(circle, rgba(167, 139, 250, 0.4), transparent 70%);
-            top: -150px; left: -100px;
-        }
-        .glow-orb--pink {
-            width: 380px; height: 380px;
-            background: radial-gradient(circle, rgba(255, 45, 149, 0.3), transparent 70%);
-            bottom: -120px; right: -100px;
-            animation-delay: -4s;
-        }
-        .glow-orb--cyan {
-            width: 300px; height: 300px;
-            background: radial-gradient(circle, rgba(34, 211, 238, 0.2), transparent 70%);
-            top: 40%; left: 50%;
-            animation-delay: -7s;
-        }
-
-        @keyframes orbFloat {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(50px, -40px) scale(1.15); }
-        }
-
-        /* ——— Auth card ——— */
-        .auth-container {
-            position: relative;
-            z-index: 10;
-            background: linear-gradient(145deg, rgba(25, 20, 50, 0.88), rgba(15, 12, 35, 0.94));
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(167, 139, 250, 0.1);
-            border-radius: 24px;
-            padding: 44px 40px;
-            width: 100%;
-            max-width: 420px;
-            box-shadow:
-                0 0 80px rgba(139, 92, 246, 0.08),
-                0 20px 60px rgba(0,0,0,0.5),
-                inset 0 1px 0 rgba(255,255,255,0.03);
-            animation: cardAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            transform: translateY(30px);
-            opacity: 0;
-        }
-
-        @keyframes cardAppear {
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        /* ——— Side glow bars ——— */
-        .auth-container::before,
-        .auth-container::after {
-            content: '';
-            position: absolute;
-            width: 2px;
-            height: 60%;
-            top: 20%;
-            border-radius: 4px;
-            opacity: 0.3;
-        }
-        .auth-container::before {
-            left: -1px;
-            background: linear-gradient(to bottom, transparent, #A78BFA, #FF2D95, transparent);
-            animation: glowBar 3s ease-in-out infinite;
-        }
-        .auth-container::after {
-            right: -1px;
-            background: linear-gradient(to bottom, transparent, #22D3EE, #A78BFA, transparent);
-            animation: glowBar 3s ease-in-out infinite alternate;
-        }
-        @keyframes glowBar {
-            0%, 100% { opacity: 0.15; }
-            50% { opacity: 0.4; }
-        }
-
-        /* ——— Logo ——— */
-        .logo-center {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 14px;
-            font-size: 30px;
-            font-weight: 900;
-            margin-bottom: 28px;
-            letter-spacing: 2px;
-        }
-        .logo-center .logo-icon {
-            width: 56px; height: 56px;
-            font-size: 26px;
-            background: linear-gradient(135deg, #7C3AED, #FF2D95);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            box-shadow: 0 0 30px rgba(124, 58, 237, 0.3);
-            animation: logoBounce 3s ease-in-out infinite;
-        }
-        @keyframes logoBounce {
-            0%, 100% { transform: translateY(0) rotate(-2deg); }
-            50% { transform: translateY(-6px) rotate(0deg); }
-        }
-
-        .logo-text {
-            background: linear-gradient(135deg, #C4B5FD, #FF2D95, #22D3EE);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            background-size: 200% 200%;
-            animation: textGrad 4s ease infinite;
-        }
-        @keyframes textGrad {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* ——— Headings ——— */
-        .auth-title {
-            text-align: center;
-            font-size: 24px;
-            font-weight: 800;
-            margin-bottom: 6px;
-            background: linear-gradient(135deg, #E0E0FF, #A78BFA);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: 0.5px;
-        }
-        .auth-subtitle {
-            text-align: center;
-            color: rgba(157, 157, 181, 0.55);
-            font-size: 14px;
-            margin-bottom: 32px;
-        }
-
-        /* ——— Form ——— */
-        .form-group {
-            margin-bottom: 22px;
-            position: relative;
-        }
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            color: rgba(157, 157, 181, 0.6);
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            transition: color 0.3s;
-        }
-        .form-group:focus-within .form-label {
-            color: #A78BFA;
-        }
-        .input-wrap {
-            position: relative;
-        }
-        .input-wrap .input-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: rgba(157, 157, 181, 0.25);
-            font-size: 15px;
-            transition: all 0.3s;
-            pointer-events: none;
-        }
-        .form-group:focus-within .input-icon {
-            color: #A78BFA;
-            text-shadow: 0 0 12px rgba(167, 139, 250, 0.4);
-        }
-        .form-control {
-            width: 100%;
-            background: rgba(10, 8, 25, 0.5);
-            border: 1.5px solid rgba(167, 139, 250, 0.06);
-            border-radius: 14px;
-            padding: 14px 18px 14px 48px;
-            color: #e8e8ff;
-            font-size: 15px;
-            font-family: inherit;
-            transition: all 0.35s ease;
-            outline: none;
-        }
-        .form-control:focus {
-            border-color: rgba(167, 139, 250, 0.25);
-            box-shadow:
-                0 0 0 4px rgba(167, 139, 250, 0.06),
-                0 0 30px rgba(167, 139, 250, 0.04);
-            background: rgba(10, 8, 25, 0.7);
-        }
-        .form-control::placeholder {
-            color: rgba(157, 157, 181, 0.2);
-        }
-        .form-control:-webkit-autofill {
-            -webkit-box-shadow: 0 0 0 50px #191432 inset;
-            -webkit-text-fill-color: #e8e8ff;
-        }
-
-        /* ——— Password eye ——— */
-        .password-wrapper .form-control {
-            padding-right: 48px;
-        }
-        .password-toggle {
-            position: absolute;
-            right: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: rgba(157, 157, 181, 0.25);
-            cursor: pointer;
-            padding: 6px;
-            font-size: 17px;
-            display: flex;
-            align-items: center;
-            transition: color 0.3s;
-        }
-        .password-toggle:hover { color: #A78BFA; }
-
-        /* ——— Link row ——— */
-        .form-link-row {
-            text-align: right;
-            margin-bottom: 4px;
-        }
-        .form-link-row a {
-            color: rgba(167, 139, 250, 0.4);
-            font-size: 12px;
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-        .form-link-row a:hover { color: #A78BFA; }
-
-        /* ——— Submit button ——— */
-        .btn-login {
-            width: 100%;
-            padding: 16px;
-            font-size: 15px;
-            font-weight: 700;
-            font-family: inherit;
-            letter-spacing: 1px;
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-            color: #fff;
-            background: linear-gradient(135deg, #7C3AED, #FF2D95, #7C3AED);
-            background-size: 200% 200%;
-            animation: gradientShift 3s ease infinite;
-            margin-top: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            text-transform: uppercase;
-        }
-        .btn-login::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, #6D28D9, #E11D8F);
-            opacity: 0;
-            transition: opacity 0.4s;
-        }
-        .btn-login:hover::before { opacity: 1; }
-        .btn-login:hover {
-            transform: translateY(-3px);
-            box-shadow:
-                0 0 40px rgba(124, 58, 237, 0.35),
-                0 0 80px rgba(225, 29, 143, 0.15),
-                0 12px 30px rgba(0,0,0,0.4);
-        }
-        .btn-login:active { transform: translateY(0) scale(0.98); }
-        .btn-login > * { position: relative; z-index: 1; }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* ——— Separator ——— */
-        .separator {
-            position: relative;
-            text-align: center;
-            margin: 24px 0;
-        }
-        .separator::before {
-            content: '';
-            display: block;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.08), transparent);
-        }
-        .separator span {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(15, 12, 35, 0.94);
-            padding: 0 16px;
-            color: rgba(157, 157, 181, 0.3);
-            font-size: 11px;
-            letter-spacing: 2px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        /* ——— Guest button ——— */
-        .btn-guest {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            padding: 14px;
-            background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(167, 139, 250, 0.06);
-            border-radius: 14px;
-            color: rgba(240, 240, 255, 0.5);
-            font-size: 13px;
-            font-weight: 500;
-            font-family: inherit;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .btn-guest:hover {
-            background: rgba(255,255,255,0.04);
-            border-color: rgba(167, 139, 250, 0.15);
-            color: #f0f0ff;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-        }
-
-        /* ——— Footer ——— */
-        .auth-footer {
-            text-align: center;
-            margin-top: 24px;
-            font-size: 13px;
-            color: rgba(157, 157, 181, 0.4);
-        }
-        .auth-footer a {
-            color: rgba(167, 139, 250, 0.6);
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-        .auth-footer a:hover {
-            color: #C4B5FD;
-            text-shadow: 0 0 15px rgba(167, 139, 250, 0.3);
-        }
-
-        /* ——— Toast notifications ——— */
-        #toast-container { position:fixed; top:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:10px; pointer-events:none; }
-        .toast { display:flex; align-items:center; gap:10px; padding:14px 20px; border-radius:14px; font-size:13px; font-family:'Inter',system-ui,sans-serif; pointer-events:auto; animation:toastIn 0.4s cubic-bezier(0.16,1,0.3,1) forwards; backdrop-filter:blur(16px); max-width:380px; line-height:1.5; }
-        .toast--success { background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.15); color:#34D399; box-shadow:0 8px 30px rgba(0,0,0,0.3); }
-        .toast--error { background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.15); color:#F87171; box-shadow:0 8px 30px rgba(0,0,0,0.3); }
-        .toast--info { background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.15); color:#A78BFA; box-shadow:0 8px 30px rgba(0,0,0,0.3); }
-        .toast--exiting { animation:toastOut 0.35s ease forwards; }
-        @keyframes toastIn { from { opacity:0; transform:translateX(40px) scale(0.95); } to { opacity:1; transform:translateX(0) scale(1); } }
-        @keyframes toastOut { to { opacity:0; transform:translateX(40px) scale(0.95); } }
-        .toast a { color:#C4B5FD; text-decoration:underline; }
-
-        /* ——— Staggered entrance ——— */
-        .form-group {
-            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            opacity: 0;
-            transform: translateY(15px);
-        }
-        .form-group:nth-child(1) { animation-delay: 0.15s; }
-        .form-group:nth-child(2) { animation-delay: 0.25s; }
-        .form-link-row { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards; opacity: 0; transform: translateY(10px); }
-        .btn-login { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.45s forwards; opacity: 0; transform: translateY(15px); }
-        .separator { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.55s forwards; opacity: 0; transform: translateY(10px); }
-        .btn-guest { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.65s forwards; opacity: 0; transform: translateY(10px); }
-        .auth-footer { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.75s forwards; opacity: 0; transform: translateY(10px); }
-
-        @keyframes fadeUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ——— Responsive ——— */
-        @media (max-width: 480px) {
-            .auth-container { padding: 32px 24px; border-radius: 20px; }
-            .logo-center { font-size: 26px; }
-            .logo-center .logo-icon { width: 48px; height: 48px; font-size: 22px; }
-            .floating-icon { display: none; }
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth_v3.css') }}">
 </head>
 <body>
 
-<div class="bg-anim"></div>
+<div class="aurora">
+    <div class="aurora-blob ab1"></div>
+    <div class="aurora-blob ab2"></div>
+    <div class="aurora-blob ab3"></div>
+    <div class="aurora-blob ab4"></div>
+</div>
+<canvas class="stars" id="stars-canvas"></canvas>
+<div class="noise"></div>
+<canvas id="particles"></canvas>
+<canvas id="confetti"></canvas>
 
-<canvas id="particles-canvas"></canvas>
+<div class="card">
+    <div class="card-inner" id="card-inner">
+        <div class="success-overlay" id="success-overlay">
+            <div class="success-icon">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                    <path class="check-path" d="M10 20L17 27L30 13" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="success-title">¡Bienvenido, Gamer!</div>
+            <div class="success-sub">Redirigiendo al dashboard...</div>
+            <div class="success-dots"><span></span><span></span><span></span></div>
+        </div>
 
-<div class="glow-orb glow-orb--purple"></div>
-<div class="glow-orb glow-orb--pink"></div>
-<div class="glow-orb glow-orb--cyan"></div>
-
-<i class="fas fa-gamepad floating-icon"></i>
-<i class="fas fa-crown floating-icon"></i>
-<i class="fas fa-bolt floating-icon"></i>
-<i class="fas fa-skull floating-icon"></i>
-<i class="fas fa-dice-d6 floating-icon"></i>
-<i class="fas fa-crosshairs floating-icon"></i>
-
-<div class="auth-container">
-    <div class="logo-center">
-        <div class="logo-icon"><i class="fas fa-gamepad"></i></div>
-        <span class="logo-text">RiftZone</span>
-    </div>
-    <h1 class="auth-title">Bienvenido de vuelta</h1>
-    <p class="auth-subtitle">Ingresa tus credenciales para continuar.</p>
-    
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div id="flash-data" style="display:none;" data-messages='{{ messages | tojson | safe }}'></div>
-        {% endif %}
-    {% endwith %}
-
-    <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        
-        <div class="form-group">
-            <label class="form-label">Usuario o Correo Electrónico</label>
-            <div class="input-wrap">
-                <i class="fas fa-user input-icon"></i>
-                <input type="text" name="identifier" class="form-control" required placeholder="@usuario o correo@ejemplo.com" maxlength="150" autocomplete="username" value="{{ request.form.get('identifier', '') }}">
+        <div class="brand s1">
+            <div class="brand-icon" data-tooltip="RiftZone v3.0"><i class="fas fa-gamepad"></i></div>
+            <h1>RiftZone</h1>
+            <p>Entra a tu zona gamer</p>
+            <div class="social-proof s2">
+                <div class="online-dot"></div>
+                <div class="avatars">
+                    <div class="avatar"><i class="fas fa-user"></i></div>
+                    <div class="avatar"><i class="fas fa-user"></i></div>
+                    <div class="avatar"><i class="fas fa-user"></i></div>
+                </div>
+                <span>2,847 gamers en línea</span>
             </div>
         </div>
-        
-        <div class="form-group">
-            <label class="form-label">Contraseña</label>
-            <div class="input-wrap password-wrapper">
-                <i class="fas fa-lock input-icon"></i>
-                <input type="password" name="password" class="form-control" required placeholder="••••••••" value="{{ request.form.get('password', '') }}" id="login-password">
-                <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)" tabindex="-1" aria-label="Mostrar contraseña">
-                    <i class="fas fa-eye"></i>
-                </button>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div id="flash-data" style="display:none;" data-messages='{{ messages | tojson | safe }}'></div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('auth.login') }}" novalidate id="login-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="field s3" id="f-identifier">
+                <label for="identifier">Usuario o correo electrónico</label>
+                <div class="input-box">
+                    <div class="icon"><i class="fas fa-user"></i><span class="typing-ring"></span></div>
+                    <input type="text" id="identifier" name="identifier" placeholder="@usuario o correo@ejemplo.com" autocomplete="username" required value="{{ request.form.get('identifier', '') }}">
+                    <div class="valid-check"><i class="fas fa-check"></i></div>
+                </div>
+                <div class="error-msg"><i class="fas fa-circle-exclamation"></i> <span>Ingresa tu usuario o correo</span></div>
             </div>
+
+            <div class="field s4 has-toggle" id="f-password">
+                <label for="password">Contraseña</label>
+                <div class="input-box">
+                    <div class="icon"><i class="fas fa-lock"></i><span class="typing-ring"></span></div>
+                    <input type="password" id="password" name="password" placeholder="Tu contraseña secreta" autocomplete="current-password" required>
+                    <div class="valid-check"><i class="fas fa-check"></i></div>
+                    <button type="button" class="pwd-toggle" id="pwd-toggle" aria-label="Mostrar contraseña" data-tooltip="Mostrar / Ocultar" onclick="togglePassword('password', this)">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <div class="caps-warning" id="caps-warning"><i class="fas fa-triangle-exclamation"></i> Mayús activada</div>
+                </div>
+                <div class="error-msg"><i class="fas fa-circle-exclamation"></i> <span>La contraseña es obligatoria</span></div>
+                <div class="pwd-strength" id="pwd-strength">
+                    <div class="strength-bar">
+                        <div class="strength-seg s1" id="seg1"></div>
+                        <div class="strength-seg s2" id="seg2"></div>
+                        <div class="strength-seg s3" id="seg3"></div>
+                        <div class="strength-seg s4" id="seg4"></div>
+                    </div>
+                    <div class="strength-label">
+                        <span class="text" id="strength-text">...</span>
+                        <div class="requirements">
+                            <span class="req" id="req-len"><i class="fas fa-circle"></i> 6+ chars</span>
+                            <span class="req" id="req-num"><i class="fas fa-circle"></i> número</span>
+                            <span class="req" id="req-upper"><i class="fas fa-circle"></i> mayús</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="options-row s5">
+                <label class="remember-me" data-tooltip="Mantener sesión 30 días">
+                    <input type="checkbox" name="remember" id="remember">
+                    <div class="check-box"><i class="fas fa-check"></i></div>
+                    <span>Recordarme</span>
+                </label>
+                <a href="{{ url_for('auth.forgot_password') }}" class="forgot-link" data-tooltip="Te enviaremos un código">¿Olvidaste tu contraseña?</a>
+            </div>
+
+            <button type="submit" class="btn-submit s6" id="btn-submit">
+                <span class="btn-text">Iniciar sesión</span>
+                <span class="loading-text"><span class="loading-dots"><span></span><span></span><span></span></span> Conectando</span>
+                <span class="spinner"></span>
+                <i class="fas fa-arrow-right btn-arrow" style="position:relative;z-index:1;"></i>
+            </button>
+        </form>
+
+        <div class="keyboard-hint s7" id="keyboard-hint" style="opacity:0;">
+            Presiona <kbd>Enter</kbd> para continuar
         </div>
-        
-        <div class="form-link-row" style="display:flex; justify-content:space-between;">
-            <a href="{{ url_for('auth.forgot_password') }}" style="color:rgba(167,139,250,0.4); font-size:12px; text-decoration:none; transition:color 0.3s;" onmouseover="this.style.color='#A78BFA'" onmouseout="this.style.color='rgba(167,139,250,0.4)'">¿Olvidaste tu contraseña?</a>
-            <a href="{{ url_for('auth.register') }}" style="color:rgba(167,139,250,0.4); font-size:12px; text-decoration:none; transition:color 0.3s;" onmouseover="this.style.color='#A78BFA'" onmouseout="this.style.color='rgba(167,139,250,0.4)'">¿No tienes cuenta?</a>
+
+        <div class="divider s8"><span>o</span></div>
+
+        <a href="{{ url_for('auth.login_guest') }}" class="btn-guest s8">
+            <i class="fas fa-user-astronaut"></i> Explorar como invitado
+        </a>
+
+        <div class="card-footer s9">
+            ¿Nuevo aquí? <a href="{{ url_for('auth.register') }}">Crea tu cuenta</a>
         </div>
-        
-        <button type="submit" class="btn-login">
-            Iniciar Sesión <i class="fas fa-sign-in-alt"></i>
-        </button>
-    </form>
-    
-    <div class="separator">
-        <span>O</span>
-    </div>
-    
-    <a href="{{ url_for('auth.login_guest') }}" class="btn-guest">
-        <i class="fas fa-user-secret"></i> Continuar como Invitado
-    </a>
-    
-    <div class="auth-footer">
-        ¿No tienes cuenta? <a href="{{ url_for('auth.register') }}">Regístrate aquí</a>
     </div>
 </div>
 
+<div id="toasts"></div>
+
+<script src="{{ url_for('static', filename='js/auth_v3.js') }}"></script>
 <script>
-function togglePassword(id, btn) {
-    var input = document.getElementById(id);
-    if (input.type === 'password') {
-        input.type = 'text';
-        btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
-        btn.setAttribute('aria-label', 'Ocultar contraseña');
-    } else {
-        input.type = 'password';
-        btn.innerHTML = '<i class="fas fa-eye"></i>';
-        btn.setAttribute('aria-label', 'Mostrar contraseña');
+// Password strength on input
+document.getElementById('password').addEventListener('input', function() {
+    updatePasswordStrength(this.value);
+});
+
+// Double-submit prevention
+var isSubmitting = false;
+document.getElementById('login-form').addEventListener('submit', function(e) {
+    if (isSubmitting) { e.preventDefault(); return; }
+    var idVal = document.getElementById('identifier').value.trim();
+    var pwVal = document.getElementById('password').value;
+    var valid = true;
+    if (!idVal) { document.getElementById('f-identifier').classList.add('error'); valid = false; }
+    if (!pwVal) { document.getElementById('f-password').classList.add('error'); valid = false; }
+    if (!valid) {
+        e.preventDefault();
+        showToast('Completa todos los campos para continuar', 'error');
+        if (!idVal) document.getElementById('identifier').focus();
+        else document.getElementById('password').focus();
+        return;
     }
-}
+    isSubmitting = true;
+    var btn = document.getElementById('btn-submit');
+    btn.classList.add('loading');
+});
 
-// ——— Particle canvas ———
-(function() {
-    var canvas = document.getElementById('particles-canvas');
-    var ctx = canvas.getContext('2d');
-    var particles = [];
-    var w, h;
-
-    function resize() {
-        w = canvas.width = window.innerWidth;
-        h = canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    var COLORS = [
-        'rgba(167, 139, 250,', 'rgba(255, 45, 149,', 'rgba(34, 211, 238,',
-        'rgba(250, 204, 21,', 'rgba(52, 211, 153,'
-    ];
-    var PARTICLE_COUNT = 100;
-
-    for (var i = 0; i < PARTICLE_COUNT; i++) {
-        particles.push({
-            x: Math.random() * w,
-            y: Math.random() * h,
-            vx: (Math.random() - 0.5) * 0.6,
-            vy: (Math.random() - 0.5) * 0.6,
-            r: Math.random() * 2.5 + 1,
-            color: COLORS[Math.floor(Math.random() * COLORS.length)],
-            alpha: Math.random() * 0.35 + 0.05
-        });
-    }
-
-    function animate() {
-        ctx.clearRect(0, 0, w, h);
-        
-        // Connections
-        for (var i = 0; i < particles.length; i++) {
-            for (var j = i + 1; j < particles.length; j++) {
-                var dx = particles[i].x - particles[j].x;
-                var dy = particles[i].y - particles[j].y;
-                var dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 130) {
-                    ctx.beginPath();
-                    ctx.moveTo(particles[i].x, particles[i].y);
-                    ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.strokeStyle = 'rgba(167, 139, 250, ' + (1 - dist / 130) * 0.05 + ')';
-                    ctx.lineWidth = 0.5;
-                    ctx.stroke();
-                }
-            }
-        }
-
-        for (var i = 0; i < particles.length; i++) {
-            var p = particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-
-            if (p.x < -10) p.x = w + 10;
-            if (p.x > w + 10) p.x = -10;
-            if (p.y < -10) p.y = h + 10;
-            if (p.y > h + 10) p.y = -10;
-
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fillStyle = p.color + p.alpha + ')';
-            ctx.fill();
-
-            // Glow
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r * 4, 0, Math.PI * 2);
-            ctx.fillStyle = p.color + '0.02)';
-            ctx.fill();
-        }
-
-        requestAnimationFrame(animate);
-    }
-    animate();
-})();
-</script>
-
-<!-- Flash messages as toasts -->
-<script>
-if (typeof showToast !== 'function') {
-  function showToast(msg, type) {
-    type = type || 'success';
-    var c = document.getElementById('toast-container');
-    if (!c) { c = document.createElement('div'); c.id = 'toast-container'; document.body.appendChild(c); }
-    var icons = { error: 'fa-exclamation-circle', info: 'fa-info-circle', success: 'fa-check-circle' };
-    var t = document.createElement('div');
-    t.className = 'toast toast--' + type;
-    t.innerHTML = '<i class="fas ' + (icons[type] || 'fa-check-circle') + '"></i> ' + msg;
-    c.appendChild(t);
-    setTimeout(function(){ t.classList.add('toast--exiting'); setTimeout(function(){ t.remove(); }, 350); }, 4000);
-  }
-}
-(function() {
-  var el = document.getElementById('flash-data');
-  if (!el) return;
-  try {
-    var messages = JSON.parse(el.getAttribute('data-messages') || '[]');
-    if (Array.isArray(messages)) {
-      messages.forEach(function(item) {
-        if (Array.isArray(item)) {
-          showToast(item[1], item[0] === 'error' ? 'error' : 'success');
-        }
-      });
-    }
-  } catch(e) {}
-  el.remove();
-})();
+// Auto-focus
+setTimeout(function() { document.getElementById('identifier').focus(); }, 800);
 </script>
 </body>
 </html>
