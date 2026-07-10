@@ -15,21 +15,21 @@ def login():
         sf = get_service_factory()
         auth_service = sf.get_auth_service()
 
-        email = request.form.get('email', '').strip()
+        identifier = request.form.get('identifier', '').strip()
         password = request.form.get('password', '')
 
-        if not email or not password:
-            flash('Por favor ingresa tu correo y contraseña.', 'error')
+        if not identifier or not password:
+            flash('Por favor ingresa tu usuario o correo y contraseña.', 'error')
             return render_template('auth/login.html')
 
-        user, status = auth_service.login(email, password)
+        user, status = auth_service.login(identifier, password)
 
         if status == 'ok':
             login_user(user)
             flash(f'¡Bienvenido de vuelta, {user.nombre}!', 'success')
             return redirect(url_for('jugador.dashboard'))
         elif status == 'no_existe':
-            flash('No encontramos una cuenta con ese correo. ¿Quizás necesitas <a href="{}" style="color:#A78BFA;text-decoration:underline;">registrarte</a>?'.format(url_for('auth.register')), 'error')
+            flash('No encontramos una cuenta con ese usuario o correo. ¿Quizás necesitas <a href="{}" style="color:#A78BFA;text-decoration:underline;">registrarte</a>?'.format(url_for('auth.register')), 'error')
         elif status == 'wrong_pass':
             flash('La contraseña es incorrecta. <a href="{}" style="color:#A78BFA;text-decoration:underline;">¿Olvidaste tu contraseña?</a>'.format(url_for('auth.forgot_password')), 'error')
         elif status == 'invitado':

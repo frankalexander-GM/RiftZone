@@ -13,18 +13,23 @@ class AuthService:
     def __init__(self, user_repo):
         self.user_repo = user_repo
 
-    def login(self, email, password):
+    def login(self, identifier, password):
         """
-        Intenta loguear al usuario.
+        Intenta loguear al usuario con username o email.
         Retorna: (usuario, codigo_estado)
             codigo_estado:
                 'ok'          — login exitoso
-                'no_existe'   — el correo no está registrado
+                'no_existe'   — el usuario/correo no está registrado
                 'wrong_pass'  — contraseña incorrecta
                 'invitado'    — cuenta de invitado temporal
         """
-        email = email.strip().lower()
-        user = self.user_repo.get_by_email(email)
+        identifier = identifier.strip()
+        identifier_lower = identifier.lower()
+
+        # Intentar buscar por username primero, luego por email
+        user = self.user_repo.get_by_username(identifier_lower)
+        if not user:
+            user = self.user_repo.get_by_email(identifier_lower)
 
         if not user:
             return None, 'no_existe'

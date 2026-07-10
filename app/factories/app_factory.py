@@ -65,7 +65,7 @@ def create_app(config_name='default'):
     # Crear tablas faltantes automáticamente al arrancar
     with flask_app.app_context():
         try:
-            from app.models.usuario import Usuario, Notificacion
+            from app.models.usuario import Usuario, Notificacion, PasswordResetCode
             from app.models.chat import MensajeChat
             from app.models.chat_comunidad import MensajeComunidad
             from app.models.publicacion import Publicacion, publicacion_likes, Poll, PollOption, PollVote, Report, publicacion_oculta
